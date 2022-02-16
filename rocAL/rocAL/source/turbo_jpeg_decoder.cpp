@@ -81,7 +81,6 @@ Decoder::Status TJDecoder::decode(unsigned char *input_buffer, size_t input_size
             planes = 3;
         break;
     };
-    keep_original_size = true;
     if (!keep_original_size) {
         actual_decoded_width = max_decoded_width;
         actual_decoded_height = max_decoded_height;
