@@ -27,6 +27,7 @@ THE SOFTWARE.
 #include "commons.h"
 #include "context.h"
 #include "rali_api.h"
+#define MAX_BUFFER 10000
 
 void
 RALI_API_CALL raliRandomBBoxCrop(RaliContext p_context, bool all_boxes_overlap, bool no_crop, RaliFloatParam p_aspect_ratio, bool has_shape, int crop_width, int crop_height, int num_attempts, RaliFloatParam p_scaling, int total_num_attempts, int64_t seed)
@@ -77,12 +78,12 @@ RALI_API_CALL raliCreateVideoLabelReader(RaliContext p_context, const char* sour
 }
 
 RaliMetaData
-RALI_API_CALL raliCreateCOCOReader(RaliContext p_context, const char* source_path, bool is_output){
+RALI_API_CALL raliCreateCOCOReader(RaliContext p_context, const char* source_path, bool is_output, bool mask){
     if (!p_context)
         THROW("Invalid rali context passed to raliCreateCOCOReader")
     auto context = static_cast<Context*>(p_context);
 
-    return context->master_graph->create_coco_meta_data_reader(source_path, is_output, MetaDataReaderType::COCO_META_DATA_READER,  MetaDataType::BoundingBox);
+    return context->master_graph->create_coco_meta_data_reader(source_path, is_output, mask, MetaDataReaderType::COCO_META_DATA_READER,  MetaDataType::BoundingBox);
 }
 
 RaliMetaData
@@ -91,7 +92,7 @@ RALI_API_CALL raliCreateCOCOReaderKeyPoints(RaliContext p_context, const char* s
         THROW("Invalid rali context passed to raliCreateCOCOReaderKeyPoints")
     auto context = static_cast<Context*>(p_context);
 
-    return context->master_graph->create_coco_meta_data_reader(source_path, is_output, MetaDataReaderType::COCO_KEY_POINTS_META_DATA_READER, MetaDataType::KeyPoints, sigma, pose_output_width, pose_output_height);
+    return context->master_graph->create_coco_meta_data_reader(source_path, is_output, false, MetaDataReaderType::COCO_KEY_POINTS_META_DATA_READER, MetaDataType::KeyPoints, sigma, pose_output_width, pose_output_height);
 }
 
 RaliMetaData
@@ -325,6 +326,62 @@ RALI_API_CALL raliGetBoundingBoxCords(RaliContext p_context, float* buf)
         unsigned bb_count = meta_data.second->get_bb_cords_batch()[i].size();
         memcpy(buf, meta_data.second->get_bb_cords_batch()[i].data(), bb_count * sizeof(BoundingBoxCord));
         buf += (bb_count * 4);
+    }
+}
+
+unsigned
+RALI_API_CALL raliGetMaskCount(RaliContext p_context, int* buf)
+{
+    if (!p_context)
+        THROW("Invalid rali context passed to raliGetMaskCount")
+    unsigned size = 0, count = 0;
+    auto context = static_cast<Context*>(p_context);
+    auto meta_data = context->master_graph->meta_data();
+    size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
+    if(context->user_batch_size() != meta_data_batch_size)
+        THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
+    if(!meta_data.second)
+        THROW("No mask has been loaded for this output image")
+    for(unsigned i = 0; i < meta_data_batch_size; i++)
+    {
+        unsigned object_count = meta_data.second->get_mask_cords_batch()[i].size();
+        for(unsigned int j = 0; j < object_count; j++) {
+            unsigned polygon_count = meta_data.second->get_mask_cords_batch()[i][j].size();
+            buf[count++] = polygon_count;
+            size += polygon_count;
+        }
+    }
+    return size;
+}
+
+void
+RALI_API_CALL raliGetMaskCoordinates(RaliContext p_context, int *bufcount, float *buf)
+{
+    if (!p_context)
+        THROW("Invalid rali context passed to raliGetMaskCoordinates")
+    auto context = static_cast<Context*>(p_context);
+    auto meta_data = context->master_graph->meta_data();
+    size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
+    if(context->user_batch_size() != meta_data_batch_size)
+        THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
+    if(!meta_data.second)
+        THROW("No mask has been loaded for this output image")
+    int size = 0;
+    auto ptr = buf;
+    for(unsigned image_idx = 0; image_idx < meta_data_batch_size; image_idx++)
+    {
+        unsigned object_count = meta_data.second->get_mask_cords_batch()[image_idx].size();
+        for(unsigned int i = 0; i < object_count; i++)
+        {
+            unsigned polygon_count = meta_data.second->get_mask_cords_batch()[image_idx][i].size();
+            for(unsigned int j = 0; j < polygon_count; j++)
+            {
+                unsigned polygon_size = meta_data.second->get_mask_cords_batch()[image_idx][i][j].size();
+                bufcount[size++] = polygon_size;
+                memcpy(ptr, meta_data.second->get_mask_cords_batch()[image_idx][i][j].data(), sizeof(float) * meta_data.second->get_mask_cords_batch()[image_idx][i][j].size());
+                ptr += polygon_size;
+            }
+        }
     }
 }
 

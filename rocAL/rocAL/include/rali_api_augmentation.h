@@ -55,6 +55,21 @@ extern "C"  RaliImage  RALI_API_CALL raliResize(RaliContext context, RaliImage i
 /// \param input
 /// \param dest_width
 /// \param dest_height
+/// \param mean
+/// \param std_dev
+/// \param p_mirror
+/// \param is_output
+/// \return
+extern "C"  RaliImage  RALI_API_CALL raliResizeMirrorNormalize(RaliContext p_context, RaliImage p_input,
+                                                            unsigned dest_width, unsigned dest_height,
+                                                            std::vector<float> &mean, std::vector<float> &std_dev,
+                                                            bool is_output, RaliIntParam p_mirror = NULL);
+
+/// Accepts U8 and RGB24 input.
+/// \param context
+/// \param input
+/// \param dest_width
+/// \param dest_height
 /// \param is_output
 /// \param area
 /// \param x_center_drift

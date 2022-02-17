@@ -157,12 +157,51 @@ namespace rali{
         return py::cast<py::none>(Py_None);
     }
 
+    py::object wrapper_Mask_count(RaliContext context, py::array_t<int> array)
+    {
+        auto buf = array.request();
+        int* ptr = (int*) buf.ptr;
+        // call pure C++ function
+        int count = raliGetMaskCount(context,ptr);
+
+        return py::cast(count);
+    }
+
+    py::object wrapper_Mask_Coordinates(RaliContext context, py::array_t<int> array_count, py::array_t<float> array)
+    {
+        auto buf = array.request();
+        float* ptr = (float*) buf.ptr;
+        auto buf_count = array_count.request();
+        int* ptr1 = (int*) buf_count.ptr;
+        // call pure C++ function
+        raliGetMaskCoordinates(context, ptr1, ptr);
+        return py::cast<py::none>(Py_None);
+    }
+
     py::object wrapper_img_sizes_copy(RaliContext context, py::array_t<int> array)
     {
         auto buf = array.request();
         int* ptr = (int*) buf.ptr;
         // call pure C++ function
         raliGetImageSizes(context,ptr);
+        return py::cast<py::none>(Py_None);
+    }
+
+    py::object wrapper_ROI_width_copy(RaliContext context, py::array_t<unsigned int> array)
+    {
+        auto buf = array.request();
+        unsigned int* ptr = (unsigned int*) buf.ptr;
+        // call pure C++ function
+        raliGetOutputResizeWidth(context,ptr);
+        return py::cast<py::none>(Py_None);
+    }
+
+    py::object wrapper_ROI_height_copy(RaliContext context, py::array_t<unsigned int> array)
+    {
+        auto buf = array.request();
+        unsigned int* ptr = (unsigned int*) buf.ptr;
+        // call pure C++ function
+        raliGetOutputResizeHeight(context,ptr);
         return py::cast<py::none>(Py_None);
     }
 
@@ -267,6 +306,10 @@ namespace rali{
         m.def("getBBCords",&wrapper_BB_cord_copy);
         m.def("raliCopyEncodedBoxesAndLables",&wrapper_encoded_bbox_label);
         m.def("getImgSizes",&wrapper_img_sizes_copy);
+        m.def("getOutputROIWidth",&wrapper_ROI_width_copy);
+        m.def("getOutputROIHeight",&wrapper_ROI_height_copy);
+        m.def("getMaskCount", &wrapper_Mask_count);
+        m.def("getMaskCoordinates", &wrapper_Mask_Coordinates);
         m.def("getBoundingBoxCount",&wrapper_labels_BB_count_copy);
         m.def("getOneHotEncodedLabels",&wrapper_one_hot_label_copy );
         m.def("isEmpty",&raliIsEmpty);
@@ -523,6 +566,16 @@ namespace rali{
             py::arg("dest_width"),
             py::arg("dest_height"),
             py::arg("is_output"));
+        m.def("ResizeMirrorNormalize", &raliResizeMirrorNormalize,
+            py::return_value_policy::reference,
+            py::arg("context"),
+            py::arg("input"),
+            py::arg("resize_min"),
+            py::arg("resize_max"),
+            py::arg("mean"),
+            py::arg("std_dev"),
+            py::arg("is_output"),
+            py::arg("mirror") = NULL);
         m.def("CropResize",&raliCropResize,
             py::return_value_policy::reference,
             py::arg("context"),

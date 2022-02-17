@@ -144,7 +144,7 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
                 std::cout << "\n json_path has to be set in rali_unit test manually";
                 exit(0);
             }
-            meta_data = raliCreateCOCOReader(handle, json_path, true);
+            meta_data = raliCreateCOCOReader(handle, json_path, true, true);
             if (decode_max_height <= 0 || decode_max_width <= 0)
                 input1 = raliJpegCOCOFileSource(handle, path, json_path, color_format, num_threads, false, true, false);
             else
@@ -160,7 +160,7 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
                 std::cout << "\n json_path has to be set in rali_unit test manually";
                 exit(0);
             }
-            meta_data = raliCreateCOCOReader(handle, json_path, true);
+            meta_data = raliCreateCOCOReader(handle, json_path, true, true);
 #if defined RANDOMBBOXCROP
             raliRandomBBoxCrop(handle, all_boxes_overlap, no_crop);
 #endif

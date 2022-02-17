@@ -89,7 +89,7 @@ class Pipeline(object):
             print("Pipeline has been created succesfully")
         else:
             raise Exception("Failed creating the pipeline")
-        self._check_ops = ["CropMirrorNormalize"]
+        self._check_ops = ["CropMirrorNormalize","ResizeMirrorNormalize"]
         self._check_crop_ops = ["Resize"]
         self._check_ops_decoder = ["ImageDecoder", "ImageDecoderSlice" , "ImageDecoderRandomCrop", "ImageDecoderRaw"]
         self._check_ops_reader = ["FileReader", "TFRecordReaderClassification", "TFRecordReaderDetection",
@@ -128,14 +128,17 @@ class Pipeline(object):
         if(operator.data in self._check_ops):
             self._tensor_layout = operator._output_layout
             self._tensor_dtype = operator._output_dtype
-            self._multiplier = list(map(lambda x: 1/x ,operator._std))
-            self._offset = list(map(lambda x,y: -(x/y), operator._mean, operator._std))
-            #changing operator std and mean to (1,0) to make sure there is no double normalization
-            operator._std = [1.0]
-            operator._mean = [0.0]
-            if operator._crop_h != 0 and operator._crop_w != 0:
-                self._img_w = operator._crop_w
-                self._img_h = operator._crop_h
+            self._multiplier = list(map(lambda x: 1/x, operator._std))
+            self._offset = list(
+                map(lambda x, y: -(x/y), operator._mean, operator._std))
+            if operator.data == "CropMirrorNormalize":
+                if operator._crop_h != 0 and operator._crop_w != 0:
+                    self._img_w = operator._crop_w
+                    self._img_h = operator._crop_h
+            elif operator.data == "ResizeMirrorNormalize":
+                if operator._resize_max != 0 and operator._resize_min != 0:
+                    self._img_w = operator._resize_min
+                    self._img_h = operator._resize_max
         elif(operator.data in self._check_crop_ops):
             self._img_w = operator._resize_x
             self._img_h = operator._resize_y
@@ -286,6 +289,11 @@ class Pipeline(object):
     def GetBBCords(self, array):
         return b.getBBCords(self._handle, array)
 
+    def GetMaskCount(self, array):
+        return b.getMaskCount(self._handle, array)
+
+    def GetMaskCoordinates(self, array_count, array):
+        return b.getMaskCoordinates(self._handle, array_count, array)
 
     def getImageLabels(self, array):
         b.getImageLabels(self._handle, array)
@@ -311,6 +319,12 @@ class Pipeline(object):
 
     def getOutputHeight(self):
         return b.getOutputHeight(self._handle)
+
+    def getOutputROIWidth(self, array):
+        return b.getOutputROIWidth(self._handle, array)
+
+    def getOutputROIHeight(self, array):
+        return b.getOutputROIHeight(self._handle, array)
 
     def getOutputImageCount(self):
         return b.getOutputImageCount(self._handle)

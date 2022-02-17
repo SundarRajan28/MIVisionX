@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2020 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +21,31 @@ THE SOFTWARE.
 */
 
 #pragma once
-#include <set>
-#include <memory>
-#include "bounding_box_graph.h"
-#include "meta_data.h"
 #include "node.h"
-#include "node_crop.h"
+#include "parameter_factory.h"
 #include "parameter_vx.h"
-class CropMetaNode:public MetaNode
+
+class ResizeMirrorNormalizeNode : public Node
 {
-    public:
-        CropMetaNode() {};
-        void update_parameters(MetaDataBatch* input_meta_data, bool segmentation)override;
-        std::shared_ptr<CropNode> _node = nullptr;
-    private:
-        void initialize();
-        std::shared_ptr<RaliCropParam> _meta_crop_param;
-        vx_array _crop_width, _crop_height, _x1, _y1;
-        std::vector<uint> _crop_width_val, _crop_height_val, _x1_val, _y1_val;
-        unsigned int _dst_width, _dst_height;
+public:
+    ResizeMirrorNormalizeNode(const std::vector<Image *> &inputs, const std::vector<Image *> &outputs);
+    ResizeMirrorNormalizeNode() = delete;
+    void init(float mean, float std_dev, IntParam *mirror);
+    vx_array get_dst_width() { return _dst_roi_width; }
+    vx_array get_dst_height() { return _dst_roi_height;}
+    vx_array get_src_width() { return _src_roi_width; }
+    vx_array get_src_height() { return _src_roi_height; }
+    vx_array return_mirror(){ return _mirror.default_array();  }
+protected:
+    void create_node() override;
+    void update_node() override;
+private:
+    vx_array  _dst_roi_width , _dst_roi_height ;
+    std::vector<uint> _dest_width_val, _dest_height_val;
+    std::vector<vx_float32> _mean_vx, _std_dev_vx;
+    vx_array _mean_array, _std_dev_array;
+    float _mean; 
+    float _std_dev; 
+    ParameterVX<int> _mirror;
+    constexpr static int   MIRROR_RANGE [2] =  {0, 1};
 };

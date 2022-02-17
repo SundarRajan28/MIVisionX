@@ -52,6 +52,26 @@ int RALI_API_CALL raliGetOutputHeight(RaliContext p_context)
     return context->master_graph->output_height();
 }
 
+void RALI_API_CALL raliGetOutputResizeWidth(RaliContext p_context, unsigned int *buf)
+{
+    auto context = static_cast<Context *>(p_context);
+    std::vector<uint32_t> resize_width_vec = context->master_graph->output_resize_width();
+    for (unsigned int i = 0; i < context->user_batch_size(); i++)
+    {
+        buf[i] = resize_width_vec[i];
+    }
+}
+
+void RALI_API_CALL raliGetOutputResizeHeight(RaliContext p_context, unsigned int *buf)
+{
+    auto context = static_cast<Context *>(p_context);
+    std::vector<uint32_t> resize_height_vec = context->master_graph->output_resize_height();
+    for (unsigned int i = 0; i < context->user_batch_size(); i++)
+    {
+        buf[i] = resize_height_vec[i];
+    }
+}
+
 int RALI_API_CALL raliGetOutputColorFormat(RaliContext p_context)
 {
     auto context = static_cast<Context*>(p_context);
