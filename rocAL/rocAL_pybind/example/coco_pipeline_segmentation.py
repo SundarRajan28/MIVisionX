@@ -298,7 +298,7 @@ class COCOPipeline(Pipeline):
         #print("*********************** train_pipeline shard_id ::",local_rank,"************************************")
         print("*********************** train_pipeline num_shards ::",num_threads,"************************************")
         self.input = ops.COCOReader(
-            file_root=data_dir, annotations_file=ann_dir, random_shuffle=True, seed=seed)
+            file_root=data_dir, annotations_file=ann_dir, random_shuffle=True, seed=seed, masks=True)
         rali_device = 'cpu' if rali_cpu else 'gpu'
         decoder_device = 'cpu' if rali_cpu else 'mixed'
 
