@@ -63,7 +63,7 @@ int main(int argc, const char **argv)
 
     int rgb = 1; // process color images
     bool gpu = 1;
-    int test_case = 55; // For Rotate
+    int test_case = 3; // For Rotate
     int num_of_classes = 0;
 
     if (argc >= argIdx + MIN_ARG_COUNT)

@@ -1699,7 +1699,7 @@ RALI_API_CALL raliCropMirrorNormalize(RaliContext p_context, RaliImage p_input, 
         context->capture_error(e.what());
         ERR(e.what())
     }
-    return output; // Changed to input----------------IMPORTANT
+    return output;
 }
 
 
