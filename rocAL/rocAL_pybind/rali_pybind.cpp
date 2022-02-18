@@ -163,7 +163,6 @@ namespace rali{
         int* ptr = (int*) buf.ptr;
         // call pure C++ function
         int count = raliGetMaskCount(context,ptr);
-
         return py::cast(count);
     }
 

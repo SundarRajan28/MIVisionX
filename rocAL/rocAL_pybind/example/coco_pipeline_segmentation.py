@@ -2,20 +2,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import torch
-import ctypes
-import logging
 import random
+
 from amd.rali.pipeline import Pipeline
-from tqdm import tqdm
 import amd.rali.ops as ops
 import amd.rali.types as types
 
-
 import sys
+from tqdm import tqdm
 import numpy as np
-from enum import Enum
-import cv2
-import time
 
 class SegmentationMask(object):
     """
@@ -548,7 +543,7 @@ def main():
     pipe.build()
     data_loader = RALICOCOIterator(
         pipe, multiplier=pipe._multiplier, offset=pipe._offset)
-    epochs = 15
+    epochs = 2
     for epoch in range(int(epochs)):
         print("EPOCH:::::",epoch)
         #for i,(images,targets) in enumerate(data_loader, 0):

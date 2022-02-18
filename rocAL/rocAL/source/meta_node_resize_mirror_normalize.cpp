@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2020 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -55,10 +55,12 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
         _dst_to_src_width_ratio = _dst_width_val[i] / float(_src_width_val[i]);
         _dst_to_src_height_ratio = _dst_height_val[i] / float(_src_height_val[i]);
         auto bb_count = input_meta_data->get_bb_labels_batch()[i].size();
-        int labels_buf[bb_count];
-        float coords_buf[bb_count * 4];
-        memcpy(labels_buf, input_meta_data->get_bb_labels_batch()[i].data(), sizeof(int) * bb_count);
-        memcpy(coords_buf, input_meta_data->get_bb_cords_batch()[i].data(), input_meta_data->get_bb_cords_batch()[i].size() * sizeof(BoundingBoxCord));
+        BoundingBoxCords coords_buf;
+        BoundingBoxLabels labels_buf;
+        coords_buf.resize(bb_count);
+        labels_buf.resize(bb_count);
+        memcpy(labels_buf.data(), input_meta_data->get_bb_labels_batch()[i].data(), sizeof(int) * bb_count);
+        memcpy((void *)coords_buf.data(), input_meta_data->get_bb_cords_batch()[i].data(), input_meta_data->get_bb_cords_batch()[i].size() * sizeof(BoundingBoxCord));
         BoundingBoxCords bb_coords;
         MaskCords mask_coords;
         coords mask_cord;
@@ -111,32 +113,16 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
             }
         }
 
-        int m = 0;
         for (uint j = 0; j < bb_count; j++)
         {
-            BoundingBoxCord box;
-            box.l = coords_buf[m++];
-            box.t = coords_buf[m++];
-            box.r = coords_buf[m++];
-            box.b = coords_buf[m++];
-            
             if(_mirror_val[i] == 1)
             {
-                float l = 1 - box.r;
-                box.r = 1 - box.l;
-                box.l = l;     
+                float l = 1 - coords_buf[j].r;
+                coords_buf[j].r = 1 - coords_buf[j].l;
+                coords_buf[j].l = l;     
             }
-
-            bb_coords.push_back(box);
+            bb_coords.push_back(coords_buf[j]);
             bb_labels.push_back(labels_buf[j]);
-        }
-        if (bb_coords.size() == 0)
-        {
-            BoundingBoxCord temp_box;
-            temp_box.l = temp_box.t = 0;
-            temp_box.r = temp_box.b = 1;
-            bb_coords.push_back(temp_box);
-            bb_labels.push_back(0);
         }
         input_meta_data->get_bb_cords_batch()[i] = bb_coords;
         input_meta_data->get_bb_labels_batch()[i] = bb_labels;

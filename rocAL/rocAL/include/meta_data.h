@@ -165,7 +165,6 @@ struct MetaDataBatch
     virtual void clear() = 0;
     virtual void resize(int batch_size) = 0;
     virtual int size() = 0;
-    virtual int mask_size() = 0;
     virtual MetaDataBatch&  operator += (MetaDataBatch& other) = 0;
     MetaDataBatch* concatenate(MetaDataBatch* other)
     {
@@ -209,10 +208,6 @@ struct LabelBatch : public MetaDataBatch
     {
         return _label_id.size();
     }
-    int mask_size() override
-    {
-        return 0;
-    }
     std::shared_ptr<MetaDataBatch> clone() override
     {
         return std::make_shared<LabelBatch>(*this);
@@ -251,10 +246,6 @@ struct BoundingBoxBatch: public MetaDataBatch
     int size() override
     {
         return _bb_cords.size();
-    }
-    int mask_size() override
-    {
-        return _mask_cords.size();
     }
     std::shared_ptr<MetaDataBatch> clone() override
     {
@@ -300,10 +291,6 @@ struct KeyPointBatch : public MetaDataBatch
     int size() override
     {
         return _joints_data.image_id_batch.size();
-    }
-    int mask_size() override
-    {
-        return 0;
     }
     std::shared_ptr<MetaDataBatch> clone() override
     {

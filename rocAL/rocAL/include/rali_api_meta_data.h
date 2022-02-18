@@ -127,9 +127,14 @@ extern "C" unsigned RALI_API_CALL raliGetBoundingBoxCount(RaliContext rali_conte
 
 ///
 /// \param rali_context
-/// \param image_idx the imageIdx in the output batch
+/// \param buf the imageIdx in the output batch
 /// \return The size of the buffer needs to be provided by user to get mask box info associated with image_idx in the output batch.
 extern "C" unsigned RALI_API_CALL raliGetMaskCount(RaliContext rali_context, int* buf );
+
+///
+/// \param rali_context
+/// \param bufcount The user's buffer that will be filled with poylgon size for the mask info
+/// \param buf The user's buffer that will be filled with mask info for the images in the output batch. It needs to be of size returned by a call to the raliGetMaskCount
 extern "C" void RALI_API_CALL raliGetMaskCoordinates(RaliContext rali_context, int* bufcount, float* buf);
 
 ///

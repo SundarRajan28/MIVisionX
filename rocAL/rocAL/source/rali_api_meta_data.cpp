@@ -332,7 +332,7 @@ RALI_API_CALL raliGetBoundingBoxCords(RaliContext p_context, float* buf)
 unsigned
 RALI_API_CALL raliGetMaskCount(RaliContext p_context, int* buf)
 {
-    if (!p_context)
+    if (p_context == nullptr)
         THROW("Invalid rali context passed to raliGetMaskCount")
     unsigned size = 0, count = 0;
     auto context = static_cast<Context*>(p_context);
@@ -357,7 +357,7 @@ RALI_API_CALL raliGetMaskCount(RaliContext p_context, int* buf)
 void
 RALI_API_CALL raliGetMaskCoordinates(RaliContext p_context, int *bufcount, float *buf)
 {
-    if (!p_context)
+    if (p_context == nullptr)
         THROW("Invalid rali context passed to raliGetMaskCoordinates")
     auto context = static_cast<Context*>(p_context);
     auto meta_data = context->master_graph->meta_data();

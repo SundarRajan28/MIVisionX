@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2020 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,11 +32,11 @@ struct ResizeMirrorNormalizebatchPDLocalData {
 	RppiSize *dstDimensions;
 	RppiSize maxDstDimensions;
 	RppPtr_t pSrc;
-    RppPtr_t pDst;
+	RppPtr_t pDst;
 	vx_float32  *mean;
-    vx_float32 *std_dev;
-    vx_uint32 *mirror;
-    vx_uint32 chnShift; //NHWC to NCHW
+	vx_float32 *std_dev;
+	vx_uint32 *mirror;
+	vx_uint32 chnShift; //NHWC to NCHW
 	Rpp32u *srcBatch_width;
 	Rpp32u *srcBatch_height;
 	Rpp32u *dstBatch_width;

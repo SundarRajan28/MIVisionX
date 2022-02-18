@@ -30,7 +30,6 @@ void BoundingBoxGraph::process(MetaDataBatch *meta_data, bool segmentation)
     }
 }
 
-//not required since the bbox are normalized in the very beggining -> remove the call in master graph also
 void BoundingBoxGraph::update_meta_data(MetaDataBatch *input_meta_data, decoded_image_info decode_image_info, bool segmentation)
 {
     std::vector<uint32_t> original_height = decode_image_info._original_height;

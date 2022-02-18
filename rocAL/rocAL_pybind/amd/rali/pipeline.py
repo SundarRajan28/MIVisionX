@@ -128,9 +128,11 @@ class Pipeline(object):
         if(operator.data in self._check_ops):
             self._tensor_layout = operator._output_layout
             self._tensor_dtype = operator._output_dtype
-            self._multiplier = list(map(lambda x: 1/x, operator._std))
-            self._offset = list(
-                map(lambda x, y: -(x/y), operator._mean, operator._std))
+            self._multiplier = list(map(lambda x: 1/x ,operator._std))
+            self._offset = list(map(lambda x,y: -(x/y), operator._mean, operator._std))
+            #changing operator std and mean to (1,0) to make sure there is no double normalization
+            operator._std = [1.0]
+            operator._mean = [0.0]
             if operator.data == "CropMirrorNormalize":
                 if operator._crop_h != 0 and operator._crop_w != 0:
                     self._img_w = operator._crop_w

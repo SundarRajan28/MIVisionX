@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include<string>
 
 #include "rali_api.h"
+#define MAX_BUFFER 10000
 
 using namespace cv;
 
@@ -47,7 +48,7 @@ int main(int argc, const char **argv)
     const int MIN_ARG_COUNT = 2;
     if (argc < MIN_ARG_COUNT)
     {
-        printf("Usage: rali_unittests reader-type pipeline-type=1(classification)2(detection)3(keypoints) <image-dataset-folder> output_image_name <width> <height> test_case gpu=1/cpu=0 rgb=1/grayscale=0 one_hot_labels=num_of_classes/0  display_all=0(display_last_only)1(display_all)\n");
+        printf("Usage: rali_unittests reader-type pipeline-type=1(classification)2(detection)3(keypoints)4(segmentation) <image-dataset-folder> output_image_name <width> <height> test_case gpu=1/cpu=0 rgb=1/grayscale=0 one_hot_labels=num_of_classes/0  display_all=0(display_last_only)1(display_all)\n");
         return -1;
     }
 
@@ -62,7 +63,7 @@ int main(int argc, const char **argv)
 
     int rgb = 1; // process color images
     bool gpu = 1;
-    int test_case = 3; // For Rotate
+    int test_case = 55; // For Rotate
     int num_of_classes = 0;
 
     if (argc >= argIdx + MIN_ARG_COUNT)
@@ -138,13 +139,17 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         case 2: //coco detection
         {
             std::cout << ">>>>>>> Running COCO READER" << std::endl;
-            char *json_path = "";
+            char *json_path = "/data/coco_20_img/coco2017/annotations/instances_train2017.json";
             if (strcmp(json_path, "") == 0)
             {
                 std::cout << "\n json_path has to be set in rali_unit test manually";
                 exit(0);
             }
-            meta_data = raliCreateCOCOReader(handle, json_path, true, true);
+            if (pipeline_type == 4)
+                meta_data = raliCreateCOCOReader(handle, json_path, true, true);
+            else
+                meta_data = raliCreateCOCOReader(handle, json_path, true, false);
+            
             if (decode_max_height <= 0 || decode_max_width <= 0)
                 input1 = raliJpegCOCOFileSource(handle, path, json_path, color_format, num_threads, false, true, false);
             else
@@ -154,13 +159,16 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         case 3: //coco detection partial
         {
             std::cout << ">>>>>>> Running COCO READER PARTIAL" << std::endl;
-            char *json_path = "";
+            char *json_path = "/data/coco_20_img/coco2017/annotations/instances_train2017.json";
             if (strcmp(json_path, "") == 0)
             {
                 std::cout << "\n json_path has to be set in rali_unit test manually";
                 exit(0);
             }
-            meta_data = raliCreateCOCOReader(handle, json_path, true, true);
+            if (pipeline_type == 4)
+                meta_data = raliCreateCOCOReader(handle, json_path, true, true);
+            else
+                meta_data = raliCreateCOCOReader(handle, json_path, true, false);
 #if defined RANDOMBBOXCROP
             raliRandomBBoxCrop(handle, all_boxes_overlap, no_crop);
 #endif
@@ -640,6 +648,15 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         image1 = raliSSDRandomCrop(handle, input1, true);
     }
     break;
+    case 55:
+    {
+        std::cout << ">>>>>>> Running "
+                  << "raliResizeMirrorNormalize" << std::endl;
+        RaliIntParam mirror = raliCreateIntParameter(1);
+        std::vector<float> mean;
+        std::vector<float> std_dev;
+        image1 = raliResizeMirrorNormalize(handle, image0, resize_w, resize_h, mean, std_dev, true, mirror);
+    }
 
     default:
         std::cout << "Not a valid option! Exiting!\n";
@@ -757,6 +774,46 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
                     for (int k = 0; k < 17; k++)
                     {
                     std::cout << "x : " << joints_data->joints_batch[i][k][0] << " , y : " << joints_data->joints_batch[i][k][1] << " , v : " << joints_data->joints_visibility_batch[i][k][0] << std::endl;
+                    }
+                }
+            }
+            break;
+            case 4: //segmentation pipeline
+            {
+                int img_size = raliGetImageNameLen(handle, image_name_length);
+                char img_name[img_size];
+                raliGetImageName(handle, img_name);
+                std::cerr << "\nPrinting image names of batch: " << img_name;
+                int bb_label_count[inputBatchSize];
+                int size = raliGetBoundingBoxCount(handle, bb_label_count);
+                for (int i = 0; i < (int)inputBatchSize; i++)
+                    std::cerr << "\n Number of box:  " << bb_label_count[i];
+                int bb_labels[size];
+                raliGetBoundingBoxLabel(handle, bb_labels);
+                float bb_coords[size * 4];
+                raliGetBoundingBoxCords(handle, bb_coords);
+                int img_sizes_batch[inputBatchSize * 2];
+                raliGetImageSizes(handle, img_sizes_batch);
+                for (int i = 0; i < (int)inputBatchSize; i++)
+                {
+                    std::cout<<"\nwidth:"<<img_sizes_batch[i*2];
+                    std::cout<<"\nHeight:"<<img_sizes_batch[(i*2)+1];
+                }
+                int mask_count[size];
+                int mask_size = raliGetMaskCount(handle, mask_count);
+                int polygon_size[mask_size];
+                float mask[MAX_BUFFER];
+                raliGetMaskCoordinates(handle, polygon_size, mask);
+                for(int i = 0; i < size; i++)
+                    std::cerr << "\n Number of polygons per object:  " << mask_count[i];
+                std::cerr << "\nMask Size:: " << mask_size;
+                int j = 0;
+                for(int i = 0; i < mask_size ; i++)
+                {
+                    std::cerr << "\nPolygon size : " << polygon_size[i]<< "\nMask Elements: ";
+                    for(int loop_idx = 0; loop_idx < polygon_size[i]; loop_idx++, j++)
+                    {
+                        std::cerr << "\t " << mask[j];
                     }
                 }
             }
