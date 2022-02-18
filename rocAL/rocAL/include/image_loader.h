@@ -83,7 +83,7 @@ private:
     size_t _prefetch_queue_depth; // Used for circular buffer's internal buffer
     size_t _image_counter = 0;//!< How many images have been loaded already
     size_t _remaining_image_count;//!< How many images are there yet to be loaded
-    bool _decoder_keep_original = true;
+    bool _decoder_keep_original = false;
     std::shared_ptr<RandomBBoxCrop_MetaDataReader> _randombboxcrop_meta_data_reader = nullptr;
 };
 

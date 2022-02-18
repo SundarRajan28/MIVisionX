@@ -42,10 +42,12 @@ void BoundingBoxGraph::update_meta_data(MetaDataBatch *input_meta_data, decoded_
         float _dst_to_src_width_ratio = roi_width[i] / float(original_width[i]);
         float _dst_to_src_height_ratio = roi_height[i] / float(original_height[i]);
         unsigned bb_count = input_meta_data->get_bb_labels_batch()[i].size();
-        std::vector<int> labels_buf(bb_count);
-        std::vector<float> coords_buf(bb_count * 4);
+        BoundingBoxCords coords_buf;
+        BoundingBoxLabels labels_buf;
+        coords_buf.resize(bb_count);
+        labels_buf.resize(bb_count);
         memcpy(labels_buf.data(), input_meta_data->get_bb_labels_batch()[i].data(), sizeof(int) * bb_count);
-        memcpy(coords_buf.data(), input_meta_data->get_bb_cords_batch()[i].data(), input_meta_data->get_bb_cords_batch()[i].size() * sizeof(BoundingBoxCord));
+        memcpy((void *)coords_buf.data(), input_meta_data->get_bb_cords_batch()[i].data(), input_meta_data->get_bb_cords_batch()[i].size() * sizeof(BoundingBoxCord));
         BoundingBoxCords bb_coords;
         BoundingBoxCord temp_box;
         temp_box.l = temp_box.t = temp_box.r = temp_box.b = 0;
@@ -91,15 +93,9 @@ void BoundingBoxGraph::update_meta_data(MetaDataBatch *input_meta_data, decoded_
             }
         }
 
-        int m = 0;
         for (uint j = 0; j < bb_count; j++)
         {
-            BoundingBoxCord box;
-            box.l = coords_buf[m++];
-            box.t = coords_buf[m++];
-            box.r = coords_buf[m++];
-            box.b = coords_buf[m++];
-            bb_coords.push_back(box);
+            bb_coords.push_back(coords_buf[j]);
             bb_labels.push_back(labels_buf[j]);
         }
         if (bb_coords.size() == 0)

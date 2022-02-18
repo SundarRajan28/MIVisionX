@@ -324,11 +324,6 @@ class COCOPipeline(Pipeline):
         output = self.rmnp(images, mirror=coin)
         return [output, self.bb, self.labels]
 
-def get_val_dataset():
-    labels_dict =  {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 13, 13: 14, 14: 15, 15: 16, 16: 17, 17: 18, 18: 19, 19: 20, 20: 21, 21: 22, 22: 23, 23: 24, 24: 25, 25: 27, 26: 28, 27: 31, 28: 32, 29: 33, 30: 34, 31: 35, 32: 36, 33: 37, 34: 38, 35: 39, 36: 40, 37: 41, 38: 42, 39: 43, 40: 44, 41: 46, 42: 47, 43: 48, 44: 49, 45: 50, 46: 51, 47: 52, 48: 53, 49: 54, 50: 55, 51: 56, 52: 57, 53: 58, 54: 59, 55: 60, 56: 61, 57: 62, 58: 63, 59: 64, 60: 65, 61: 67, 62: 70, 63: 72, 64: 73, 65: 74, 66: 75, 67: 76, 68: 77, 69: 78, 70: 79, 71: 80, 72: 81, 73: 82, 74: 84, 75: 85, 76: 86, 77: 87, 78: 88, 79: 89, 80: 90}
-    return labels_dict
-
-
 class RALICOCOIterator(object):
     """
     COCO RALI iterator for pyTorch.
@@ -461,15 +456,6 @@ class RALICOCOIterator(object):
             print("\nAfter : self.bb_2d_numpy\n", self.bb_2d_numpy)
 
             self.bb_2d_numpy = np.reshape(self.bb_2d_numpy, (-1, 4)).tolist()
-
-            val_dataset = get_val_dataset()
-            inv_map = {v: k for k, v in val_dataset.items()}
-
-            self.inv_label = []
-            for element in self.label_2d_numpy:
-                self.inv_label.append(inv_map[element])
-
-            self.label_2d_numpy = torch.as_tensor(self.inv_label)
 
             self.target = BoxList(self.bb_2d_numpy, (self.img_roi_size2d_numpy_wh[0],self.img_roi_size2d_numpy_wh[1]), mode="xyxy")
             self.target.add_field("labels", self.label_2d_numpy)

@@ -336,7 +336,7 @@ void COCOMetaDataReader::read_all(const std::string &path)
             parser.SkipValue();
         }
     }
-    /*for (auto &elem : _map_content)
+    for (auto &elem : _map_content)
     {
         bb_coords = elem.second->get_bb_cords();
         bb_labels = elem.second->get_bb_labels();
@@ -348,7 +348,7 @@ void COCOMetaDataReader::read_all(const std::string &path)
             continuous_label_id.push_back(cnt_idx);
         }
         elem.second->set_bb_labels(continuous_label_id);
-    }*/
+    }
     _coco_metadata_read_time.end(); // Debug timing
     //print_map_contents();
     // std::cout << "coco read time in sec: " << _coco_metadata_read_time.get_timing() / 1000 << std::endl;
