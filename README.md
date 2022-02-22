@@ -254,35 +254,35 @@ macOS [build instructions](https://github.com/GPUOpen-ProfessionalCompute-Librar
 
   + Instructions for building MIVisionX with the **HIP** GPU backend (i.e., default GPU backend):
 
-    + run the setup script to install all the dependencies required by the **HIP** GPU backend:
-    ```
-    python MIVisionX-setup.py
-    ```
+    * run the setup script to install all the dependencies required by the **HIP** GPU backend:
+  ```
+  python MIVisionX-setup.py
+  ```
 
-    + run the below commands to build MIVisionX with the **HIP** GPU backend:
-    ```
-    mkdir build-hip
-    cd build-hip
-    cmake ../
-    make -j8
-    sudo make install
-    ```
+    * run the below commands to build MIVisionX with the **HIP** GPU backend:
+  ```
+  mkdir build-hip
+  cd build-hip
+  cmake ../
+  make -j8
+  sudo make install
+  ```
 
-  + Instructions for building MIVisionX with **OPENCL** GPU backend:
+  + Instructions for building MIVisionX with **OPENCL**:
 
-    + run the setup script to install all the dependencies required by the **OPENCL** GPU backend:
-    ```
-    python MIVisionX-setup.py --reinstall yes --backend OCL
-    ```
+    * run the setup script to install all the dependencies required by the **OPENCL** GPU backend:
+  ```
+  python MIVisionX-setup.py --reinstall yes --backend OCL
+  ```
 
-    + run the below commands to build MIVisionX with the **OPENCL** GPU backend:
-    ```
-    mkdir build-ocl
-    cd build-ocl
-    cmake -DBACKEND=OPENCL ../
-    make -j8
-    sudo make install
-    ```
+    * run the below commands to build MIVisionX with the **OPENCL** GPU backend:
+  ```
+  mkdir build-ocl
+  cd build-ocl
+  cmake -DBACKEND=OPENCL ../
+  make -j8
+  sudo make install
+  ```
 
   **Note:** 
   + MIVisionX cannot be installed for both GPU backends in the same default folder (i.e., /opt/rocm/mivisionx)
