@@ -34,6 +34,16 @@ extern "C" int RALI_API_CALL raliGetOutputWidth(RaliContext rali_context);
 extern "C" int RALI_API_CALL raliGetOutputHeight(RaliContext rali_context);
 
 ///
+/// \param image
+/// \return The width of the RALI's output image in pixels
+extern "C" void RALI_API_CALL raliGetOutputResizeWidth(RaliContext rali_context,unsigned int* buf);
+
+///
+/// \param image
+/// \return The height of the RALI's output image in pixels. It includes all images in the batch.
+extern "C" void RALI_API_CALL raliGetOutputResizeHeight(RaliContext rali_context,unsigned int* buf);
+
+///
 /// \param rali_context
 /// \return The color format of the RALI's output. It's equivalent of what's passed to the loaders as input color format.
 extern "C" int RALI_API_CALL raliGetOutputColorFormat(RaliContext rali_context);

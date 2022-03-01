@@ -2,7 +2,7 @@ import rali_pybind as b
 import amd.rali.types as types
 import numpy as np
 import torch
-
+import ctypes
 
 
 class Pipeline(object):
@@ -83,13 +83,14 @@ class Pipeline(object):
             self._handle = b.raliCreate(
                 batch_size, types.CPU, device_id, num_threads,prefetch_queue_depth,types.FLOAT)
         else:
+            print("comes to gpu")
             self._handle = b.raliCreate(
                 batch_size, types.GPU, device_id, num_threads,prefetch_queue_depth,types.FLOAT)
         if(b.getStatus(self._handle) == types.OK):
             print("Pipeline has been created succesfully")
         else:
             raise Exception("Failed creating the pipeline")
-        self._check_ops = ["CropMirrorNormalize"]
+        self._check_ops = ["CropMirrorNormalize","ResizeMirrorNormalize"]
         self._check_crop_ops = ["Resize"]
         self._check_ops_decoder = ["ImageDecoder", "ImageDecoderSlice" , "ImageDecoderRandomCrop", "ImageDecoderRaw"]
         self._check_ops_reader = ["FileReader", "TFRecordReaderClassification", "TFRecordReaderDetection",
@@ -133,9 +134,14 @@ class Pipeline(object):
             #changing operator std and mean to (1,0) to make sure there is no double normalization
             operator._std = [1.0]
             operator._mean = [0.0]
-            if operator._crop_h != 0 and operator._crop_w != 0:
-                self._img_w = operator._crop_w
-                self._img_h = operator._crop_h
+            if operator.data == "CropMirrorNormalize":
+                if operator._crop_h != 0 and operator._crop_w != 0:
+                    self._img_w = operator._crop_w
+                    self._img_h = operator._crop_h
+            elif operator.data == "ResizeMirrorNormalize":
+                if operator._resize_max != 0 and operator._resize_min != 0:
+                    self._img_w = operator._resize_min
+                    self._img_h = operator._resize_max
         elif(operator.data in self._check_crop_ops):
             self._img_w = operator._resize_x
             self._img_h = operator._resize_y
@@ -240,23 +246,12 @@ class Pipeline(object):
         b.raliCopyToOutput(
             self._handle, np.ascontiguousarray(out, dtype=array.dtype))
 
-    def copyToTensorNHWC(self, array,  multiplier, offset, reverse_channels, tensor_dtype):
-        out = np.frombuffer(array, dtype=array.dtype)
-        if tensor_dtype == types.FLOAT:
-            b.raliCopyToOutputTensor32(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NHWC,
-                                       multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0))
-        elif tensor_dtype == types.FLOAT16:
-            b.raliCopyToOutputTensor16(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NHWC,
-                                       multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0))
 
-    def copyToTensorNCHW(self, array,  multiplier, offset, reverse_channels, tensor_dtype):
-        out = np.frombuffer(array, dtype=array.dtype)
-        if tensor_dtype == types.FLOAT:
-            b.raliCopyToOutputTensor32(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NCHW,
-                                       multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0))
-        elif tensor_dtype == types.FLOAT16:
-            b.raliCopyToOutputTensor16(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NCHW,
-                                       multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0))
+
+    def copyToTensor(self, array,  multiplier, offset, reverse_channels, tensor_format, tensor_dtype):
+
+        b.raliCopyToOutputTensor(self._handle, ctypes.c_void_p(array.data_ptr()), tensor_format, tensor_dtype,
+                                    multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0))
 
     def encode(self, bboxes_in, labels_in):
         bboxes_tensor = torch.tensor(bboxes_in).float()
@@ -273,7 +268,6 @@ class Pipeline(object):
     def GetImageName(self, array_len):
 
         return b.getImageName(self._handle,array_len)
-    
     def GetImageId(self, array):
         b.getImageId(self._handle, array)
 
@@ -286,13 +280,17 @@ class Pipeline(object):
     def GetBBCords(self, array):
         return b.getBBCords(self._handle, array)
 
+    def GetMaskCount(self, array):
+        return b.getMaskCount(self._handle, array)
+
+    def GetMaskCoordinates(self, array_count, array):
+        return b.getMaskCoordinates(self._handle, array_count, array)
 
     def getImageLabels(self, array):
         b.getImageLabels(self._handle, array)
 
     def copyEncodedBoxesAndLables(self, bbox_array, label_array):
         b.raliCopyEncodedBoxesAndLables(self._handle, bbox_array, label_array)
-        
     def GetImgSizes(self, array):
         return b.getImgSizes(self._handle, array)
 
@@ -311,6 +309,12 @@ class Pipeline(object):
 
     def getOutputHeight(self):
         return b.getOutputHeight(self._handle)
+
+    def getOutputROIWidth(self, array):
+        return b.getOutputROIWidth(self._handle, array)
+
+    def getOutputROIHeight(self, array):
+        return b.getOutputROIHeight(self._handle, array)
 
     def getOutputImageCount(self):
         return b.getOutputImageCount(self._handle)

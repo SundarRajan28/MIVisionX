@@ -592,7 +592,7 @@ class COCOReader(Node):
 
     def rali_c_func_call(self, handle):
         b.setSeed(self._seed)
-        b.COCOReader(handle, self._annotations_file, True)
+        b.COCOReader(handle, self._annotations_file, True, self._masks)
         # b.labelReader(handle,self._file_root)
         return self._file_root
 
@@ -1623,6 +1623,62 @@ class Resize(Node):
                                 self._resize_x, self._resize_y, is_output)
         return output_image
 
+class ResizeMirrorNormalize(Node):
+    """
+        bytes_per_sample_hint (int, optional, default = 0) - Output size hint (bytes), per sample. The memory will be preallocated if it uses GPU or page-locked memory
+        resize_min - Size of the smallest side of the image
+        resize_max - Maximum size of the side of the image
+        image_type (int, optional, default = 0) - The color space of input and output image
+        mean (float or list of float, optional, default = [0.0]) - Mean pixel values for image normalization.
+        mirror (int, optional, default = 0) - Mask for horizontal flip. - 0 - do not perform horizontal flip for this image - 1 - perform horizontal flip for this image.
+        output_dtype (int, optional, default = 9) - Output data type. Supported types: FLOAT and FLOAT16
+        output_layout (str, optional, default = 'CHW') - Output tensor data layout
+        pad_output (bool, optional, default = False) - Whether to pad the output to number of channels being a power of 2.
+        preserve (bool, optional, default = False) - Do not remove the Op from the graph even if its outputs are unused.
+        seed (int, optional, default = -1) - Random seed (If not provided it will be populated based on the global seed of the pipeline)
+        std (float or list of float, optional, default = [1.0]) - Standard deviation values for image normalization.
+    """
+    def __init__(self, bytes_per_sample_hint = 0, resize_min = 0, resize_max = 0 , image_type = 0, mean = [0.0], mirror = 0, output_dtype = types.FLOAT, output_layout = types.NCHW, pad_output = False, preserve = False, seed = 1, std = [1.0], device = None):
+
+        Node().__init__()
+        self._bytes_per_sample_hint = bytes_per_sample_hint
+        self._image_type = image_type
+        self._resize_min = resize_min
+        self._resize_max = resize_max
+        self._mean = mean
+        self._mirror = mirror
+        self._output_dtype = output_dtype
+        self._output_layout = output_layout
+        self._pad_output = pad_output
+        self._preserve = preserve
+        self._seed = seed
+        self._std = std
+        self.output = Node()
+        self._temp = None
+
+    def __call__(self, input, mirror = None):
+        input.next = self
+        self.data = "ResizeMirrorNormalize"
+        self.prev = input
+        self.next = self.output
+        self.output.prev = self
+        self.output.next = None
+        self._temp = mirror
+        return self.output
+
+    def rali_c_func_call(self, handle, input_image, is_output):
+        b.setSeed(self._seed)
+        output_image = []
+        if self._temp is not None:
+            mirror = self._temp.rali_c_func_call(handle)
+            output_image = b.ResizeMirrorNormalize(handle, input_image, self._resize_min, self._resize_max, self._mean, self._std, is_output, mirror)
+        else:
+            if(self._mirror == 0):
+                mirror = b.CreateIntParameter(0)
+            else:
+                mirror = b.CreateIntParameter(1)
+            output_image = b.ResizeMirrorNormalize(handle, input_image, self._resize_min, self._resize_max, self._mean, self._std, is_output, mirror)
+        return output_image
 
 class CropMirrorNormalize(Node):
     """
