@@ -656,7 +656,7 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         std::vector<float> std_dev;
         image1 = raliResizeMirrorNormalize(handle, image0, resize_w, resize_h, mean, std_dev, true, mirror);
     }
-
+    break;
     default:
         std::cout << "Not a valid option! Exiting!\n";
         return -1;
