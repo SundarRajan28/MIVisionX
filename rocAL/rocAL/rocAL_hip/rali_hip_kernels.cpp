@@ -181,6 +181,9 @@ Hip_CopyInt8ToNCHW_fp16
             out_tensor[dstIdx] = __float2half((float)inp_img[srcIdx]*multiplier.x + offset.x);
         }
     }
+    unsigned short *out_tensor = (unsigned short *)output_tensor + 0*img_offset+dst_buf_offset;
+    const uchar *inp_img = &inp_image_u8[0*img_offset+dst_buf_offset];
+    printf("Src: %hu, Dest: %hu\n", inp_img[(y*W + x)*C], out_tensor[(y*W + x)]);
 }
 
 int HipExecCopyInt8ToNHWC
