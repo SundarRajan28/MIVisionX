@@ -184,9 +184,9 @@ Hip_CopyInt8ToNCHW_fp16
     unsigned short *out_tensor = (unsigned short *)output_tensor + 0*img_offset+dst_buf_offset;
     const uchar *inp_img = &inp_image_u8[0*img_offset+dst_buf_offset];
     if (reverse_channels)
-        printf("Src: %hu, Dest: %hu, Mult: %f\n", inp_img[((y*W + x)*C)+2], out_tensor[(y*W + x)], multiplier.x);
+        printf("Src: %hu, Dest: %hu, Mult: %f, Offset: %f\n", inp_img[((y*W + x)*C)+2], out_tensor[(y*W + x)], multiplier.x), offset.x;
     else
-        printf("Src: %hu, Dest: %hu, Mult: %f\n", inp_img[(y*W + x)*C], out_tensor[(y*W + x)], multiplier.x);
+        printf("Src: %hu, Dest: %hu, Mult: %f, Offset: %f\n", inp_img[(y*W + x)*C], out_tensor[(y*W + x)], multiplier.x), offset.x;
 }
 
 int HipExecCopyInt8ToNHWC
