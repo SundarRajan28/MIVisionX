@@ -140,7 +140,7 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         case 2: //coco detection
         {
             std::cout << ">>>>>>> Running COCO READER" << std::endl;
-            char *json_path = "/data/coco_20_img/coco2017/annotations/instances_train2017.json";
+            char *json_path = "";
             if (strcmp(json_path, "") == 0)
             {
                 std::cout << "\n json_path has to be set in rali_unit test manually";
@@ -160,7 +160,7 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         case 3: //coco detection partial
         {
             std::cout << ">>>>>>> Running COCO READER PARTIAL" << std::endl;
-            char *json_path = "/data/coco_20_img/coco2017/annotations/instances_train2017.json";
+            char *json_path = "";
             if (strcmp(json_path, "") == 0)
             {
                 std::cout << "\n json_path has to be set in rali_unit test manually";
@@ -665,7 +665,7 @@ int test(int test_case, int reader_type, int pipeline_type, const char *path, co
         std::vector<float> std_dev;
         image1 = raliResizeMirrorNormalize(handle, image0, resize_w, resize_h, mean, std_dev, true, mirror);
     }
-
+    break;
     default:
         std::cout << "Not a valid option! Exiting!\n";
         return -1;
