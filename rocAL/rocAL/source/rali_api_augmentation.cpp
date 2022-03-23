@@ -163,7 +163,7 @@ raliRotateFixed(
         unsigned dest_width,
         unsigned dest_height)
 {
-    
+
     Image* output = nullptr;
     if ((p_context == nullptr) || (p_input == nullptr)) {
         ERR("Invalid RALI context or invalid input image")
