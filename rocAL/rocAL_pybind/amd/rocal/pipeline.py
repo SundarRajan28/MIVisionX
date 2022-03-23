@@ -84,7 +84,6 @@ class Pipeline(object):
             self._handle = b.raliCreate(
                 batch_size, types.CPU, device_id, num_threads,prefetch_queue_depth,types.FLOAT)
         else:
-            print("comes to gpu")
             self._handle = b.raliCreate(
                 batch_size, types.GPU, device_id, num_threads,prefetch_queue_depth,types.FLOAT)
         if(b.getStatus(self._handle) == types.OK):
