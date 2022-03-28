@@ -1019,7 +1019,6 @@ void MasterGraph::output_routine()
                 }
                 _resize_width.insert(_resize_width.begin(), temp_width_arr);
                 _resize_height.insert(_resize_height.begin(), temp_height_arr);
-                _process_time.start();
                 _graph->process();
             }
             _bencode_time.start();
