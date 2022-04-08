@@ -133,10 +133,10 @@ namespace rali{
         return py::cast<py::none>(Py_None);
     }
 
-    py::object wrapper_encoded_bbox_label(RaliContext context, py::array_t<float>bboxes_array, py::array_t<int>labels_array)
+    py::object wrapper_encoded_bbox_label(RaliContext context, py::array_t<double>bboxes_array, py::array_t<int>labels_array)
     {
         auto bboxes_buf = bboxes_array.request();
-        float* bboxes_ptr = (float*) bboxes_buf.ptr;
+        double* bboxes_ptr = (double*) bboxes_buf.ptr;
         auto labels_buf = labels_array.request();
         int* labels_ptr = (int*) labels_buf.ptr;
         // call pure C++ function
@@ -144,10 +144,10 @@ namespace rali{
         return py::cast<py::none>(Py_None);
     }
 
-    py::object wrapper_BB_cord_copy(RaliContext context, py::array_t<float> array)
+    py::object wrapper_BB_cord_copy(RaliContext context, py::array_t<double> array)
     {
         auto buf = array.request();
-        float* ptr = (float*) buf.ptr;
+        double* ptr = (double*) buf.ptr;
         // call pure C++ function
         raliGetBoundingBoxCords(context,ptr);
         return py::cast<py::none>(Py_None);
