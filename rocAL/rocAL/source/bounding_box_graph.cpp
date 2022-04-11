@@ -94,6 +94,10 @@ void BoundingBoxGraph::update_meta_data(MetaDataBatch *input_meta_data, decoded_
 
         for (uint j = 0; j < bb_count; j++)
         {
+            coords_buf[j].l = coords_buf[j].l * _dst_to_src_width_ratio;
+            coords_buf[j].t = coords_buf[j].t * _dst_to_src_height_ratio;
+            coords_buf[j].r = coords_buf[j].r * _dst_to_src_width_ratio;
+            coords_buf[j].b = coords_buf[j].b * _dst_to_src_height_ratio;
             bb_coords.push_back(coords_buf[j]);
             bb_labels.push_back(labels_buf[j]);
         }
