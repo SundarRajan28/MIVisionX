@@ -234,7 +234,7 @@ void COCOMetaDataReader::read_all(const std::string &path)
         {
             RAPIDJSON_ASSERT(parser.PeekType() == kArrayType);
             parser.EnterArray();
-            int ann_id = 0;
+            // int ann_id = 0;
             while (parser.NextArrayValue())
             {
                 int id = 1, label = 0, iscrowd = 0;
@@ -302,20 +302,20 @@ void COCOMetaDataReader::read_all(const std::string &path)
                         parser.SkipValue();
                     }
                 }
-                ann_id ++;
-                std::cout << "Annotation ID: " << ann_id << std::endl << std::flush;
+                // ann_id ++;
+                // std::cout << "Annotation ID: " << ann_id << std::endl << std::flush;
                 char buffer[13];
                 sprintf(buffer, "%012d", id);
                 string str(buffer);
                 std::string file_name = str + ".jpg";
                 auto it = _map_img_sizes.find(file_name);
                 ImgSize image_size = it->second; //Normalizing the co-ordinates & convert to "ltrb" format
-                std::cout << "Before ltrb conversion:" << bbox[0] << " " << bbox[1] << " " << bbox[2] << " " << bbox[3] << std::endl << std::flush;
+                // std::cout << "Before ltrb conversion:" << bbox[0] << " " << bbox[1] << " " << bbox[2] << " " << bbox[3] << std::endl << std::flush;
                 box.l = bbox[0];
                 box.t = bbox[1];
                 box.r = (bbox[0] + bbox[2]) - 1;
                 box.b = (bbox[1] + bbox[3]) - 1;
-                std::cout << "After ltrb conversion:" << box.l << " " << box.t << " " << box.r << " " << box.b << std::endl << std::flush;
+                // std::cout << "After ltrb conversion:" << box.l << " " << box.t << " " << box.r << " " << box.b << std::endl << std::flush;
                 if (_mask && iscrowd == 0)
                 {
                     bb_coords.push_back(box);
