@@ -313,8 +313,8 @@ void COCOMetaDataReader::read_all(const std::string &path)
                 // std::cout << "Before ltrb conversion:" << bbox[0] << " " << bbox[1] << " " << bbox[2] << " " << bbox[3] << std::endl << std::flush;
                 box.l = bbox[0];
                 box.t = bbox[1];
-                box.r = (bbox[0] + bbox[2]) - 1;
-                box.b = (bbox[1] + bbox[3]) - 1;
+                box.r = bbox[2];
+                box.b = bbox[3];
                 // std::cout << "After ltrb conversion:" << box.l << " " << box.t << " " << box.r << " " << box.b << std::endl << std::flush;
                 if (_mask && iscrowd == 0)
                 {
