@@ -147,7 +147,7 @@ extern "C" void RALI_API_CALL raliGetMaskCoordinates(RaliContext rali_context, i
 /// \param rali_context
 /// \param buf The user's buffer that will be filled with bounding box label info for the images in the output batch. It needs to be of size returned by a call to the raliGetBoundingBoxCount
 extern "C" void RALI_API_CALL raliGetBoundingBoxLabel(RaliContext rali_context, int* buf);
-extern "C" void RALI_API_CALL raliGetBoundingBoxCords(RaliContext rali_context, double* buf);
+extern "C" void RALI_API_CALL raliGetBoundingBoxCords(RaliContext rali_context, float* buf);
 
 extern "C" void RALI_API_CALL raliGetImageSizes(RaliContext rali_context, int* buf);
 
@@ -187,7 +187,7 @@ extern "C" void RALI_API_CALL raliBoxEncoder(RaliContext p_context, std::vector<
 
 /// \param boxes_buf  user's buffer that will be filled with encoded bounding boxes . Its needs to be at least of size batch_size.
 /// \param labels_buf  user's buffer that will be filled with encoded labels . Its needs to be at least of size batch_size.
-extern "C" void RALI_API_CALL raliCopyEncodedBoxesAndLables(RaliContext p_context, double* boxes_buf, int* labels_buf);
+extern "C" void RALI_API_CALL raliCopyEncodedBoxesAndLables(RaliContext p_context, float* boxes_buf, int* labels_buf);
 
 ///
 /// \param rali_context

@@ -318,7 +318,7 @@ RALI_API_CALL raliGetOneHotImageLabels(RaliContext p_context, int* buf, int numO
 
 
 void
-RALI_API_CALL raliGetBoundingBoxCords(RaliContext p_context, double* buf)
+RALI_API_CALL raliGetBoundingBoxCords(RaliContext p_context, float* buf)
 {
     if (!p_context)
         THROW("Invalid rali context passed to raliGetBoundingBoxCords")
@@ -466,7 +466,7 @@ void RALI_API_CALL raliBoxEncoder(RaliContext p_context, std::vector<float>& anc
 }
 
 void 
-RALI_API_CALL raliCopyEncodedBoxesAndLables(RaliContext p_context, double* boxes_buf, int* labels_buf)
+RALI_API_CALL raliCopyEncodedBoxesAndLables(RaliContext p_context, float* boxes_buf, int* labels_buf)
 {
     if (!p_context)
         THROW("Invalid rali context passed to raliCopyEncodedBoxesAndLables")
@@ -493,7 +493,7 @@ RALI_API_CALL raliCopyEncodedBoxesAndLables(RaliContext p_context, double* boxes
     {
         unsigned bb_count = meta_data.second->get_bb_labels_batch()[i].size();
         int *temp_labels_buf = labels_buf + sum_bb_count[i];
-        double *temp_bbox_buf = boxes_buf + (sum_bb_count[i] * 4);
+        float *temp_bbox_buf = boxes_buf + (sum_bb_count[i] * 4);
         memcpy(temp_labels_buf, meta_data.second->get_bb_labels_batch()[i].data(), sizeof(int) * bb_count);
         memcpy(temp_bbox_buf, meta_data.second->get_bb_cords_batch()[i].data(), sizeof(BoundingBoxCord) * bb_count);
     }
