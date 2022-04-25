@@ -311,10 +311,10 @@ void COCOMetaDataReader::read_all(const std::string &path)
                 auto it = _map_img_sizes.find(file_name);
                 ImgSize image_size = it->second; //Normalizing the co-ordinates & convert to "ltrb" format
                 // std::cout << "Before ltrb conversion:" << bbox[0] << " " << bbox[1] << " " << bbox[2] << " " << bbox[3] << std::endl << std::flush;
-                box.l = bbox[0];
-                box.t = bbox[1];
-                box.r = bbox[2];
-                box.b = bbox[3];
+                box.l = bbox[0] / image_size.w;
+                box.t = bbox[1] / image_size.h;
+                box.r = bbox[2] / image_size.w;
+                box.b = bbox[3] / image_size.h;
                 // std::cout << "After ltrb conversion:" << box.l << " " << box.t << " " << box.r << " " << box.b << std::endl << std::flush;
                 if (_mask && iscrowd == 0)
                 {

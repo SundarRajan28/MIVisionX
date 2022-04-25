@@ -117,16 +117,21 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
         {
             // double width = (coords_buf[j].r - coords_buf[j].l) * _dst_to_src_width_ratio;
             // double height = (coords_buf[j].b - coords_buf[j].t) * _dst_to_src_height_ratio;
-            coords_buf[j].l = coords_buf[j].l * _dst_to_src_width_ratio;
-            coords_buf[j].t = coords_buf[j].t * _dst_to_src_height_ratio;
-            coords_buf[j].r = coords_buf[j].r * _dst_to_src_width_ratio;
-            coords_buf[j].b = coords_buf[j].b * _dst_to_src_height_ratio;
+            // coords_buf[j].l = coords_buf[j].l * _dst_to_src_width_ratio;
+            // coords_buf[j].t = coords_buf[j].t * _dst_to_src_height_ratio;
+            // coords_buf[j].r = coords_buf[j].r * _dst_to_src_width_ratio;
+            // coords_buf[j].b = coords_buf[j].b * _dst_to_src_height_ratio;
 
             if(_mirror_val[i] == 1)
             {
-                float centre_x = _dst_width_val[i] / 2;
+                // float centre_x = _dst_width_val[i] / 2;
                 // coords_buf[j].l += ((centre_x - coords_buf[j].l) * 2) - width;     
-                coords_buf[j].l += ((centre_x - coords_buf[j].l) * 2) - coords_buf[j].r;
+                // coords_buf[j].l += ((centre_x - coords_buf[j].l) * 2) - coords_buf[j].r;
+                float r = coords_buf[j].l + coords_buf[j].r;
+                float l = 1 - r;
+                r = 1 - coords_buf[j].l;
+                coords_buf[j].r = r - l;
+                coords_buf[j].l = l; 
             }
 
             // coords_buf[j].r = coords_buf[j].l + width;
