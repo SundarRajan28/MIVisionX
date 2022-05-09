@@ -40,24 +40,25 @@ THE SOFTWARE.
 #include "meta_data_graph.h"
 #if ENABLE_HIP
 #include "device_manager_hip.h"
+#include "box_encoder_hip.h"
 #endif
 #include "randombboxcrop_meta_data_reader.h"
 #define MAX_STRING_LENGTH 100
 class MasterGraph
 {
 public:
-    enum class Status { OK = 0,  NOT_RUNNING = 1, NO_MORE_DATA = 2, NOT_IMPLEMENTED };
-    MasterGraph(size_t batch_size, RaliAffinity affinity, int gpu_id, size_t cpu_threads, size_t prefetch_queue_depth, RaliTensorDataType output_tensor_data_type);
+    enum class Status { OK = 0,  NOT_RUNNING = 1, NO_MORE_DATA = 2, NOT_IMPLEMENTED = 3, INVALID_ARGUMENTS };
+    MasterGraph(size_t batch_size, RocalAffinity affinity, int gpu_id, size_t cpu_threads, size_t prefetch_queue_depth, RocalTensorDataType output_tensor_data_type);
     ~MasterGraph();
     Status reset();
     size_t remaining_count();
     MasterGraph::Status copy_output(unsigned char *out_ptr);
     MasterGraph::Status
-    copy_out_tensor(void *out_ptr, RaliTensorFormat format, float multiplier0, float multiplier1, float multiplier2,
-                    float offset0, float offset1, float offset2, bool reverse_channels, RaliTensorDataType output_data_type);
+    copy_out_tensor(void *out_ptr, RocalTensorFormat format, float multiplier0, float multiplier1, float multiplier2,
+                    float offset0, float offset1, float offset2, bool reverse_channels, RocalTensorDataType output_data_type);
     Status copy_output(void* out_ptr, size_t out_size);
-    Status copy_out_tensor_planar(void *out_ptr, RaliTensorFormat format, float multiplier0, float multiplier1, float multiplier2,
-                    float offset0, float offset1, float offset2, bool reverse_channels, RaliTensorDataType output_data_type);
+    Status copy_out_tensor_planar(void *out_ptr, RocalTensorFormat format, float multiplier0, float multiplier1, float multiplier2,
+                    float offset0, float offset1, float offset2, bool reverse_channels, RocalTensorDataType output_data_type);
     size_t output_width();
     size_t output_height();
     std::vector<uint32_t> output_resize_width();
@@ -68,11 +69,11 @@ public:
     void sequence_frame_timestamps(std::vector<std::vector<float>> &sequence_frame_timestamp); // Returns the timestamps of the frames in the sequences
     size_t augmentation_branch_count();
     size_t output_sample_size();
-    RaliColorFormat output_color_format();
+    RocalColorFormat output_color_format();
     Status build();
     Status run();
     Timing timing();
-    RaliMemType mem_type();
+    RocalMemType mem_type();
     void release();
     template <typename T>
     std::shared_ptr<T> add_node(const std::vector<Image *> &inputs, const std::vector<Image *> &outputs);
@@ -91,6 +92,12 @@ public:
     void create_randombboxcrop_reader(RandomBBoxCrop_MetaDataReaderType reader_type, RandomBBoxCrop_MetaDataType label_type, bool all_boxes_overlap, bool no_crop, FloatParam* aspect_ratio, bool has_shape, int crop_width, int crop_height, int num_attempts, FloatParam* scaling, int total_num_attempts, int64_t seed=0);
     const std::pair<ImageNameBatch,pMetaDataBatch>& meta_data();
     void set_loop(bool val) { _loop = val; }
+    void set_output_images(const std::vector<Image*> &output_images, unsigned int num_of_outputs)
+    {
+        _output_images.resize(num_of_outputs);
+        _output_images = output_images;
+    }
+    void set_output(Image* output_image);
     bool empty() { return (remaining_count() < (_is_sequence_reader_output ? _sequence_batch_size : _user_batch_size)); }
     size_t internal_batch_size() { return _internal_batch_size; }
     size_t sequence_batch_size() { return _sequence_batch_size; }
@@ -104,6 +111,11 @@ public:
     void set_sequence_reader_output() { _is_sequence_reader_output = true; }
     void set_sequence_batch_size(size_t sequence_length) { _sequence_batch_size = _user_batch_size * sequence_length; }
     void set_sequence_batch_ratio() { _sequence_batch_ratio = _sequence_batch_size / _internal_batch_size; }
+    Status get_bbox_encoded_buffers(float **boxes_buf_ptr, int **labels_buf_ptr, size_t num_encoded_boxes);
+    size_t bounding_box_batch_count(int* buf, pMetaDataBatch meta_data_batch);
+#if ENABLE_OPENCL
+    cl_command_queue get_ocl_cmd_q() { return _device.resources().cmd_queue; }
+#endif
 private:
     Status update_node_parameters();
     Status allocate_output_tensor();
@@ -114,8 +126,8 @@ private:
     void output_routine();
     void output_routine_video();
     void decrease_image_count();
-    bool processing_on_device_ocl() { return _output_image_info.mem_type() == RaliMemType::OCL; };
-    bool processing_on_device_hip() { return _output_image_info.mem_type() == RaliMemType::HIP; };
+    bool processing_on_device_ocl() { return _output_image_info.mem_type() == RocalMemType::OCL; };
+    bool processing_on_device_hip() { return _output_image_info.mem_type() == RocalMemType::HIP; };
     /// notify_user_thread() is called when the internal processing thread is done with processing all available images
     void notify_user_thread();
     /// no_more_processed_data() is logically linked to the notify_user_thread() and is used to tell the user they've already consumed all the processed images
@@ -124,7 +136,7 @@ private:
     MetaDataBatch* _augmented_meta_data = nullptr;//!< The output of the meta_data_graph,
     CropCordBatch* _random_bbox_crop_cords_data = nullptr;
     std::thread _output_thread;
-    ImageInfo _output_image_info;//!< Keeps the information about RALI's output image , it includes all images of a batch stacked on top of each other
+    ImageInfo _output_image_info;//!< Keeps the information about ROCAL's output image , it includes all images of a batch stacked on top of each other
     std::vector<Image*> _output_images;//!< Keeps the ovx images that are used to store the augmented output (there is an image per augmentation branch)
     std::list<Image*> _internal_images;//!< Keeps all the ovx images (virtual/non-virtual) either intermediate images, or input images that feed the graph
     std::list<std::shared_ptr<Node>> _nodes;//!< List of all the nodes
@@ -139,32 +151,33 @@ private:
     DeviceManager   _device;//!< Keeps the device related constructs needed for running on GPU
 #endif
     std::shared_ptr<Graph> _graph = nullptr;
-    RaliAffinity _affinity;
+    RocalAffinity _affinity;
     const int _gpu_id;//!< Defines the device id used for processing
     pLoaderModule _loader_module; //!< Keeps the loader module used to feed the input the images of the graph
-#ifdef RALI_VIDEO
+#ifdef ROCAL_VIDEO
     pVideoLoaderModule _video_loader_module; //!< Keeps the video loader module used to feed the input sequences of the graph
 #endif
     TimingDBG _convert_time;
     const size_t _user_batch_size;//!< Batch size provided by the user
     const size_t _cpu_threads;//!< Not in use
     vx_context _context;
-    const RaliMemType _mem_type;//!< Is set according to the _affinity, if GPU, is set to CL, otherwise host
+    const RocalMemType _mem_type;//!< Is set according to the _affinity, if GPU, is set to CL, otherwise host
     TimingDBG _process_time, _bencode_time;
     std::shared_ptr<MetaDataReader> _meta_data_reader = nullptr;
     std::shared_ptr<MetaDataGraph> _meta_data_graph = nullptr;
+    MetaDataReaderType _reader_config;
     std::shared_ptr<RandomBBoxCrop_MetaDataReader> _randombboxcrop_meta_data_reader = nullptr;
     bool _first_run = true;
     bool _processing;//!< Indicates if internal processing thread should keep processing or not
     const static unsigned SAMPLE_SIZE = sizeof(unsigned char);
     int _remaining_count;//!< Keeps the count of remaining images yet to be processed for the user,
     bool _loop;//!< Indicates if user wants to indefinitely loops through images or not
-    static size_t compute_optimum_internal_batch_size(size_t user_batch_size, RaliAffinity affinity);
+    static size_t compute_optimum_internal_batch_size(size_t user_batch_size, RocalAffinity affinity);
     const size_t _internal_batch_size;//!< In the host processing case , internal batch size can be different than _user_batch_size. This batch size used internally throughout.
     const size_t _user_to_internal_batch_ratio;
     size_t _prefetch_queue_depth;
     bool _output_routine_finished_processing = false;
-    const RaliTensorDataType _out_data_type;
+    const RocalTensorDataType _out_data_type;
     bool _is_random_bbox_crop = false;
     bool _is_segmentation = false;
     std::vector<std::vector<uint32_t>> _resize_width;
@@ -176,12 +189,18 @@ private:
     size_t _sequence_batch_ratio; //!< Indicates the _user_to_internal_batch_ratio when sequence reader outputs are required
     bool _is_sequence_reader_output = false; //!< Set to true if Sequence Reader is invoked.
     // box encoder variables
+#if ENABLE_HIP
+    BoxEncoderGpu *_box_encoder_gpu = nullptr;
+#endif
     bool _is_box_encoder = false; //bool variable to set the box encoder
-    std::vector<float>_anchors; // Anchors to be used for encoding, as the array of floats is in the ltrb format of size 8732x4
+    std::vector<float> _anchors; // Anchors to be used for encoding, as the array of floats is in the ltrb format of size 8732x4
+    size_t _num_anchors;       // number of bbox anchors
     float _criteria = 0.5; // Threshold IoU for matching bounding boxes with anchors. The value needs to be between 0 and 1.
     float _scale; // Rescales the box and anchor values before the offset is calculated (for example, to return to the absolute values).
     bool _offset; // Returns normalized offsets ((encoded_bboxes*scale - anchors*scale) - mean) / stds in EncodedBBoxes that use std and the mean and scale arguments if offset="True"
+    size_t _encoded_labels_byte_size, encoded_bboxes_byte_size;
     std::vector<float> _means, _stds; //_means:  [x y w h] mean values for normalization _stds: [x y w h] standard deviations for offset normalization.
+    TimingDBG _rb_block_if_empty_time, _rb_block_if_full_time;
 };
 
 template <typename T>
@@ -293,7 +312,7 @@ template<> inline std::shared_ptr<Cifar10LoaderNode> MasterGraph::add_node(const
     return node;
 }
 
-#ifdef RALI_VIDEO
+#ifdef ROCAL_VIDEO
 /*
  * Explicit specialization for VideoLoaderNode
  */
