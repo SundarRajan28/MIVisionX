@@ -131,6 +131,7 @@ list(APPEND SOURCES
         source/image/WarpPerspectivebatchPD.cpp
         source/kernel_rpp.cpp
         source/internal_publishKernels.cpp
+        source/ResizeMirrorNormalizePD.cpp
     )
 
 link_directories(${AMDRPP_LIBRARIES_DIR})
