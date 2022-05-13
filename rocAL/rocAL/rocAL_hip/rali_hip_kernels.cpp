@@ -172,9 +172,9 @@ Hip_CopyInt8ToNCHW_fp16
         if (C == 3){
             float3 dst;
             if (reverse_channels)
-                dst = make_float3((float)inp_img[srcIdx+2], (float) inp_img[srcIdx+1], (float)inp_img[srcIdx])*multiplier + offset;
+                dst = make_float3((float)inp_img[srcIdx+2], (float) inp_img[srcIdx+1], (float)inp_img[srcIdx]); //*multiplier + offset;
             else
-                dst = make_float3((float)inp_img[srcIdx], (float) inp_img[srcIdx+1], (float)inp_img[srcIdx+2])*multiplier + offset;
+                dst = make_float3((float)inp_img[srcIdx], (float) inp_img[srcIdx+1], (float)inp_img[srcIdx+2]); //*multiplier + offset;
             out_tensor[dstIdx] = __float2half(dst.x);
             out_tensor[dstIdx+W*H] = __float2half(dst.y);
             out_tensor[dstIdx+W*H*2] = __float2half(dst.z);
