@@ -92,7 +92,7 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
                 {
                     if(_mirror_val[i] == 1)
                     {
-                        mask.push_back(_dst_width_val[i] - mask_data[idx] * _dst_to_src_width_ratio);
+                        mask.push_back(_dst_width_val[i] - (mask_data[idx] * _dst_to_src_width_ratio) - 1);
                         mask.push_back(mask_data[idx + 1] * _dst_to_src_height_ratio);
                     }
                     else
@@ -117,8 +117,9 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
         {
             if(_mirror_val[i] == 1)
             {
-                float l = 1 - coords_buf[j].r;
-                coords_buf[j].r = 1 - coords_buf[j].l;
+                float one_by_width_coeff = 1 / _dst_width_val[i];
+                float l = 1 - coords_buf[j].r - one_by_width_coeff;
+                coords_buf[j].r = 1 - coords_buf[j].l - one_by_width_coeff;
                 coords_buf[j].l = l;     
             }
             bb_coords.push_back(coords_buf[j]);
