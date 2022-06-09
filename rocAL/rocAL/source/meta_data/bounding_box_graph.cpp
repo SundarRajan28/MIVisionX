@@ -91,6 +91,26 @@ void BoundingBoxGraph::update_meta_data(MetaDataBatch *input_meta_data, decoded_
                     index = 1;
                 }
             }
+        }
+
+        for (uint j = 0; j < bb_count; j++)
+        {
+            coords_buf[j].l = coords_buf[j].l * _dst_to_src_width_ratio;
+            coords_buf[j].t = coords_buf[j].t * _dst_to_src_height_ratio;
+            coords_buf[j].r = coords_buf[j].r * _dst_to_src_width_ratio;
+            coords_buf[j].b = coords_buf[j].b * _dst_to_src_height_ratio;
+            bb_coords.push_back(coords_buf[j]);
+            bb_labels.push_back(labels_buf[j]);
+        }
+        if (bb_coords.size() == 0)
+        {
+            bb_coords.push_back(temp_box);
+            bb_labels.push_back(0);
+        }
+        input_meta_data->get_bb_cords_batch()[i] = bb_coords;
+        input_meta_data->get_bb_labels_batch()[i] = bb_labels;
+        if (segmentation)
+        {
             input_meta_data->get_mask_cords_batch()[i] = mask_coords;
             mask_coords.clear();
             poly_size.clear();

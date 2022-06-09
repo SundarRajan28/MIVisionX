@@ -415,11 +415,11 @@ class RALICOCOIterator(object):
             self.bb_2d_numpy = (self.bboxes[sum_count*4 : (sum_count+count)*4])
 
             # print("\nBefore : self.bb_2d_numpy\n", self.bb_2d_numpy)
-            for index, element in enumerate(self.bb_2d_numpy):
-                if index % 2 == 0:
-                    self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[0]
-                elif index % 2 != 0:
-                    self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[1]
+            # for index, element in enumerate(self.bb_2d_numpy):
+            #     if index % 2 == 0:
+            #         self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[0]
+            #     elif index % 2 != 0:
+            #         self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[1]
 
             # print("\nAfter : self.bb_2d_numpy\n", self.bb_2d_numpy)
 
