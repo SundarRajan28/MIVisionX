@@ -270,8 +270,12 @@ static vx_status VX_CALLBACK initializeResizeMirrorNormalizebatchPD(vx_node node
 
     // Set ROI tensors types for src/dst
     data->roiType = RpptRoiType::XYWH;
-
+#if ENABLE_HIP
+    hipMalloc(&data->d_dstImgSize, data->nbatchSize * sizeof(RpptImagePatch));
+    hipMalloc(&data->d_roiTensorPtrSrc, data->nbatchSize * sizeof(RpptROI));
+#endif
 	refreshResizeMirrorNormalizebatchPD(node, parameters, num, data);
+
 #if ENABLE_OPENCL
 	if(data->device_type == AGO_TARGET_AFFINITY_GPU)
 		rppCreateWithStreamAndBatchSize(&data->rppHandle, data->handle.cmdq, data->nbatchSize);
