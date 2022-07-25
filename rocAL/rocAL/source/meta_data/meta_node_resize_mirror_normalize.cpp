@@ -86,9 +86,9 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
         {            
             if(_mirror_val[i] == 1)
             {
-                float one_by_width_coeff = 1 / float(_dst_width_val[i]);
-                float l = 1 - coords_buf[j].r - one_by_width_coeff;
-                coords_buf[j].r = 1 - coords_buf[j].l - one_by_width_coeff;
+                long double one_by_width_coeff = 1 / (long double)_dst_width_val[i];
+                long double l = 1 - (long double)coords_buf[j].r - one_by_width_coeff;
+                coords_buf[j].r = 1 - (long double)coords_buf[j].l - one_by_width_coeff;
                 coords_buf[j].l = l; 
             }
             bb_coords.push_back(coords_buf[j]);
