@@ -1427,19 +1427,19 @@ size_t MasterGraph::compute_optimum_internal_batch_size(size_t user_batch_size, 
     if(CORE_COUNT <= 0)
         THROW("Wrong core count detected less than 0")
 
-    for( size_t i = CORE_COUNT; i <= THREAD_COUNT; i++)
-        if(user_batch_size % i == 0)
-        {
-            ret = i;
-            break;
-        }
+    // for( size_t i = CORE_COUNT; i <= THREAD_COUNT; i++)
+    //     if(user_batch_size % i == 0)
+    //     {
+    //         ret = i;
+    //         break;
+    //     }
 
-    for(size_t i = CORE_COUNT; i > 1; i--)
-        if(user_batch_size % i == 0)
-        {
-            ret = i;
-            break;
-        }
+    // for(size_t i = CORE_COUNT; i > 1; i--)
+    //     if(user_batch_size % i == 0)
+    //     {
+    //         ret = i;
+    //         break;
+    //     }
     INFO("User batch size "+ TOSTR(user_batch_size)+" Internal batch size set to "+ TOSTR(ret))
     return ret;
 }
