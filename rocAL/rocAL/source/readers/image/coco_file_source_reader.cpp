@@ -209,8 +209,9 @@ Reader::Status COCOFileSourceReader::subfolder_reading()
     if (_in_batch_read_count > 0 && _in_batch_read_count < _batch_count)
     {
         replicate_last_image_to_fill_last_shard();
-        LOG("FileReader ShardID [" + TOSTR(_shard_id) + "] Replicated " + _folder_path + _last_file_name + " " + TOSTR((_batch_count - _in_batch_read_count)) + " times to fill the last batch")
+        ERR("FileReader ShardID [" + TOSTR(_shard_id) + "] Replicated " + _folder_path + _last_file_name + " " + TOSTR((_batch_count - _in_batch_read_count)) + " times to fill the last batch")
     }
+
     if (!_file_names.empty())
         LOG("FileReader ShardID [" + TOSTR(_shard_id) + "] Total of " + TOSTR(_file_names.size()) + " images loaded from " + _full_path)
     closedir(_sub_dir);
@@ -260,6 +261,7 @@ Reader::Status COCOFileSourceReader::open_folder()
     if (_file_names.empty())
         WRN("FileReader ShardID [" + TOSTR(_shard_id) + "] Did not load any file from " + _folder_path)
 
+    ERR("FileReader read " + TOSTR(_file_names.size()) + " files in " + _folder_path)
     closedir(_src_dir);
     return Reader::Status::OK;
 }
