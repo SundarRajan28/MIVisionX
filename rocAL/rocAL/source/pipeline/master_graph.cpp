@@ -700,10 +700,15 @@ MasterGraph::copy_out_tensor(void *out_ptr, RocalTensorFormat format, float mult
         size_t dest_buf_offset_start = 0;
 
         auto output_buffers =_ring_buffer.get_read_buffers();
+        ERR("OMP Get max threads in normalization kernel: " + omp_get_max_threads());
         for( auto&& out_image: output_buffers)
         {
             unsigned int single_image_size = w * c * h;
             #pragma omp parallel for
+            #pragma omp master
+            {
+                ERR("OMP Get num threads in normalization kernel: " + omp_get_num_threads());
+            }
             for(unsigned int batchCount = 0; batchCount < n; batchCount ++)
             {
                 size_t dest_buf_offset = dest_buf_offset_start + single_image_size*batchCount;
