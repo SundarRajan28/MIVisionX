@@ -701,20 +701,17 @@ MasterGraph::copy_out_tensor(void *out_ptr, RocalTensorFormat format, float mult
         size_t dest_buf_offset_start = 0;
 
         auto output_buffers =_ring_buffer.get_read_buffers();
-        ERR("OMP Get max threads in normalization kernel: " + omp_get_max_threads());
+        // std::cerr << "OMP Get max threads in normalization kernel: " << omp_get_max_threads() << std::endl;
         for( auto&& out_image: output_buffers)
         {
             unsigned int single_image_size = w * c * h;
             #pragma omp parallel for
-            #pragma omp master
-            {
-                ERR("OMP Get num threads in normalization kernel: " + omp_get_num_threads());
-            }
             for(unsigned int batchCount = 0; batchCount < n; batchCount ++)
             {
                 size_t dest_buf_offset = dest_buf_offset_start + single_image_size*batchCount;
                 auto in_buffer = (unsigned char*)out_image + single_image_size*batchCount;
-
+                // std::cerr << "OMP Get num threads in normalization kernel: " << omp_get_num_threads() << std::endl;
+                // std::cerr << "OMP Thread number in normalization kernel: " << omp_get_thread_num() << std::endl;
                 if(format == RocalTensorFormat::NHWC)
                 {
                     if(output_data_type == RocalTensorDataType::FP32)

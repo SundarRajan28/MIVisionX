@@ -23,6 +23,7 @@ THE SOFTWARE.
 
 #include <iterator>
 #include <cstring>
+#include <omp.h>
 #include "decoder_factory.h"
 #include "image_read_and_decode.h"
 
@@ -209,14 +210,12 @@ ImageReadAndDecode::load(unsigned char* buff,
     if (_decoder_config._type != DecoderType::SKIP_DECODE) {
         for (size_t i = 0; i < _batch_size; i++)
             _decompressed_buff_ptrs[i] = buff + image_size * i;
-    // ERR("OMP Get max threads in img_read_decode.cpp: " + omp_get_max_threads());
-#pragma omp parallel for num_threads(_batch_size)  // default(none) TBD: option disabled in Ubuntu 20.04
-        // #pragma omp master
-        // {
-        //     ERR("OMP Get num threads in img_read_decode.cpp: " + omp_get_num_threads());
-        // }
+    // std::cerr << "OMP Get max threads in img_read_decode.cpp: " << omp_get_max_threads() << std::endl;
+#pragma omp parallel for  // default(none) TBD: option disabled in Ubuntu 20.04
         for (size_t i = 0; i < _batch_size; i++)
         {
+            // std::cerr << "OMP Get num threads in img_read_decode.cpp: " << omp_get_num_threads() << std::endl;
+            // std::cerr << "OMP Thread number in img_read_decode.cpp: " << omp_get_thread_num() << std::endl;
             // initialize the actual decoded height and width with the maximum
             _actual_decoded_width[i] = max_decoded_width;
             _actual_decoded_height[i] = max_decoded_height;
