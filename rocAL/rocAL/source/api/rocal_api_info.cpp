@@ -123,9 +123,9 @@ TimingInfo
     // INFO("shuffle time "+ TOSTR(info.shuffle_time)); to display time taken for shuffling dataset
     // INFO("bbencode time "+ TOSTR(info.bb_process_time)); //to display time taken for bbox encoder
     if (context->master_graph->is_video_loader())
-        return {info.video_read_time, info.video_decode_time, info.video_process_time, info.copy_to_output};
+        return {info.video_read_time, info.video_decode_time, info.video_process_time, info.copy_to_output, info.wait_if_empty_time, info.wait_if_full_time};
     else
-        return {info.image_read_time, info.image_decode_time, info.image_process_time, info.copy_to_output};
+        return {info.image_read_time, info.image_decode_time, info.image_process_time, info.copy_to_output, info.wait_if_empty_time, info.wait_if_full_time};
 }
 
 RocalMetaData

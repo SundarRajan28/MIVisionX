@@ -44,20 +44,29 @@ include(GNUInstallDirs)
 
 find_package(OpenCV QUIET)
 find_package(AMDRPP QUIET)
+find_package(hip QUIET)
 
 # Application Includes & Libraries
-include_directories(${ROCM_PATH}/${CMAKE_INSTALL_INCLUDEDIR}/mivisionx)
-link_directories(${ROCM_PATH}/${CMAKE_INSTALL_LIBDIR})
+include_directories(${ROCM_PATH}/include/mivisionx/rocal)
+link_directories(${ROCM_PATH}/lib/)
+file(GLOB My_Source_Files ./*.cpp)
 
 add_executable(${PROJECT_NAME} image_augmentation.cpp)
 
+if (hip_FOUND)
+    message("-- ${Green}${PROJECT_NAME} set to build with hip and")
+    set(COMPILER_FOR_HIP ${ROCM_PATH}/bin/hipcc)
+    set(CMAKE_CXX_COMPILER ${COMPILER_FOR_HIP})
+    include_directories(${hip_INCLUDE_DIRS} ${hip_INCLUDE_DIRS}/hip)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGPU_SUPPORT=1 -DRPP_BACKEND_HIP=1 -std=gnu++14")
+endif()
 # OpenCV 3/4 Support
 if(OpenCV_FOUND)
     if(${OpenCV_VERSION_MAJOR} GREATER_EQUAL 3 )
         message("-- OpenCV Found -- Version-${OpenCV_VERSION_MAJOR}.${OpenCV_VERSION_MINOR}.X Supported")
         target_compile_definitions(${PROJECT_NAME} PUBLIC ENABLE_OPENCV=1)
         include_directories(${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES})
+        target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES} ${hip_LIBRARIES} ${LINK_LIBRARY_LIST} hip::device)
         if(${OpenCV_VERSION_MAJOR} GREATER_EQUAL 4)
 	        target_compile_definitions(${PROJECT_NAME} PUBLIC USE_OPENCV_4=1)
         else()

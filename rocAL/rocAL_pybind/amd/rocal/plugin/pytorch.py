@@ -116,6 +116,8 @@ class ROCALGenericIterator(object):
             print("Decode   time ::", timing_info.decode_time)
             print("Process  time ::", timing_info.process_time)
             print("Transfer time ::", timing_info.transfer_time)
+            print("Wait if empty time ::", timing_info.wait_if_empty_time)
+            print("Wait if full time ::", timing_info.wait_if_full_time)
             raise StopIteration
 
         if self.loader.run() != 0:

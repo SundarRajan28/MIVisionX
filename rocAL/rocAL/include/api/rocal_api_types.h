@@ -54,6 +54,8 @@ struct TimingInfo
     long long unsigned decode_time;
     long long unsigned process_time;
     long long unsigned transfer_time;
+    long long unsigned wait_if_empty_time;
+    long long unsigned wait_if_full_time;
 };
 
 //HRNet training expects meta data (joints_data) in below format, so added here as a type for exposing to user
@@ -136,7 +138,7 @@ enum RocalDecoderType
     ROCAL_DECODER_VIDEO_FFMPEG_HW = 4
 };
 
-// rocal external memcpy flags 
+// rocal external memcpy flags
 #define    ROCAL_MEMCPY_TO_HOST      1      // force copy to user provided host memory
 #define    ROCAL_MEMCPY_TO_DEVICE    2      // force copy to user provided device memory (gpu)
 #define    ROCAL_MEMCPY_IS_PINNED    4      // for future use
