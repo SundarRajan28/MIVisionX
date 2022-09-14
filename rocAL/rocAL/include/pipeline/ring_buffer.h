@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include "device_manager.h"
 #include "commons.h"
 #include "device_manager_hip.h"
+#include "timing_debug.h"
 
 using MetaDataNamePair = std::pair<ImageNameBatch,pMetaDataBatch>;
 class RingBuffer
@@ -69,6 +70,7 @@ public:
     void block_if_empty();
     void block_if_full();
     void release_if_empty();
+    TimingDBG _rb_block_if_empty_time, _rb_block_if_full_time;
 private:
     std::queue<MetaDataNamePair> _meta_ring_buffer;
     MetaDataNamePair _last_image_meta_data;
