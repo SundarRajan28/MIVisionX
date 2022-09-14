@@ -39,9 +39,12 @@ void RingBuffer::block_if_empty()
     std::unique_lock<std::mutex> lock(_lock);
     if(empty())
     { // if the current read buffer is being written wait on it
+        _rb_block_if_empty_time.start();
         if(_dont_block)
+            _rb_block_if_empty_time.end();
             return;
         _wait_for_load.wait(lock);
+        _rb_block_if_empty_time.end();
     }
 }
 
@@ -51,25 +54,24 @@ void RingBuffer:: block_if_full()
     // Write the whole buffer except for the last spot which is being read by the reader thread
     if(full())
     {
+        _rb_block_if_full_time.start();
         if(_dont_block)
+            _rb_block_if_full_time.end();
             return;
         _wait_for_unload.wait(lock);
+        _rb_block_if_full_time.end();
     }
 }
 std::vector<void*> RingBuffer::get_read_buffers()
 {
-    _rb_block_if_empty_time.start();
     block_if_empty();
-    _rb_block_if_empty_time.end();
     if((_mem_type == RocalMemType::OCL) || (_mem_type == RocalMemType::HIP))
         return _dev_sub_buffer[_read_ptr];
     return _host_sub_buffers[_read_ptr];
 }
 
 void *RingBuffer::get_host_master_read_buffer() {
-    _rb_block_if_empty_time.start();
     block_if_empty();
-    _rb_block_if_empty_time.end();
     if((_mem_type == RocalMemType::OCL) || (_mem_type == RocalMemType::HIP))
         return nullptr;
 
@@ -79,9 +81,7 @@ void *RingBuffer::get_host_master_read_buffer() {
 
 std::pair<void*, void*> RingBuffer::get_box_encode_read_buffers()
 {
-    _rb_block_if_empty_time.start();
     block_if_empty();
-    _rb_block_if_empty_time.end();
     if((_mem_type == RocalMemType::OCL) || (_mem_type == RocalMemType::HIP))
         return std::make_pair(_dev_bbox_buffer[_read_ptr], _dev_labels_buffer[_read_ptr]);
     return std::make_pair(nullptr, nullptr);   // todo:: implement the same scheme for host as well
@@ -89,9 +89,7 @@ std::pair<void*, void*> RingBuffer::get_box_encode_read_buffers()
 
 std::vector<void*> RingBuffer::get_write_buffers()
 {
-    _rb_block_if_full_time.start();
     block_if_full();
-    _rb_block_if_full_time.end();
     if((_mem_type == RocalMemType::OCL) || (_mem_type == RocalMemType::HIP))
         return _dev_sub_buffer[_write_ptr];
 
@@ -100,9 +98,7 @@ std::vector<void*> RingBuffer::get_write_buffers()
 
 std::pair<void*, void*> RingBuffer::get_box_encode_write_buffers()
 {
-    _rb_block_if_full_time.start();
     block_if_full();
-    _rb_block_if_full_time.end();
     if((_mem_type == RocalMemType::OCL) || (_mem_type == RocalMemType::HIP))
         return std::make_pair(_dev_bbox_buffer[_write_ptr], _dev_labels_buffer[_write_ptr]);
     return std::make_pair(nullptr, nullptr); 
@@ -400,9 +396,7 @@ void RingBuffer::set_meta_data( ImageNameBatch names, pMetaDataBatch meta_data)
 
 MetaDataNamePair& RingBuffer::get_meta_data()
 {
-    _rb_block_if_empty_time.start();
     block_if_empty();
-    _rb_block_if_empty_time.end();
     std::unique_lock<std::mutex> lock(_names_buff_lock);
     if(_level != _meta_ring_buffer.size())
         THROW("ring buffer internals error, image and metadata sizes not the same "+TOSTR(_level) + " != "+TOSTR(_meta_ring_buffer.size()))
