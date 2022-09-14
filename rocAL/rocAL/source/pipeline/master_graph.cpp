@@ -564,6 +564,8 @@ MasterGraph::timing()
     }
     t.copy_to_output += _convert_time.get_timing();
     t.bb_process_time += _bencode_time.get_timing();
+    t.wait_if_empty_time += _ring_buffer._rb_block_if_empty_time.get_timing();
+    t.wait_if_full_time += _ring_buffer._rb_block_if_full_time.get_timing();
     return t;
 }
 
