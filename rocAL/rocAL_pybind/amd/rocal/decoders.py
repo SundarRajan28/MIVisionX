@@ -1,3 +1,4 @@
+rocAL/rocAL/source/decoders/image/fused_crop_decoder.cpp
 import amd.rocal.types as types
 import rocal_pybind as b
 from amd.rocal.pipeline import Pipeline
@@ -75,8 +76,8 @@ def image(*inputs, user_feature_key_map=None, path='', file_root='', annotations
             "shuffle": random_shuffle,
             "loop": False,
             "decode_size_policy": types.USER_GIVEN_SIZE_ORIG,
-            "max_width": 1000,
-            "max_height":1000,
+            "max_width": 2000,
+            "max_height":2000,
             "dec_type":types.DECODER_TJPEG}
         decoded_image = b.ImageDecoderShard(Pipeline._current_pipeline._handle ,*(kwargs_pybind.values()))
 
@@ -274,8 +275,8 @@ def image_slice(*inputs,file_root='',path='',annotations_file='',shard_id = 0, n
             "shuffle": random_shuffle,
             "loop": False,
             "decode_size_policy": types.USER_GIVEN_SIZE_ORIG,
-            "max_width": 600,
-            "max_height":600,
+            "max_width": 2000,
+            "max_height":2000,
             "area_factor": None,
             "aspect_ratio": None,
             "x_drift_factor": None,
