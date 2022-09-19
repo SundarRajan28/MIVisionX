@@ -1,4 +1,3 @@
-rocAL/rocAL/source/decoders/image/fused_crop_decoder.cpp
 import amd.rocal.types as types
 import rocal_pybind as b
 from amd.rocal.pipeline import Pipeline
