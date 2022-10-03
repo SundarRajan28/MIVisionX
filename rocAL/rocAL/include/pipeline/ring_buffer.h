@@ -71,6 +71,7 @@ public:
     void block_if_full();
     void release_if_empty();
     TimingDBG _rb_block_if_empty_time, _rb_block_if_full_time;
+    long long unsigned _rb_block_if_empty_time_counter, _rb_block_if_full_time_counter;
 private:
     std::queue<MetaDataNamePair> _meta_ring_buffer;
     MetaDataNamePair _last_image_meta_data;

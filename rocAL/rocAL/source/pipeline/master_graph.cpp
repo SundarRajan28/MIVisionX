@@ -552,6 +552,8 @@ MasterGraph::timing()
     t.bb_process_time += _bencode_time.get_timing();
     t.wait_if_empty_time += _ring_buffer._rb_block_if_empty_time.get_timing();
     t.wait_if_full_time += _ring_buffer._rb_block_if_full_time.get_timing();
+    t.wait_if_empty_time_counter += _ring_buffer._rb_block_if_empty_time_counter;
+    t.wait_if_full_time_counter += _ring_buffer._rb_block_if_full_time_counter;
     return t;
 }
 

@@ -30,7 +30,9 @@ RingBuffer::RingBuffer(unsigned buffer_depth):
         _dev_bbox_buffer(buffer_depth),
         _dev_labels_buffer(buffer_depth),
         _rb_block_if_empty_time("Ring Buffer Block IF Empty Time"),
-        _rb_block_if_full_time("Ring Buffer Block IF Full Time")
+        _rb_block_if_full_time("Ring Buffer Block IF Full Time"),
+        _rb_block_if_empty_time_counter(0),
+        _rb_block_if_full_time_counter(0)
 {
     reset();
 }
@@ -39,6 +41,7 @@ void RingBuffer::block_if_empty()
     std::unique_lock<std::mutex> lock(_lock);
     if(empty())
     { // if the current read buffer is being written wait on it
+        _rb_block_if_empty_time_counter++;
         if(_dont_block)
             return;
         _wait_for_load.wait(lock);
@@ -51,6 +54,7 @@ void RingBuffer:: block_if_full()
     // Write the whole buffer except for the last spot which is being read by the reader thread
     if(full())
     {
+        _rb_block_if_full_time_counter++;
         if(_dont_block)
             return;
         _wait_for_unload.wait(lock);

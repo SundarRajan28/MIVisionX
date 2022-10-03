@@ -118,6 +118,8 @@ class ROCALGenericIterator(object):
             print("Transfer time ::", timing_info.transfer_time)
             print("Wait if empty time ::", timing_info.wait_if_empty_time)
             print("Wait if full time ::", timing_info.wait_if_full_time)
+            print("Wait if empty time counter ::", timing_info.wait_if_empty_time_counter)
+            print("Wait if full time counter ::", timing_info.wait_if_full_time_counter)
             raise StopIteration
 
         if self.loader.run() != 0:

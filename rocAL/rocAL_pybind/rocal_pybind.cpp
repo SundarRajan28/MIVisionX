@@ -249,7 +249,9 @@ namespace rocal{
             .def_readwrite("process_time",&TimingInfo::process_time)
             .def_readwrite("transfer_time",&TimingInfo::transfer_time)
             .def_readwrite("wait_if_empty_time",&TimingInfo::wait_if_empty_time)
-            .def_readwrite("wait_if_full_time",&TimingInfo::wait_if_full_time);
+            .def_readwrite("wait_if_full_time",&TimingInfo::wait_if_full_time)
+            .def_readwrite("wait_if_empty_time_counter",&TimingInfo::wait_if_empty_time_counter)
+            .def_readwrite("wait_if_full_time_counter",&TimingInfo::wait_if_full_time_counter);
         py::module types_m = m.def_submodule("types");
         types_m.doc() = "Datatypes and options used by ROCAL";
         py::enum_<RocalStatus>(types_m, "RocalStatus", "Status info")
