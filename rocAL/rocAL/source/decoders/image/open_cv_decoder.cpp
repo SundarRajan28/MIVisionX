@@ -33,6 +33,7 @@ int handleError( int status, const char* func_name,
 }
 
 CVDecoder::CVDecoder() {
+    // ERR("CV decoder initialized");
     cv::redirectError(handleError);
 }
 
@@ -70,18 +71,34 @@ Decoder::Status CVDecoder::decode(unsigned char *input_buffer, size_t input_size
     }
     cv::Mat mat_rgb;
     cv::cvtColor(m_mat_orig, mat_rgb, cv::COLOR_BGR2RGB, 0);
+    float scale = 1.0f;
+    size_t _dst_height = max_decoded_height;
+    size_t _dst_width = max_decoded_width;
+    size_t _src_width = m_mat_orig.cols;
+    size_t _src_height = m_mat_orig.rows;
+    float scale_w = static_cast<float>(max_decoded_width) / _src_width;
+    float scale_h = static_cast<float>(max_decoded_height) / _src_height;
+    scale = (scale_w > 0 && scale_h > 0) ? std::min(scale_w, scale_h) : ((scale_w > 0) ? scale_w : scale_h);
+    if ((scale_h != scale) || (!_dst_height)) _dst_height = static_cast<size_t>(_src_height * scale);
+    if ((scale_w != scale) || (!_dst_width)) _dst_width = static_cast<size_t>(_src_width * scale); 
+    // std::cerr << _src_width << " " << _src_height << " " << _dst_width << " " << _dst_height << std::endl;
+    cv::Mat mat_resized;
+    cv::resize(mat_rgb, mat_resized, cv::Size(_dst_width, _dst_height), cv::INTER_LINEAR);
+    // std::cerr << _dst_width << " " << _dst_height << " " << mat_resized.cols << " " << mat_resized.rows << std::endl;    
     cv::Mat mat_scaled = cv::Mat(max_decoded_width, max_decoded_height, CV_8UC3, output_buffer); 
-    cv::resize(mat_rgb, mat_scaled, cv::Size(max_decoded_width, max_decoded_height), cv::INTER_LINEAR);
+    mat_resized.copyTo(mat_scaled(cv::Rect(0, 0, mat_resized.cols, mat_resized.rows)));
+    // cv::resize(mat_rgb, mat_scaled, cv::Size(max_decoded_width, max_decoded_height), cv::INTER_LINEAR);
     if(mat_scaled.rows == 0 || mat_scaled.cols == 0) {
         actual_decoded_width = m_mat_orig.cols;
         actual_decoded_height = m_mat_orig.rows;
     }else
     {
-        actual_decoded_width = mat_scaled.cols;
-        actual_decoded_height = mat_scaled.rows;
+        actual_decoded_width = mat_resized.cols;
+        actual_decoded_height = mat_resized.rows;
     }
     //printf("OpenCV image decoded: size %dx%d\n", mat_scaled.cols, mat_scaled.rows);
     mat_rgb.release();
+    mat_resized.release();
     return Decoder::Status::OK;
 }
 

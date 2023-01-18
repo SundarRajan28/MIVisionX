@@ -1786,7 +1786,7 @@ rocalCropCenterFixed(
         ImageInfo output_info = input->info();
         output_info.width(crop_width);
         output_info.height(crop_height);
-        output = context->master_graph->create_image(input->info(), is_output);
+        output = context->master_graph->create_image(output_info, is_output);
         output->reset_image_roi();
         std::shared_ptr<CropNode> crop_node =  context->master_graph->add_node<CropNode>({input}, {output});
         crop_node->init(crop_height, crop_width);

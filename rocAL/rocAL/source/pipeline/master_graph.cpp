@@ -667,7 +667,7 @@ MasterGraph::copy_out_tensor(void *out_ptr, RocalTensorFormat format, float mult
         for( auto&& out_image: output_buffers)
         {
             unsigned int single_image_size = w * c * h;
-            #pragma omp parallel for num_threads(_internal_batch_size)
+            #pragma omp parallel for num_threads(16)
             for(unsigned int batchCount = 0; batchCount < n; batchCount ++)
             {
                 size_t dest_buf_offset = dest_buf_offset_start + single_image_size*batchCount;
@@ -1060,8 +1060,8 @@ void MasterGraph::output_routine()
             _bencode_time.end();
             _ring_buffer.set_meta_data(full_batch_image_names, full_batch_meta_data);
             _ring_buffer.push(); // Image data and metadata is now stored in output the ring_buffer, increases it's level by 1
+            _process_time.end();
         }
-        _process_time.end();
 
     }
     catch (const std::exception &e)
@@ -1461,7 +1461,7 @@ size_t MasterGraph::compute_optimum_internal_batch_size(size_t user_batch_size, 
             break;
         }
     INFO("User batch size "+ TOSTR(user_batch_size)+" Internal batch size set to "+ TOSTR(ret))
-    return ret;
+    return user_batch_size;
 }
 
 size_t MasterGraph::output_sample_size()
