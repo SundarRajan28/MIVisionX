@@ -45,9 +45,17 @@ void RocalRandomCropParam::set_aspect_ratio(Parameter<float>* crop_aspect_ratio)
 
 void RocalRandomCropParam::update_array()
 {
+    generate_random_seeds();
     fill_crop_dims();
     update_crop_array();
 }
+
+void RocalRandomCropParam::generate_random_seeds() {
+    ParameterFactory::instance()->generate_seed(); // Renew and regenerate
+    std::seed_seq seq{ParameterFactory::instance()->get_seed()};
+    seq.generate(_seeds.begin(), _seeds.end());
+}
+
 
 void RocalRandomCropParam::fill_crop_dims()
 {
@@ -61,52 +69,74 @@ void RocalRandomCropParam::fill_crop_dims()
     {
         return (h < height && w < width);
     };
+    std::uniform_real_distribution<float> _aspect_ratio_log_dis(std::log(3.0f / 4), std::log(4.0f / 3));
+    std::uniform_real_distribution<float> _area_dis( 0.08, 1);
+    float min_wh_ratio = 3.0f / 4;
+    float max_wh_ratio = 4.0f / 3;
+    float max_hw_ratio = 1 / min_wh_ratio;
+
     for(uint img_idx = 0; img_idx < batch_size; img_idx++)
     {
-        // Try for num_of_attempts time to get a good crop
-        for(int i=0; i < num_of_attempts; i++)
-        {
-            area_factor->renew();
-            aspect_ratio->renew();
-            crop_area_factor  = area_factor->get();
-            crop_aspect_ratio = aspect_ratio->get();
-            target_area = crop_area_factor * in_height[img_idx] * in_width[img_idx];
-            cropw_arr_val[img_idx] = static_cast<size_t>(std::sqrt(target_area * crop_aspect_ratio));
-            croph_arr_val[img_idx] = static_cast<size_t>(std::sqrt(target_area * (1 / crop_aspect_ratio)));
-            if(is_valid_crop(croph_arr_val[img_idx], cropw_arr_val[img_idx], in_height[img_idx], in_width[img_idx]))
-            {
-                x_drift_factor->renew();
-                y_drift_factor->renew();
-                y_drift_factor->renew();
-                x_drift = x_drift_factor->get();
-                y_drift = y_drift_factor->get();
-                x1_arr_val[img_idx] = static_cast<size_t>(x_drift * (in_width[img_idx]  - cropw_arr_val[img_idx]));
-                y1_arr_val[img_idx] = static_cast<size_t>(y_drift * (in_height[img_idx] - croph_arr_val[img_idx]));
-                break;
-            }
+        _rand_gen.seed(_seeds[img_idx]);
+        CropROI crop;
+        int H = in_height[img_idx], W = in_width[img_idx];
+        if (W <= 0 || H <= 0) {
+            // Should not come here
+            cropw_arr_val[img_idx] = crop.W;
+            croph_arr_val[img_idx] = crop.H;
+            x1_arr_val[img_idx] = crop.x;
+            y1_arr_val[img_idx] = crop.y;
+            x2_arr_val[img_idx] = x1_arr_val[img_idx] + cropw_arr_val[img_idx];
+            y2_arr_val[img_idx] = y1_arr_val[img_idx] + croph_arr_val[img_idx];
+        }        
+        float min_area = W * H * _area_dis.a();
+        int maxW = std::max<int>(1, H * max_wh_ratio);
+        int maxH = std::max<int>(1, W * max_hw_ratio);
+        // detect two impossible cases early
+        if (H * maxW < min_area) {  // image too wide
+        crop.set_shape(H, maxW);
+        } else if (W * maxH < min_area) {  // image too tall
+        crop.set_shape(maxH, W);
+        } else { // it can still fail for very small images when size granularity matters
+        int attempts_left = 100;
+        for (; attempts_left > 0; attempts_left--) {
+            float scale = _area_dis(_rand_gen);
+            size_t original_area = H * W;
+            float target_area = scale * original_area;
+            float ratio = std::exp(_aspect_ratio_log_dis(_rand_gen));
+            auto w = static_cast<int>(
+                std::roundf(sqrtf(target_area * ratio)));
+            auto h = static_cast<int>(
+                std::roundf(sqrtf(target_area / ratio)));
+            w = std::max(1, w);
+            h = std::max(1, h);
+            crop.set_shape(h, w);
+            ratio = static_cast<float>(w) / h;
+            if (w <= W && h <= H && ratio >= min_wh_ratio && ratio <= max_wh_ratio)
+            break;
         }
-        // Fallback on Central Crop
-        if(!is_valid_crop(croph_arr_val[img_idx], cropw_arr_val[img_idx], in_height[img_idx], in_width[img_idx]))
-        {
-            in_ratio = static_cast<float>(in_width[img_idx]) / in_height[img_idx];
-            if(in_ratio < ASPECT_RATIO_RANGE[0])
-            {
-                cropw_arr_val[img_idx] = in_width[img_idx];
-                croph_arr_val[img_idx] = cropw_arr_val[img_idx] / ASPECT_RATIO_RANGE[0];
+        if (attempts_left <= 0) {
+            float max_area = _area_dis.b() * W * H;
+            float ratio = static_cast<float>(W) / H;
+            if (ratio > max_wh_ratio) {
+            crop.set_shape(H, maxW);
+            } else if (ratio < min_wh_ratio) {
+            crop.set_shape(maxH, W);
+            } else {
+            crop.set_shape(H, W);
             }
-            else if(in_ratio > ASPECT_RATIO_RANGE[1])
-            {
-                croph_arr_val[img_idx] = in_height[img_idx];
-                cropw_arr_val[img_idx] = croph_arr_val[img_idx] * ASPECT_RATIO_RANGE[1];
-            }
-            else
-            {
-                croph_arr_val[img_idx] = in_height[img_idx];
-                cropw_arr_val[img_idx] = in_width[img_idx];
-            }
-            x1_arr_val[img_idx] =  (in_width[img_idx] - cropw_arr_val[img_idx]) / 2;
-            y1_arr_val[img_idx] =  (in_height[img_idx] - croph_arr_val[img_idx]) / 2;
+            float scale = std::min(1.0f, max_area / (crop.W * crop.H));
+            crop.W = std::max<int>(1, crop.W * std::sqrt(scale));
+            crop.H = std::max<int>(1, crop.H * std::sqrt(scale));
         }
+        }
+        crop.x = std::uniform_int_distribution<int>(0, W - crop.W)(_rand_gen);
+        crop.y = std::uniform_int_distribution<int>(0, H - crop.H)(_rand_gen);
+
+        cropw_arr_val[img_idx] = crop.W;
+        croph_arr_val[img_idx] = crop.H;
+        x1_arr_val[img_idx] = crop.x;
+        y1_arr_val[img_idx] = crop.y;
         x2_arr_val[img_idx] = x1_arr_val[img_idx] + cropw_arr_val[img_idx];
         y2_arr_val[img_idx] = y1_arr_val[img_idx] + croph_arr_val[img_idx];
     }

@@ -22,6 +22,15 @@ THE SOFTWARE.
 
 #pragma once
 #include "parameter_crop.h"
+#include <thread>
+#include <random>
+
+struct CropROI {
+  unsigned x, y, H, W;
+  CropROI() { x = 0; y = 0; H = 1; W = 1; }
+  CropROI(unsigned x1, unsigned y1, unsigned h, unsigned w) { x = x1, y = y1, H = h, W = w ; }
+  void set_shape(unsigned h, unsigned w) { H = h, W = w; }
+};
 
 class RocalRandomCropParam : public CropParam
 {
@@ -38,11 +47,15 @@ public:
     Parameter<float> * get_aspect_ratio() {return  aspect_ratio;}
     void update_array() override;
     void fill_crop_dims() override;
+    void generate_random_seeds();
 private:
     constexpr static float AREA_FACTOR_RANGE[2]  = {0.08, 0.99};
     constexpr static float ASPECT_RATIO_RANGE[2] = {0.7500, 1.333};
     Parameter<float>* default_area_factor();
     Parameter<float>* default_aspect_ratio();
     Parameter<float> *area_factor, *aspect_ratio;
+    static thread_local std::mt19937 _rand_gen;
+    int64_t _seed;
+    std::vector<int> _seeds;
 };
 
