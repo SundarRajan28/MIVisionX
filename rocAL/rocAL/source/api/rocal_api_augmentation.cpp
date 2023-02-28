@@ -604,9 +604,8 @@ rocalResizeMirrorNormalize(
         // TODO: To be removed with rocAL Tensor support
         // rmn_node->init(0, 1, mirror);
         rmn_node->init(mean, std_dev, mirror);
-        // TODO: Uncomment the below lines once RMN meta node is added to ToT
-        // if (context->master_graph->meta_data_graph())
-        //     context->master_graph->meta_add_node<ResizeMirrorNormalizeMetaNode,ResizeMirrorNormalizeNode>(rmn_node);
+        if (context->master_graph->meta_data_graph())
+            context->master_graph->meta_add_node<ResizeMirrorNormalizeMetaNode,ResizeMirrorNormalizeNode>(rmn_node);
     }
     catch(const std::exception& e)
     {
