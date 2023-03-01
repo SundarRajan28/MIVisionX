@@ -372,7 +372,7 @@ class ROCALCOCOIterator(object):
         self.loader.GetBBLabels(self.labels)
         # print(self.labels)
 # 1D bboxes array in a batch
-        self.bboxes = np.zeros((self.count_batch*4), dtype="float64")
+        self.bboxes = np.zeros((self.count_batch*4), dtype="float32")
         self.loader.GetBBCords(self.bboxes)
         # print("BBoxes (rocAL): ",self.bboxes)
 #Image sizes of a batch
@@ -475,7 +475,7 @@ class ROCALCOCOIterator(object):
 
 def main():
     if len(sys.argv) < 5:
-        print('Please pass the folder image_folder Annotation_file cpu/gpu batch_size')
+        print('Please pass the following image_folder Annotation_file cpu/gpu batch_size')
         exit(0)
 
     image_path = sys.argv[1]
