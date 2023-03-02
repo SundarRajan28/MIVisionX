@@ -359,26 +359,20 @@ class ROCALCOCOIterator(object):
 
         self.img_names_length = np.empty(self.bs, dtype="int32")
         self.img_names_size = self.loader.GetImageNameLen(self.img_names_length)
-        # print("Image name length:", self.img_names_size)
 # Images names of a batch
         self.Img_name = self.loader.GetImageName(self.img_names_size)
-        # print("Image names in a batch ", self.Img_name)
 #Count of labels/ bboxes in a batch
         self.bboxes_label_count = np.zeros(self.bs, dtype="int32")
         self.count_batch = self.loader.GetBoundingBoxCount(self.bboxes_label_count)
-        # print("Count Batch:", self.count_batch)
 # 1D labels array in a batch
         self.labels = np.zeros(self.count_batch, dtype="int32")
         self.loader.GetBBLabels(self.labels)
-        # print(self.labels)
 # 1D bboxes array in a batch
         self.bboxes = np.zeros((self.count_batch*4), dtype="float32")
         self.loader.GetBBCords(self.bboxes)
-        # print("BBoxes (rocAL): ",self.bboxes)
 #Image sizes of a batch
         self.img_size = np.zeros((self.bs * 2),dtype = "int32")
         self.loader.GetImgSizes(self.img_size)
-        # print("Image sizes:", self.img_size)
 #Image ROI width and height
         self.roi_width = np.zeros((self.bs),dtype = "uint32")
         self.roi_height = np.zeros((self.bs),dtype = "uint32")
@@ -396,7 +390,6 @@ class ROCALCOCOIterator(object):
         count =0
         sum_count=0
         j = 0
-        list_poly = []
         iteration1 = 0
         iteration = 0
         self.target_batch = []
@@ -418,14 +411,12 @@ class ROCALCOCOIterator(object):
             self.label_2d_numpy = (self.labels[sum_count : sum_count+count])
             self.bb_2d_numpy = (self.bboxes[sum_count*4 : (sum_count+count)*4])
 
-            # print("\nBefore : self.bb_2d_numpy\n", self.bb_2d_numpy)
             for index, element in enumerate(self.bb_2d_numpy):
                 if index % 2 == 0:
                     self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[0]
                 elif index % 2 != 0:
                     self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[1]
 
-            # print("\nAfter : self.bb_2d_numpy\n", self.bb_2d_numpy)
 
             self.bb_2d_numpy = np.reshape(self.bb_2d_numpy, (-1, 4)).tolist()
 
