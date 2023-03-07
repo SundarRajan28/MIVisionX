@@ -38,8 +38,8 @@ void BoundingBoxGraph::update_meta_data(MetaDataBatch *input_meta_data, decoded_
     std::vector<uint32_t> roi_height = decode_image_info._roi_height;
     for (int i = 0; i < input_meta_data->size(); i++)
     {
-        float _dst_to_src_width_ratio = roi_width[i] / float(original_width[i]);
-        float _dst_to_src_height_ratio = roi_height[i] / float(original_height[i]);
+        float _dst_to_src_width_ratio = static_cast<float>(roi_width[i] / original_width[i]);
+        float _dst_to_src_height_ratio = static_cast<float>(roi_height[i] / original_height[i]);
         if (segmentation)
         {
             auto mask_data_ptr = input_meta_data->get_mask_cords_batch()[i].data();

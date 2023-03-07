@@ -36,7 +36,6 @@ class ResizeMirrorNormalizeMetaNode:public MetaNode
         std::shared_ptr<ResizeMirrorNormalizeNode> _node = nullptr;
     private:
         void initialize();
-        vx_array _src_width, _src_height, _dst_width, _dst_height, _mirror;
         std::vector<uint> _src_width_val, _src_height_val, _dst_width_val, _dst_height_val, _mirror_val;
         float _dst_to_src_width_ratio, _dst_to_src_height_ratio;
 };

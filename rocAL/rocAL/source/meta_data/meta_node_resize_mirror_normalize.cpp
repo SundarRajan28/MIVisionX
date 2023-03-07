@@ -37,22 +37,22 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
     {
         _batch_size = input_meta_data->size();
     }
-    _mirror = _node->return_mirror();
-    _src_width = _node->get_src_width();
-    _src_height = _node->get_src_height();
-    _dst_width = _node->get_dst_width();
-    _dst_height = _node->get_dst_height();
+    auto mirror = _node->return_mirror();
+    auto src_width = _node->get_src_width();
+    auto src_height = _node->get_src_height();
+    auto dst_width = _node->get_dst_width();
+    auto dst_height = _node->get_dst_height();
 
-    vxCopyArrayRange((vx_array)_mirror, 0, _batch_size, sizeof(uint), _mirror_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-    vxCopyArrayRange((vx_array)_src_width, 0, _batch_size, sizeof(uint), _src_width_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-    vxCopyArrayRange((vx_array)_src_height, 0, _batch_size, sizeof(uint), _src_height_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-    vxCopyArrayRange((vx_array)_dst_width, 0, _batch_size, sizeof(uint), _dst_width_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
-    vxCopyArrayRange((vx_array)_dst_height, 0, _batch_size, sizeof(uint), _dst_height_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyArrayRange((vx_array)mirror, 0, _batch_size, sizeof(uint), _mirror_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyArrayRange((vx_array)src_width, 0, _batch_size, sizeof(uint), _src_width_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyArrayRange((vx_array)src_height, 0, _batch_size, sizeof(uint), _src_height_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyArrayRange((vx_array)dst_width, 0, _batch_size, sizeof(uint), _dst_width_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
+    vxCopyArrayRange((vx_array)dst_height, 0, _batch_size, sizeof(uint), _dst_height_val.data(), VX_READ_ONLY, VX_MEMORY_TYPE_HOST);
 
     for (int i = 0; i < _batch_size; i++)
     {
-        _dst_to_src_width_ratio = _dst_width_val[i] / float(_src_width_val[i]);
-        _dst_to_src_height_ratio = _dst_height_val[i] / float(_src_height_val[i]);
+        _dst_to_src_width_ratio = static_cast<float>(_dst_width_val[i] / _src_width_val[i]);
+        _dst_to_src_height_ratio = static_cast<float>(_dst_height_val[i] / _src_height_val[i]);
         auto bb_count = input_meta_data->get_bb_labels_batch()[i].size();
         BoundingBoxCords coords_buf;
         BoundingBoxLabels labels_buf;
@@ -64,20 +64,15 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
         BoundingBoxLabels bb_labels;
         if (segmentation)
         {
-            // auto ptr = mask_data;
             auto mask_data_ptr = input_meta_data->get_mask_cords_batch()[i].data();
             int mask_size = input_meta_data->get_mask_cords_batch()[i].size();
             for (int idx = 0; idx < mask_size; idx += 2)
-            {
+            {                
+                mask_data_ptr[idx] = mask_data_ptr[idx] * _dst_to_src_width_ratio;
+                mask_data_ptr[idx + 1] = mask_data_ptr[idx + 1] * _dst_to_src_height_ratio;
                 if(_mirror_val[i] == 1)
                 {
-                    mask_data_ptr[idx] = _dst_width_val[i] - (mask_data_ptr[idx] * _dst_to_src_width_ratio) - 1;
-                    mask_data_ptr[idx + 1] = mask_data_ptr[idx + 1] * _dst_to_src_height_ratio;
-                }
-                else
-                {
-                    mask_data_ptr[idx] = mask_data_ptr[idx] * _dst_to_src_width_ratio;
-                    mask_data_ptr[idx + 1] = mask_data_ptr[idx + 1] * _dst_to_src_height_ratio;
+                    mask_data_ptr[idx] = _dst_width_val[i] - mask_data_ptr[idx] - 1;
                 }
             }
         }

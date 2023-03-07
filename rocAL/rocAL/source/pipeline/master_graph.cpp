@@ -1269,8 +1269,7 @@ MetaDataBatch * MasterGraph::create_coco_meta_data_reader(const char *source_pat
 {
     if( _meta_data_reader)
         THROW("A metadata reader has already been created")
-    if(mask)
-        _is_segmentation = true;
+    if(mask)  { _is_segmentation = true; }
     MetaDataConfig config(label_type, reader_type, source_path, std::map<std::string, std::string>(), std::string(), mask);
     config.set_out_img_width(pose_output_width);
     config.set_out_img_height(pose_output_height);

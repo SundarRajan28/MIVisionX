@@ -406,7 +406,6 @@ ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, fl
     if(!meta_data.second)
         THROW("No mask has been loaded for this output image")
     int size = 0;
-    auto ptr = buf;
     for(unsigned image_idx = 0; image_idx < meta_data_batch_size; image_idx++)
     {
         int poly_size = 0;
@@ -419,8 +418,8 @@ ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, fl
             {
                 unsigned polygon_size = meta_data.second->get_mask_vertices_count_batch()[image_idx][i][j];
                 bufcount[size++] = polygon_size;
-                memcpy(ptr, mask_data_ptr + poly_size, sizeof(float) * polygon_size);
-                ptr += polygon_size;
+                memcpy(buf, mask_data_ptr + poly_size, sizeof(float) * polygon_size);
+                buf += polygon_size;
                 poly_size += polygon_size;
             }
         }

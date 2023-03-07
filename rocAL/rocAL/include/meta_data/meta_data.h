@@ -126,9 +126,9 @@ struct BoundingBox : public MetaData
         _bb_label_ids = std::move(bb_label_ids);
         _img_size = std::move(img_size);
     }
-    BoundingBox(BoundingBoxCords bb_cords,BoundingBoxLabels bb_label_ids ,ImgSize img_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count)
+    BoundingBox(BoundingBoxCords bb_cords, BoundingBoxLabels bb_label_ids, ImgSize img_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count)
     {
-        _bb_cords =std::move(bb_cords);
+        _bb_cords = std::move(bb_cords);
         _bb_label_ids = std::move(bb_label_ids);
         _img_size = std::move(img_size);
         _mask_cords = std::move(mask_cords);
@@ -246,9 +246,9 @@ struct BoundingBoxBatch: public MetaDataBatch
         _bb_cords.insert(_bb_cords.end(), other.get_bb_cords_batch().begin(), other.get_bb_cords_batch().end());
         _bb_label_ids.insert(_bb_label_ids.end(), other.get_bb_labels_batch().begin(), other.get_bb_labels_batch().end());
         _img_sizes.insert(_img_sizes.end(), other.get_img_sizes_batch().begin(), other.get_img_sizes_batch().end());
-        _mask_cords.insert(_mask_cords.end(),other.get_mask_cords_batch().begin(), other.get_mask_cords_batch().end());
-        _polygon_counts.insert(_polygon_counts.end(),other.get_mask_polygons_count_batch().begin(), other.get_mask_polygons_count_batch().end());
-        _vertices_counts.insert(_vertices_counts.end(),other.get_mask_vertices_count_batch().begin(), other.get_mask_vertices_count_batch().end());
+        _mask_cords.insert(_mask_cords.end(), other.get_mask_cords_batch().begin(), other.get_mask_cords_batch().end());
+        _polygon_counts.insert(_polygon_counts.end(), other.get_mask_polygons_count_batch().begin(), other.get_mask_polygons_count_batch().end());
+        _vertices_counts.insert(_vertices_counts.end(), other.get_mask_vertices_count_batch().begin(), other.get_mask_vertices_count_batch().end());
         return *this;
     }
     void resize(int batch_size) override
