@@ -21,6 +21,10 @@ THE SOFTWARE.
 */
 
 #include "internal_publishKernels.h"
+#include <chrono>
+using namespace std::chrono;
+
+double cmn_acc_time = 0.0;
 
 struct CropMirrorNormalizebatchPDLocalData
 {
@@ -150,6 +154,7 @@ static vx_status VX_CALLBACK processCropMirrorNormalizebatchPD(vx_node node, con
     vx_df_image df_image = VX_DF_IMAGE_VIRT;
     STATUS_ERROR_CHECK(vxQueryImage((vx_image)parameters[0], VX_IMAGE_ATTRIBUTE_FORMAT, &df_image, sizeof(df_image)));
 
+    high_resolution_clock::time_point c1 = high_resolution_clock::now();
     if (data->device_type == AGO_TARGET_AFFINITY_GPU)
     {
 #if ENABLE_OPENCL
@@ -189,6 +194,8 @@ static vx_status VX_CALLBACK processCropMirrorNormalizebatchPD(vx_node node, con
         }
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
     }
+    high_resolution_clock::time_point c2 = high_resolution_clock::now();
+    cmn_acc_time += (double)duration_cast<microseconds>( c2 - c1 ).count();
     return return_status;
 }
 
@@ -233,6 +240,7 @@ static vx_status VX_CALLBACK uninitializeCropMirrorNormalizebatchPD(vx_node node
 {
     CropMirrorNormalizebatchPDLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
+    std::cerr << "Time taken for resize: " << cmn_acc_time/1000000 << " secs\n";
 #if ENABLE_OPENCL || ENABLE_HIP
     if (data->device_type == AGO_TARGET_AFFINITY_GPU)
         rppDestroyGPU(data->rppHandle);

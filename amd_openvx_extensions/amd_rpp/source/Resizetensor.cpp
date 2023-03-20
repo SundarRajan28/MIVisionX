@@ -21,6 +21,10 @@ THE SOFTWARE.
 */
 
 #include "internal_publishKernels.h"
+#include <chrono>
+using namespace std::chrono;
+
+double resize_acc_time = 0.0;
 
 struct ResizetensorLocalData
 {
@@ -139,14 +143,20 @@ static vx_status VX_CALLBACK processResizetensor(vx_node node, const vx_referenc
     if (data->device_type == AGO_TARGET_AFFINITY_GPU)
     {
         refreshResizetensor(node, parameters, num, data);
+        high_resolution_clock::time_point c1 = high_resolution_clock::now();
         rpp_status = rppt_resize_gpu(data->pSrc_dev, data->srcDescPtr, data->pDst_dev, data->dstDescPtr, data->dstImgSize_dev, data->interpolation_type, data->roiTensorPtrSrc_dev, data->roiType, data->rppHandle);
+        high_resolution_clock::time_point c2 = high_resolution_clock::now();
+        resize_acc_time += (double)duration_cast<microseconds>( c2 - c1 ).count();
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
     }
 #endif
     if (data->device_type == AGO_TARGET_AFFINITY_CPU)
     {
         refreshResizetensor(node, parameters, num, data);
+        high_resolution_clock::time_point c1 = high_resolution_clock::now();
         rpp_status = rppt_resize_host(data->pSrc, data->srcDescPtr, data->pDst, data->dstDescPtr, data->dstImgSize, data->interpolation_type, data->roiTensorPtrSrc, data->roiType, data->rppHandle);
+        high_resolution_clock::time_point c2 = high_resolution_clock::now();
+        resize_acc_time += (double)duration_cast<microseconds>( c2 - c1 ).count();
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
     }
     return return_status;
@@ -261,6 +271,7 @@ static vx_status VX_CALLBACK uninitializeResizetensor(vx_node node, const vx_ref
 {
     ResizetensorLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
+    std::cerr << "Time taken for resize: " << resize_acc_time/1000000 << " secs\n";
 #if ENABLE_HIP
     hipFree(data->dstImgSize_dev);
     hipFree(data->roiTensorPtrSrc_dev);

@@ -549,6 +549,8 @@ MasterGraph::timing()
     }
     t.copy_to_output += _convert_time.get_timing();
     t.bb_process_time += _bencode_time.get_timing();
+    t.wait_if_empty_time += _ring_buffer._rb_block_if_empty_time.get_timing();
+    t.wait_if_full_time += _ring_buffer._rb_block_if_full_time.get_timing();
     return t;
 }
 
@@ -657,7 +659,7 @@ MasterGraph::copy_out_tensor(void *out_ptr, RocalTensorFormat format, float mult
         }
     }
 #endif
-    if(_output_image_info.mem_type() == RocalMemType::HOST)
+    if(false)
     {
         unsigned int fp16 = (output_data_type == RocalTensorDataType::FP16);
 
@@ -695,7 +697,7 @@ MasterGraph::copy_out_tensor(void *out_ptr, RocalTensorFormat format, float mult
         }
 
     }
-    if(false)
+    if(_output_image_info.mem_type() == RocalMemType::HOST)
     {
         float multiplier[3] = {multiplier0, multiplier1, multiplier2 };
         float offset[3] = {offset0, offset1, offset2 };
@@ -1012,7 +1014,6 @@ void MasterGraph::output_routine()
             auto write_buffers = _ring_buffer.get_write_buffers();
             _rb_block_if_full_time.end();
 
-            _process_time.start();
             // When executing on CPU the internal batch count can be smaller than the user batch count
             // In that case the user_batch_size will be an integer multiple of the _internal_batch_size
             // Multiple cycles worth of internal_batch_size images should be processed to complete a full _user_batch_size
@@ -1080,7 +1081,9 @@ void MasterGraph::output_routine()
                     else
                         full_batch_meta_data = _augmented_meta_data->clone();
                 }
+                _process_time.start();
                 _graph->process();
+                _process_time.end();
             }
             _bencode_time.start();
             if(_is_box_encoder )
@@ -1099,7 +1102,6 @@ void MasterGraph::output_routine()
             _ring_buffer.set_meta_data(full_batch_image_names, full_batch_meta_data);
             _ring_buffer.push(); // Image data and metadata is now stored in output the ring_buffer, increases it's level by 1
         }
-        _process_time.end();
 
     }
     catch (const std::exception &e)
