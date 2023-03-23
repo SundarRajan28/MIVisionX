@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <map>
 #include "meta_data_reader.h"
 #include "video_properties.h"
+#include <half/half.hpp>
 
 #define E(expr) CHECK_CAFFE((rc = (expr)) == MDB_SUCCESS, #expr)
 #define CHECK_CAFFE(test, msg) \
@@ -42,6 +43,7 @@ enum class StorageType
     VIDEO_FILE_SYSTEM = 6,
     MXNET_RECORDIO = 7,
     SEQUENCE_FILE_SYSTEM = 8,
+    NUMPY_DATA = 9
 };
 
 #ifdef ROCAL_VIDEO
@@ -124,6 +126,54 @@ struct ImageRecordIOHeader {
      *  image_id[0] is used to store image id
      */
 };
+
+
+struct NumpyHeaderData {
+    public:
+    std::vector<int> _shape;
+    RocalTensorDataType _type_info;
+    bool _fortran_order        = false;
+    int64_t _data_offset       = 0;
+
+    std::unordered_map<RocalTensorDataType, size_t> data_type_sizes = {
+            {RocalTensorDataType::FP32, sizeof(float)},
+            {RocalTensorDataType::FP16, sizeof(half_float::half)},
+            {RocalTensorDataType::UINT8, sizeof(uint8_t)},
+            {RocalTensorDataType::INT8, sizeof(int8_t)},
+            {RocalTensorDataType::UINT32, sizeof(uint32_t)},
+            {RocalTensorDataType::INT32, sizeof(int32_t)},
+    };
+
+    RocalTensorDataType type() const { return _type_info; };
+
+    size_t size() const { 
+        size_t num_elements = 0;
+        for (const auto& dim: _shape)
+            num_elements *= dim;
+        return num_elements;
+    };
+
+    size_t nbytes() const 
+    {         
+        auto n_elements = size();
+        switch(_type_info) {
+            case RocalTensorDataType::FP32: 
+                return sizeof(float) * n_elements;
+            case RocalTensorDataType::FP16:
+                return sizeof(half_float::half) * n_elements;
+            case RocalTensorDataType::UINT8:
+                return sizeof(uint8_t) * n_elements;
+            case RocalTensorDataType::INT8:
+                return sizeof(int8_t) * n_elements;
+            case RocalTensorDataType::UINT32:
+                return sizeof(uint32_t) * n_elements;
+            case RocalTensorDataType::INT32:
+                return sizeof(int32_t) * n_elements;
+        }
+        
+    }
+};
+
 class Reader {
 public:
     enum class Status
@@ -153,6 +203,10 @@ public:
 
     //! Copies the data of the opened item to the buf
     virtual size_t read_data(unsigned char *buf, size_t read_size) = 0;
+
+    virtual const NumpyHeaderData get_numpy_header_data();
+
+    virtual size_t read_numpy_data(void* buf, size_t read_size);
 
     //! Closes the opened item
     virtual int close() = 0;

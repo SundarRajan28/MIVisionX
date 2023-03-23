@@ -43,10 +43,13 @@ class ImageSourceEvaluator
 {
 public:
     ImageSourceEvaluatorStatus create(ReaderConfig reader_cfg, DecoderConfig decoder_cfg);
+    ImageSourceEvaluatorStatus create(ReaderConfig reader_cfg);
     void find_max_dimension();
+    void find_max_numpy_dimensions();
     void set_size_evaluation_policy(MaxSizeEvaluationPolicy arg);
     size_t max_width();
     size_t max_height();
+    size_t max_channels();
 
 private:
     class FindMaxSize
@@ -63,6 +66,7 @@ private:
     };
     FindMaxSize _width_max;
     FindMaxSize _height_max;
+    FindMaxSize _channel_max;
     DecoderConfig _decoder_cfg_cv;
     std::shared_ptr<Decoder> _decoder;
     std::shared_ptr<Reader> _reader;
