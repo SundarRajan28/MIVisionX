@@ -135,15 +135,6 @@ struct NumpyHeaderData {
     bool _fortran_order        = false;
     int64_t _data_offset       = 0;
 
-    std::unordered_map<RocalTensorDataType, size_t> data_type_sizes = {
-            {RocalTensorDataType::FP32, sizeof(float)},
-            {RocalTensorDataType::FP16, sizeof(half_float::half)},
-            {RocalTensorDataType::UINT8, sizeof(uint8_t)},
-            {RocalTensorDataType::INT8, sizeof(int8_t)},
-            {RocalTensorDataType::UINT32, sizeof(uint32_t)},
-            {RocalTensorDataType::INT32, sizeof(int32_t)},
-    };
-
     RocalTensorDataType type() const { return _type_info; };
 
     size_t size() const { 

@@ -39,11 +39,6 @@ size_t ImageSourceEvaluator::max_height()
     return _height_max.get_max();
 }
 
-size_t ImageSourceEvaluator::max_channels()
-{
-    return _channel_max.get_max();
-}
-
 ImageSourceEvaluatorStatus
 ImageSourceEvaluator::create(ReaderConfig reader_cfg, DecoderConfig decoder_cfg)
 {
@@ -112,20 +107,25 @@ ImageSourceEvaluator::find_max_numpy_dimensions()
 
     while( _reader->count_items() )
     {
-        int width, height, channels;
         size_t fsize = _reader->open();
         const NumpyHeaderData numpy_header = _reader->get_numpy_header_data();
-        width = numpy_header._shape[0];
-        height = numpy_header._shape[1];
-        channels = numpy_header._shape[2];
+
+        if (_max_numpy_dims.size() == 0) {
+            _max_numpy_dims.resize(numpy_header._shape.size());
+            _numpy_dtype = numpy_header._type_info;
+        }
+        
+        if (_max_numpy_dims.size() != numpy_header._shape.size()) {
+            THROW("All numpy arrays must have the same number of dimensions")
+        }
+        
+        for(int i = 0; i < _max_numpy_dims.size(); i++) 
+        {
+            if (numpy_header._shape[i] > _max_numpy_dims[i]) {
+                _max_numpy_dims[i] = numpy_header._shape[i];
+            }
+        }
         _reader->close();        
-
-        if(width <= 0 || height <=0 || channels <=0)
-            continue;
-
-        _width_max.process_sample(width);
-        _height_max.process_sample(height);
-        _channel_max.process_sample(height);
 
     }
     // return the reader read pointer to the begining of the resource
