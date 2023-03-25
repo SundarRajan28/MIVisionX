@@ -114,7 +114,12 @@ const RocalTensorDataType NumpyDataReader::TypeFromNumpyStr(const std::string &f
     // if (format == "i2") return TypeTable::GetTypeInfo<int16_t>();    // Currently not supported in rocAL
     if (format == "i4") return RocalTensorDataType::INT32;
     // if (format == "i8") return TypeTable::GetTypeInfo<int64_t>();    // Currently not supported in rocAL
-    if (format == "f2") return RocalTensorDataType::FP16;
+    if (format == "f2") 
+#if defined(AMD_FP16_SUPPORT)
+        return RocalTensorDataType::FP16;
+#else
+        THROW("FLOAT16 type tensor not supported")
+#endif
     if (format == "f4") return RocalTensorDataType::FP32;
     // if (format == "f8") return TypeTable::GetTypeInfo<double>();     // Currently not supported in rocAL
     THROW("Unknown Numpy type string");

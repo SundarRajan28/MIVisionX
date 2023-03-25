@@ -38,6 +38,8 @@ THE SOFTWARE.
 #include "node_cifar10_loader.h"
 #include "meta_data_reader.h"
 #include "meta_data_graph.h"
+#include "node_numpy_loader.h"
+#include "node_numpy_loader_single_shard.h"
 #if ENABLE_HIP
 #include "device_manager_hip.h"
 #include "box_encoder_hip.h"
@@ -348,6 +350,42 @@ template<> inline std::shared_ptr<VideoLoaderSingleShardNode> MasterGraph::add_n
 #else
     auto node = std::make_shared<VideoLoaderSingleShardNode>(outputs[0], nullptr);
 #endif    
+    _loader_module = node->get_loader_module();
+    _loader_module->set_prefetch_queue_depth(_prefetch_queue_depth);
+    _root_nodes.push_back(node);
+    for(auto& output: outputs)
+        _tensor_map.insert(std::make_pair(output, node));
+
+    return node;
+}
+
+template<> inline std::shared_ptr<NumpyLoaderNode> MasterGraph::add_node(const std::vector<rocalTensor*>& inputs, const std::vector<rocalTensor*>& outputs)
+{
+    if(_loader_module)
+        THROW("A loader already exists, cannot have more than one loader")
+#if ENABLE_HIP || ENABLE_OPENCL
+    auto node = std::make_shared<NumpyLoaderNode>(outputs[0], (void *)_device.resources());
+#else
+    auto node = std::make_shared<NumpyLoaderNode>(outputs[0], nullptr);
+#endif
+    _loader_module = node->get_loader_module();
+    _loader_module->set_prefetch_queue_depth(_prefetch_queue_depth);
+    _root_nodes.push_back(node);
+    for(auto& output: outputs)
+        _tensor_map.insert(std::make_pair(output, node));
+
+    return node;
+}
+
+template<> inline std::shared_ptr<NumpyLoaderSingleShardNode> MasterGraph::add_node(const std::vector<rocalTensor*>& inputs, const std::vector<rocalTensor*>& outputs)
+{
+    if(_loader_module)
+        THROW("A loader already exists, cannot have more than one loader")
+#if ENABLE_HIP || ENABLE_OPENCL
+    auto node = std::make_shared<NumpyLoaderSingleShardNode>(outputs[0], (void *)_device.resources());
+#else
+    auto node = std::make_shared<NumpyLoaderSingleShardNode>(outputs[0], nullptr);
+#endif
     _loader_module = node->get_loader_module();
     _loader_module->set_prefetch_queue_depth(_prefetch_queue_depth);
     _root_nodes.push_back(node);

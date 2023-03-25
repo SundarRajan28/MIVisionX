@@ -25,7 +25,7 @@ THE SOFTWARE.
 #include <map>
 #include "meta_data_reader.h"
 #include "video_properties.h"
-#include <half/half.hpp>
+#include "tensor.h"
 
 #define E(expr) CHECK_CAFFE((rc = (expr)) == MDB_SUCCESS, #expr)
 #define CHECK_CAFFE(test, msg) \
@@ -144,25 +144,7 @@ struct NumpyHeaderData {
         return num_elements;
     };
 
-    size_t nbytes() const 
-    {         
-        auto n_elements = size();
-        switch(_type_info) {
-            case RocalTensorDataType::FP32: 
-                return sizeof(float) * n_elements;
-            case RocalTensorDataType::FP16:
-                return sizeof(half_float::half) * n_elements;
-            case RocalTensorDataType::UINT8:
-                return sizeof(uint8_t) * n_elements;
-            case RocalTensorDataType::INT8:
-                return sizeof(int8_t) * n_elements;
-            case RocalTensorDataType::UINT32:
-                return sizeof(uint32_t) * n_elements;
-            case RocalTensorDataType::INT32:
-                return sizeof(int32_t) * n_elements;
-        }
-        
-    }
+    size_t nbytes() const { return tensor_data_size(_type_info) * size(); }
 };
 
 class Reader {

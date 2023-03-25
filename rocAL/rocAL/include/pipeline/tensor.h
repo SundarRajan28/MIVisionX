@@ -129,9 +129,15 @@ public:
             }
             reset_tensor_roi_buffers();
         } else if (!_is_metadata) {  // For audio
-            _max_shape.resize(2);       // Since 2 values will be stored in the vector
-            _max_shape[0] = _dims.at(1);
-            _max_shape[1] = _num_of_dims > 2 ? _dims.at(2) : 0;
+            if (_dims.size() == 3) {
+                _max_shape.resize(2);       // Since 2 values will be stored in the vector
+                _max_shape[0] = _dims.at(1);
+                _max_shape[1] = _num_of_dims > 2 ? _dims.at(2) : 0;
+            }
+            else {
+                _max_shape.resize(_dims.size() - 1);
+                _max_shape.assign(_dims.begin()+1, _dims.end());
+            }
         }
     }
     void set_tensor_layout(RocalTensorlayout layout) {
