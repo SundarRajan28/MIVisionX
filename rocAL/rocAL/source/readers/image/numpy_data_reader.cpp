@@ -101,6 +101,7 @@ size_t NumpyDataReader::open()
     ParseHeader(_file_headers[_curr_file_idx], file_path);
     fseek(_current_fPtr, 0 , SEEK_SET);// Take the file pointer back to the start
 
+    std::cout << "In open func, Header n_elements: " <<_file_headers[_curr_file_idx].size() << " Header n_bytes: " << _file_headers[_curr_file_idx].nbytes() << " Header shape size: " << _file_headers[_curr_file_idx]._shape[0] << " x " << _file_headers[_curr_file_idx]._shape[1] << " Header type info: " << int(_file_headers[_curr_file_idx]._type_info)  << "\n";
     return _file_headers[_curr_file_idx].nbytes();
 }
 
@@ -257,8 +258,9 @@ void NumpyDataReader::ParseHeaderContents(NumpyHeaderData& target, const std::st
         // ParseInteger already skips the leading spaces (strtol does).
         target._shape.push_back(ParseInteger<int64_t>(hdr));
         SkipSpaces(hdr);
-        if (target._shape.size() <= 1)
-            THROW("The first number in a tuple must be followed by a comma.");
+        auto x = TrySkip(hdr, ",");
+        // if ((!TrySkip(hdr, ",")) || target._shape.size())
+        //     THROW("The first number in a tuple must be followed by a comma.");
     }
     if (target._fortran_order) 
     {

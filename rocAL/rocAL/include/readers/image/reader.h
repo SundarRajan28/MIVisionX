@@ -138,7 +138,7 @@ struct NumpyHeaderData {
     RocalTensorDataType type() const { return _type_info; };
 
     size_t size() const { 
-        size_t num_elements = 0;
+        size_t num_elements = 1;
         for (const auto& dim: _shape)
             num_elements *= dim;
         return num_elements;
@@ -177,9 +177,9 @@ public:
     //! Copies the data of the opened item to the buf
     virtual size_t read_data(unsigned char *buf, size_t read_size) = 0;
 
-    virtual const NumpyHeaderData get_numpy_header_data();
+    virtual const NumpyHeaderData get_numpy_header_data() {return {}; }
 
-    virtual size_t read_numpy_data(void* buf, size_t read_size);
+    virtual size_t read_numpy_data(void* buf, size_t read_size) { return 0; }
 
     //! Closes the opened item
     virtual int close() = 0;

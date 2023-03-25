@@ -128,8 +128,8 @@ public:
                 _channels = _dims.at(2);
             }
             reset_tensor_roi_buffers();
-        } else if (!_is_metadata) {  // For audio
-            if (_dims.size() == 3) {
+        } else if (!_is_metadata) {
+            if (_dims.size() == 3) { // For audio
                 _max_shape.resize(2);       // Since 2 values will be stored in the vector
                 _max_shape[0] = _dims.at(1);
                 _max_shape[1] = _num_of_dims > 2 ? _dims.at(2) : 0;

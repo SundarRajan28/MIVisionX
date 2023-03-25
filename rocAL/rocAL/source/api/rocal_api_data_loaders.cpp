@@ -1852,6 +1852,12 @@ rocalNumpyFileSource(
         auto max_dimensions = evaluate_numpy_data_set(decode_size_policy, StorageType::NUMPY_DATA, DecoderType::SKIP_DECODE,
                                                        source_path, "");
 
+        std::cout << "evaluate_numpy_data_set completed successfully\n";
+        std::cout << "max dims\n";
+        for (auto x: max_dimensions) {
+            std:: cout << x << " x ";
+        }
+        std::cout << "\n";
         RocalTensorlayout tensor_format = RocalTensorlayout::NONE;
         RocalTensorDataType tensor_data_type;
         std::unordered_map<int, RocalTensorDataType> data_type_map = {
