@@ -101,7 +101,6 @@ size_t NumpyDataReader::open()
     ParseHeader(_file_headers[_curr_file_idx], file_path);
     fseek(_current_fPtr, 0 , SEEK_SET);// Take the file pointer back to the start
 
-    std::cout << "In open func, Header n_elements: " <<_file_headers[_curr_file_idx].size() << " Header n_bytes: " << _file_headers[_curr_file_idx].nbytes() << " Header shape size: " << _file_headers[_curr_file_idx]._shape[0] << " x " << _file_headers[_curr_file_idx]._shape[1] << " Header type info: " << int(_file_headers[_curr_file_idx]._type_info)  << "\n";
     return _file_headers[_curr_file_idx].nbytes();
 }
 

@@ -552,15 +552,15 @@ void MasterGraph::output_routine()
             }
 
             // get roi width and height of output image
-            std::vector<uint32_t> temp_width_arr;
-            std::vector<uint32_t> temp_height_arr;
-            for (unsigned int i = 0; i < _user_batch_size; i++)
-            {
-                temp_width_arr.push_back(_internal_tensor_list.front()->info().get_roi()[i].x2);
-                temp_height_arr.push_back(_internal_tensor_list.front()->info().get_roi()[i].y2);
-            }
-            _resize_width.insert(_resize_width.begin(), temp_width_arr);
-            _resize_height.insert(_resize_height.begin(), temp_height_arr);
+            // std::vector<uint32_t> temp_width_arr;
+            // std::vector<uint32_t> temp_height_arr;
+            // for (unsigned int i = 0; i < _user_batch_size; i++)
+            // {
+            //     temp_width_arr.push_back(_internal_tensor_list.front()->info().get_roi()[i].x2);
+            //     temp_height_arr.push_back(_internal_tensor_list.front()->info().get_roi()[i].y2);
+            // }
+            // _resize_width.insert(_resize_width.begin(), temp_width_arr);
+            // _resize_height.insert(_resize_height.begin(), temp_height_arr);
             
             _process_time.start();
             _graph->process();

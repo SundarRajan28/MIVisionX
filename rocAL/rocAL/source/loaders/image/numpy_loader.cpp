@@ -144,6 +144,7 @@ void NumpyLoader::initialize(ReaderConfig reader_cfg, DecoderConfig decoder_cfg,
     _batch_size = batch_size;
     _loop = reader_cfg.loop();
     _image_size = _output_mem_size/batch_size;
+    _output_names.resize(batch_size);
     size_t shard_count = reader_cfg.get_shard_count();
     int device_id = reader_cfg.get_shard_id();
     try
@@ -196,25 +197,19 @@ NumpyLoader::load_routine()
             unsigned file_counter = 0;
             _file_load_time.start();// Debug timing
 
-            std::cout << "_image_size = " << _image_size << "\n";
-            std::cout << "sizeof(circular buffer) = " << sizeof(data) << "\n";
-            while (_reader->count_items() > 0)
+            while ((file_counter != _batch_size) && _reader->count_items() > 0)
             {
                 auto read_ptr = data + _image_size * file_counter;
-                std::cout << "read_ptr at " << read_ptr << "\n";
                 size_t readSize = _reader->open();
                 if (readSize == 0) {
                     WRN("Opened file " + _reader->id() + " of size 0");
                     continue;
-                }                
-                std::cout << "Opened file " << _reader->id() << "\n";
-                auto fsize = _reader->read_numpy_data(read_ptr, readSize);        
-                std::cout << "Read numpy data from file " << _reader->id() << "\n";        
+                }
+                auto fsize = _reader->read_numpy_data(read_ptr, readSize);
                 _decoded_img_info._image_names[file_counter] = _reader->id();
                 _decoded_img_info._roi_width[file_counter] = _output_tensor->info().max_shape()[0];
                 _decoded_img_info._roi_height[file_counter] = _output_tensor->info().max_shape()[1];
                 _reader->close();
-                std::cout << "Closed file " << _reader->id() << "\n";
                 file_counter++;
             }
             _file_load_time.end();// Debug timing
