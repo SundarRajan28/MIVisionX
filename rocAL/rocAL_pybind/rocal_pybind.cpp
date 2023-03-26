@@ -448,6 +448,25 @@ namespace rocal
             py::return_value_policy::reference);
         m.def("COCO_ImageDecoderSliceShard",&rocalJpegCOCOFileSourcePartialSingleShard,"Reads file from the source given and decodes it according to the policy",
             py::return_value_policy::reference);
+        m.def("NumpyReaderSource", &rocalNumpyFileSource, "Reads file from the source given and decodes it according to the policy",
+              py::return_value_policy::reference,
+              py::arg("context"),
+              py::arg("source_path"),
+              py::arg("internal_shard_count"),
+              py::arg("is_output") = false,
+              py::arg("shuffle") = false,
+              py::arg("loop") = false,
+              py::arg("decode_size_policy") = ROCAL_USE_MAX_SIZE);
+        m.def("NumpyReaderSourceShard", &rocalNumpyFileSourceSingleShard, "Reads file from the source given and decodes it according to the shard id and number of shards",
+              py::return_value_policy::reference,
+              py::arg("context"),
+              py::arg("source_path"),
+              py::arg("is_output") = false,
+              py::arg("shuffle") = false,
+              py::arg("loop") = false,
+              py::arg("decode_size_policy") = ROCAL_USE_MAX_SIZE,
+              py::arg("shard_id") = 0,
+              py::arg("shard_count") = 1);
         m.def("Resize",&rocalResize, "Resizes the image ",py::return_value_policy::reference);
         m.def("ColorTwist",&rocalColorTwist, py::return_value_policy::reference);
         m.def("rocalResetLoaders", &rocalResetLoaders);

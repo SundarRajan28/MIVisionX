@@ -27,6 +27,13 @@ def coco(*inputs,file_root='', annotations_file='', bytes_per_sample_hint=0, dum
     meta_data = b.COCOReader(Pipeline._current_pipeline._handle ,*(kwargs_pybind.values()))
     return (meta_data, labels, bboxes)
 
+def numpy(*inputs,file_root='', annotations_file='', bytes_per_sample_hint=0, dump_meta_files=False, dump_meta_files_path='', file_list='', initial_fill=1024,  lazy_init=False, ltrb=False, masks=False, meta_files_path='', num_shards=1, pad_last_batch=False, prefetch_queue_depth=1,
+                 preserve=False, random_shuffle=False, ratio=False, read_ahead=False,
+                 save_img_ids=False, seed=-1, shard_id=0, shuffle_after_epoch=False, size_threshold=0.1, is_box_encoder=False,
+                 skip_cached_images=False, skip_empty=False, stick_to_shard=False, tensor_init_bytes=1048576, is_output=True):
 
-
-
+    Pipeline._current_pipeline._reader = "NumpyReader"
+    #Output
+    kwargs_pybind = {"source_path": file_root, "is_output": is_output, "shard_id": shard_id, "shard_count": num_shards}
+    numpy_reader_output = b.NumpyReaderSourceShard(Pipeline._current_pipeline._handle ,*(kwargs_pybind.values()))
+    return (numpy_reader_output)
