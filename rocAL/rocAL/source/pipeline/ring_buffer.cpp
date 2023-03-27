@@ -345,9 +345,11 @@ void RingBuffer::release_gpu_res()
                         ERR("Could not release hip memory in the ring buffer")
                     }
             }
-            for (unsigned sub_buf_idx = 0; sub_buf_idx < _host_meta_data_buffers[buffIdx].size(); sub_buf_idx++) {
-                if (_host_meta_data_buffers[buffIdx][sub_buf_idx])
-                    free(_host_meta_data_buffers[buffIdx][sub_buf_idx]);
+            if(_host_meta_data_buffers.size() != 0) {
+                for (unsigned sub_buf_idx = 0; sub_buf_idx < _host_meta_data_buffers[buffIdx].size(); sub_buf_idx++) {
+                    if (_host_meta_data_buffers[buffIdx][sub_buf_idx])
+                        free(_host_meta_data_buffers[buffIdx][sub_buf_idx]);
+                }
             }
         }
         _dev_sub_buffer.clear();
@@ -361,9 +363,11 @@ void RingBuffer::release_gpu_res()
                     if (clReleaseMemObject((cl_mem) _dev_sub_buffer[buffIdx][sub_buf_idx]) != CL_SUCCESS)
                         ERR("Could not release ocl memory in the ring buffer")
             }
-            for (unsigned sub_buf_idx = 0; sub_buf_idx < _host_meta_data_buffers[buffIdx].size(); sub_buf_idx++) {
-                if (_host_meta_data_buffers[buffIdx][sub_buf_idx])
-                    free(_host_meta_data_buffers[buffIdx][sub_buf_idx]);
+            if(_host_meta_data_buffers.size() != 0) {
+                for (unsigned sub_buf_idx = 0; sub_buf_idx < _host_meta_data_buffers[buffIdx].size(); sub_buf_idx++) {
+                    if (_host_meta_data_buffers[buffIdx][sub_buf_idx])
+                        free(_host_meta_data_buffers[buffIdx][sub_buf_idx]);
+                }
             }
         }
         _dev_sub_buffer.clear();
@@ -380,10 +384,12 @@ RingBuffer::~RingBuffer()
                 if (_host_sub_buffers[buffIdx][sub_buf_idx])
                     free(_host_sub_buffers[buffIdx][sub_buf_idx]);
             }
-            // for (unsigned sub_buf_idx = 0; sub_buf_idx < _host_meta_data_buffers[buffIdx].size(); sub_buf_idx++) {
-            //     if (_host_meta_data_buffers[buffIdx][sub_buf_idx])
-            //         free(_host_meta_data_buffers[buffIdx][sub_buf_idx]);
-            // }
+            if(_host_meta_data_buffers.size() != 0) {
+                for (unsigned sub_buf_idx = 0; sub_buf_idx < _host_meta_data_buffers[buffIdx].size(); sub_buf_idx++) {
+                    if (_host_meta_data_buffers[buffIdx][sub_buf_idx])
+                        free(_host_meta_data_buffers[buffIdx][sub_buf_idx]);
+                }   
+            }
         }
         _host_sub_buffers.clear();
         _host_meta_data_buffers.clear();
