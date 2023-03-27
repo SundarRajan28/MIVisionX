@@ -255,7 +255,7 @@ void NumpyDataReader::ParseHeaderContents(NumpyHeaderData& target, const std::st
     while (*hdr != ')') 
     {
         // ParseInteger already skips the leading spaces (strtol does).
-        target._shape.push_back(ParseInteger<int64_t>(hdr));
+        target._shape.push_back(static_cast<unsigned>(ParseInteger<int64_t>(hdr)));
         SkipSpaces(hdr);
         if (!(TrySkip(hdr, ",")) && (target._shape.size() <= 1))
             THROW("The first number in a tuple must be followed by a comma.");
