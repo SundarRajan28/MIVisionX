@@ -551,7 +551,7 @@ void MasterGraph::output_routine()
                     full_batch_meta_data = _augmented_meta_data->clone();
             }
 
-            // get roi width and height of output image
+            // get roi width and height of output image -> For Mask!
             // std::vector<uint32_t> temp_width_arr;
             // std::vector<uint32_t> temp_height_arr;
             // for (unsigned int i = 0; i < _user_batch_size; i++)

@@ -108,18 +108,13 @@ bool operator==(const rocalTensorInfo &rhs, const rocalTensorInfo &lhs) {
 
 
 void rocalTensorInfo::reset_tensor_roi_buffers() {
-    allocate_host_or_pinned_mem((void **)&_roi_buf, _batch_size * 4 * sizeof(unsigned), _mem_type);
-    if (_mem_type == RocalMemType::HIP) {
-#if ENABLE_HIP
-        _roi.reset(_roi_buf, hipHostFree);
-#endif
-    } else {
-        _roi.reset(_roi_buf, free);
-    }
-    _orig_roi_height = std::make_shared<std::vector<uint32_t>>(_batch_size);    // TODO - Check if this needs to be reallocated every time
-    _orig_roi_width = std::make_shared<std::vector<uint32_t>>(_batch_size);
+    unsigned *roi_buf;
+    allocate_host_or_pinned_mem((void **)&roi_buf, _batch_size * (_is_image ? 4 : (_num_of_dims - 1) * 2) * sizeof(unsigned), _mem_type);
+    _roi.set_ptr(roi_buf, _mem_type, _num_of_dims - 1);
     if (_is_image) {
-        auto roi = get_roi();
+        _orig_roi_height = std::make_shared<std::vector<uint32_t>>(_batch_size);    // TODO - Check if this needs to be reallocated every time
+        _orig_roi_width = std::make_shared<std::vector<uint32_t>>(_batch_size);
+        Rocal2DROI * roi = (Rocal2DROI *)_roi.get_ptr();
         for (unsigned i = 0; i < _batch_size; i++) {
             roi[i].x2 = _max_shape.at(0);
             roi[i].y2 = _max_shape.at(1);
@@ -157,7 +152,7 @@ void rocalTensor::update_tensor_roi(const std::vector<uint32_t> &width,
         auto max_shape = _info.max_shape();
         unsigned max_width = max_shape.at(0);
         unsigned max_height = max_shape.at(1);
-
+        Rocal2DROI *roi = (Rocal2DROI *)_info.roi().get_ptr();
         if (width.size() != height.size())
             THROW("Batch size of Tensor height and width info does not match")
 
@@ -167,15 +162,15 @@ void rocalTensor::update_tensor_roi(const std::vector<uint32_t> &width,
         for (unsigned i = 0; i < info().batch_size(); i++) {
             if (width[i] > max_width) {
                 WRN("Given ROI width is larger than buffer width for tensor[" + TOSTR(i) + "] " + TOSTR(width[i]) + " > " + TOSTR(max_width))
-                _info.get_roi()[i].x2 = max_width;
+                roi[i].x2 = max_width;
             } else {
-                _info.get_roi()[i].x2 = width[i];
+                roi[i].x2 = width[i];
             }
             if (height[i] > max_height) {
                 WRN("Given ROI height is larger than buffer height for tensor[" + TOSTR(i) + "] " + TOSTR(height[i]) + " > " + TOSTR(max_height))
-                _info.get_roi()[i].y2 = max_height;
+                roi[i].y2 = max_height;
             } else {
-                _info.get_roi()[i].y2 = height[i];
+                roi[i].y2 = height[i];
             }
         }
     }
