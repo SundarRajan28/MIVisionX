@@ -417,12 +417,12 @@ Reader::Status NumpyDataReader::subfolder_reading()
                 WRN("NumpyDataReader ShardID ["+ TOSTR(_shard_id)+ "] File reader cannot access the storage at " + _folder_path);
         }
     }
-    _file_headers.resize(_file_names.size());
     if(_in_batch_read_count > 0 && _in_batch_read_count < _batch_count)
     {
         replicate_last_image_to_fill_last_shard();
         LOG("NumpyDataReader ShardID [" + TOSTR(_shard_id) + "] Replicated " + _folder_path+_last_file_name + " " + TOSTR((_batch_count - _in_batch_read_count) ) + " times to fill the last batch")
     }
+    _file_headers.resize(_file_names.size());
     if(!_file_names.empty())
         LOG("NumpyDataReader ShardID ["+ TOSTR(_shard_id)+ "] Total of " + TOSTR(_file_names.size()) + " images loaded from " + _full_path )
     return ret;
