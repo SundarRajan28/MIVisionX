@@ -80,6 +80,7 @@ struct ROI {
         _roi_coords.shape = (_roi_buf + (i * _stride) + _dims);
         return _roi_coords;
     }
+    unsigned no_of_dims() { return _dims; }
 private:
     unsigned *_roi_buf;
     std::shared_ptr<unsigned> _roi_ptr;

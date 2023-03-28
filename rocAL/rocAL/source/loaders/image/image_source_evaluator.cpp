@@ -109,6 +109,7 @@ ImageSourceEvaluator::find_max_numpy_dimensions()
     {
         size_t fsize = _reader->open();
         const NumpyHeaderData numpy_header = _reader->get_numpy_header_data();
+        _reader->close();        
 
         if (_max_numpy_dims.size() == 0) {
             _max_numpy_dims.resize(numpy_header._shape.size());
@@ -125,7 +126,6 @@ ImageSourceEvaluator::find_max_numpy_dimensions()
                 _max_numpy_dims[i] = numpy_header._shape[i];
             }
         }
-        _reader->close();        
 
     }
     // return the reader read pointer to the begining of the resource

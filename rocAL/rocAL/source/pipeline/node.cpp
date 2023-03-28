@@ -42,7 +42,7 @@ Node::create(std::shared_ptr<Graph> graph)
     {
         vx_size num_of_dims = 2;
         vx_size stride[num_of_dims];
-        std::vector<size_t> roi_dims = {_batch_size, 4};
+        std::vector<size_t> roi_dims = {_batch_size, 2 * _inputs[0]->info().roi().no_of_dims()};
         stride[0] = sizeof(vx_uint32);
         stride[1] = stride[0] * roi_dims[0];
         vx_enum mem_type = VX_MEMORY_TYPE_HOST;
