@@ -498,10 +498,10 @@ extern "C"  RocalTensor  ROCAL_API_CALL rocalNumpyFileSource(
                  RocalContext p_context,
                  const char* source_path,
                  unsigned internal_shard_count,
-                 bool is_output,
-                 bool shuffle,
-                 bool loop,
-                 RocalImageSizeEvaluationPolicy decode_size_policy);
+                 bool is_output = false,
+                 bool shuffle = false,
+                 bool loop = false,
+                 RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MAX_SIZE);
 
 /// Creates JPEG image reader and decoder. It allocates the resources and objects required to read and decode COCO Jpeg images stored on the file systems. It accepts external sharding information to load a singe shard. only
 /// \param rocal_context Rocal context
@@ -516,12 +516,12 @@ extern "C"  RocalTensor  ROCAL_API_CALL rocalNumpyFileSource(
 extern "C"  RocalTensor  rocalNumpyFileSourceSingleShard(
                  RocalContext p_context,
                  const char* source_path,
-                 bool is_output,
-                 bool shuffle,
-                 bool loop,
-                 RocalImageSizeEvaluationPolicy decode_size_policy,
-                 unsigned shard_id,
-                 unsigned shard_count);
+                 bool is_output = false,
+                 bool shuffle = false,
+                 bool loop = false,
+                 RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MAX_SIZE,
+                 unsigned shard_id = 0,
+                 unsigned shard_count = 1);
 
 /// Creates a video reader and decoder as a source. It allocates the resources and objects required to read and decode mp4 videos stored on the file systems.
 /// \param context Rocal context
