@@ -189,6 +189,32 @@ namespace rocal
                 R"code(
                 Returns a rocAL tensor at given position `i` in the rocalTensorlist.
                 )code",
+                py::keep_alive<0, 1>())
+                .def(
+                "as_array",
+                [](rocalTensor &output_tensor)
+                {
+                    std::vector<size_t> tensor_dims = output_tensor.info().dims();
+                    std::vector<size_t> stride(tensor_dims.size());
+                    stride[0] = sizeof(unsigned char);
+                    for(int d = 1; d < tensor_dims.size(); d++)
+                        stride[d] = stride[d - 1] * tensor_dims[tensor_dims.size() - d];
+                    std::reverse(stride.begin(), stride.end());
+                    
+                    if (output_tensor.info().data_type() == RocalTensorDataType::UINT8)
+                    {
+                        return py::array(py::buffer_info(
+                            ((unsigned char *)(output_tensor.buffer())),
+                            sizeof(unsigned char),
+                            py::format_descriptor<unsigned char>::format(),
+                            output_tensor.info().num_of_dims(),
+                            tensor_dims,
+                            stride));
+                    }
+                },
+                R"code(
+                Returns a rocAL tensor at given position `i` in the rocalTensorlist.
+                )code",
                 py::keep_alive<0, 1>());
 
         // .def_readwrite("swap_handle",&rocalTensor::swap_handle);

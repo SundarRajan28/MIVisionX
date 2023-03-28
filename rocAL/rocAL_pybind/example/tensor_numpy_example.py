@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import random
-from amd.rocal.plugin.pytorch import ROCALNumpyIterator
 
 from amd.rocal.pipeline import Pipeline
 import amd.rocal.fn as fn
@@ -10,6 +9,59 @@ import amd.rocal.types as types
 import sys
 import os
 
+
+class ROCALNumpyIterator(object):
+    def __init__(self, pipeline, tensor_dtype=types.FLOAT, device="cpu", device_id=0):
+        try:
+            assert pipeline is not None, "Number of provided pipelines has to be at least 1"
+        except Exception as ex:
+            print(ex)
+        self.loader = pipeline
+        self.tensor_dtype = tensor_dtype
+        self.device = device
+        self.device_id = device_id
+        self.out = None
+        print("self.device", self.device)
+        self.len = self.loader.getRemainingImages()
+
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        if(self.loader.isEmpty()):
+            # timing_info = self.loader.Timing_Info()
+            # print("Load     time ::", timing_info.load_time/1000000)
+            # print("Decode   time ::", timing_info.decode_time/1000000)
+            # print("Process  time ::", timing_info.process_time/1000000)
+            # print("Output routine time ::", timing_info.output_routine_time/1000000)
+            # print("Transfer time ::", timing_info.transfer_time/1000000)
+            raise StopIteration
+
+        if self.loader.rocalRun() != 0:
+            raise StopIteration
+        else:
+            self.output_tensor_list = self.loader.rocalGetOutputTensors()
+
+        #From init
+        self.augmentation_count = len(self.output_tensor_list)
+        self.batch_size = self.output_tensor_list[0].batch_size()
+        self.out = self.output_tensor_list[0].as_array()
+
+        return self.out
+        # elif self.tensor_dtype == types.FLOAT16:
+
+    def reset(self):
+        self.loader.rocalResetLoaders()
+
+    def __iter__(self):
+        return self
+
+    def __len__(self):
+        return self.len
+
+    # def __del__(self):
+        # b.rocalRelease(self.loader._handle)
 
 def main():
     if  len(sys.argv) < 3:
@@ -64,13 +116,15 @@ def main():
     pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=_rali_cpu)
 
     with pipeline:
-        numpy_reader_output = fn.readers.numpy(file_root=data_path, is_output=True, shard_id=local_rank, num_shards=world_size)
+        numpy_reader_output = fn.readers.numpy(file_root=data_path, shard_id=local_rank, num_shards=world_size)
         pipeline.set_outputs(numpy_reader_output)
 
     pipeline.build()
-    numpyIteratorPipeline = ROCALNumpyIterator(pipeline)
+    
+    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, tensor_dtype=types.UINT8)
+    print(len(numpyIteratorPipeline))
     cnt = 0
-    for epoch in range(3):
+    for epoch in range(1):
         print("+++++++++++++++++++++++++++++EPOCH+++++++++++++++++++++++++++++++++++++",epoch)
         for i , it in enumerate(numpyIteratorPipeline):
             print(it.shape)
