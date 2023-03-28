@@ -252,6 +252,7 @@ void NumpyDataReader::ParseHeaderContents(NumpyHeaderData& target, const std::st
     SkipFieldName(hdr, "shape");
     Skip(hdr, "(");
     SkipSpaces(hdr);
+    target._shape.clear();
     while (*hdr != ')') 
     {
         // ParseInteger already skips the leading spaces (strtol does).
