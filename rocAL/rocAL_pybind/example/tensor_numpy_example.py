@@ -30,12 +30,6 @@ class ROCALNumpyIterator(object):
 
     def __next__(self):
         if(self.loader.isEmpty()):
-            # timing_info = self.loader.Timing_Info()
-            # print("Load     time ::", timing_info.load_time/1000000)
-            # print("Decode   time ::", timing_info.decode_time/1000000)
-            # print("Process  time ::", timing_info.process_time/1000000)
-            # print("Output routine time ::", timing_info.output_routine_time/1000000)
-            # print("Transfer time ::", timing_info.transfer_time/1000000)
             raise StopIteration
 
         if self.loader.rocalRun() != 0:
@@ -93,26 +87,6 @@ def main():
     device_memory_padding = 211025920 if decoder_device == 'mixed' else 0
     host_memory_padding = 140544512 if decoder_device == 'mixed' else 0
 
-    # with pipe:
-    #     jpegs, labels = fn.readers.file(file_root=data_path)
-    #     images = fn.decoders.image(jpegs,file_root=data_path, output_type=types.RGB, shard_id=0, num_shards=1, random_shuffle=False)
-    #     brightend_images = fn.brightness(images)
-    #     # brightend_images2 = fn.brightness(brightend_images)
-
-    #     pipe.set_outputs(brightend_images)
-
-    # pipe.build()
-    # imageIterator = ROCALClassificationIterator(pipe)
-    # cnt = 0
-    # for i , it in enumerate(imageIterator):
-    #     print("************************************** i *************************************",i)
-    #     for img in it[0]:
-    #         print(img.shape)
-    #         cnt = cnt + 1
-    #         draw_patches(img, cnt, "cpu")
-
-    print("*********************************************************************")
-
     pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=_rali_cpu)
 
     with pipeline:
@@ -129,10 +103,6 @@ def main():
         for i , it in enumerate(numpyIteratorPipeline):
             print(it.shape)
             print("************************************** i *************************************",i)
-            # for img in it[0]:
-                # print(img.shape)
-                # cnt = cnt + 1
-                # draw_patches(img, cnt, "cpu")
         numpyIteratorPipeline.reset()
     print("*********************************************************************")
     exit(0)
