@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -49,10 +49,7 @@ protected:
     const std::vector<rocalTensor *> _inputs;
     const std::vector<rocalTensor *> _outputs;
     std::shared_ptr<Graph> _graph = nullptr;
-    vx_array _src_tensor_roi = nullptr, _dst_tensor_roi = nullptr;
-    vx_tensor _src_tensor_roi_ = nullptr, _dst_tensor_roi_ = nullptr; // TODO - To be removed
-    vx_array _src_roi_width = nullptr; // TODO - To be removed
-    vx_array _src_roi_height = nullptr; // TODO - To be removed
+    vx_tensor _src_tensor_roi = nullptr, _dst_tensor_roi = nullptr;
     vx_node _node = nullptr;
     size_t _batch_size;
     MetaDataBatch* _meta_data_info;

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+
 #pragma once
 #include "parameter_factory.h"
 #include <thread>
@@ -27,7 +28,7 @@ THE SOFTWARE.
 
 struct CropWindow {
   unsigned x, y, H, W;
-  CropWindow() {}
+  CropWindow() { x = 0; y = 0; H = 1; W = 1; }
   CropWindow(unsigned x1, unsigned y1, unsigned h, unsigned w) { x = x1, y = y1, H = h, W = w ; }
   void set_shape(unsigned h, unsigned w) { H = h, W = w; }
 };

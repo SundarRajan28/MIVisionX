@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,7 @@ extern "C" RocalMetaData ROCAL_API_CALL rocalCreateTFReaderDetection(RocalContex
 /// \param rocal_context
 /// \param source_path path to the coco json file
 /// \return RocalMetaData object, can be used to inquire about the rocal's output (processed) tensors
-extern "C" RocalMetaData ROCAL_API_CALL rocalCreateCOCOReader(RocalContext rocal_context, const char* source_path, bool is_output, bool mask, bool is_box_encoder = false);
+extern "C" RocalMetaData ROCAL_API_CALL rocalCreateCOCOReader(RocalContext rocal_context, const char* source_path, bool is_output, bool is_box_encoder = false, bool is_box_iou_matcher = false);
 
 
 ///
@@ -133,6 +133,7 @@ extern "C" void ROCAL_API_CALL rocalGetOneHotImageLabels(RocalContext rocal_cont
 /// \param buf The user's buffer that will be filled with bounding box label info for the images in the output batch. It needs to be of size returned by a call to the rocalGetBoundingBoxCount
 extern "C" RocalTensorList ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext rocal_context);
 extern "C" RocalTensorList ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext rocal_context);
+extern "C" RocalTensorList ROCAL_API_CALL rocalGetMatchedIndices(RocalContext rocal_context);
 
 ///
 /// \param rocal_context
@@ -181,4 +182,8 @@ extern "C" void ROCAL_API_CALL rocalBoxEncoder(RocalContext p_context, std::vect
                                              std::vector<float>  &means , std::vector<float>  &stds ,  bool offset = false, float scale = 1.0);
 
 extern "C" RocalMetaData ROCAL_API_CALL rocalGetEncodedBoxesAndLables(RocalContext p_context, int num_encoded_boxes);
+
+extern "C" void ROCAL_API_CALL rocalBoxIOUMatcher(RocalContext p_context, std::vector<float> &anchors, float criteria,
+                                             float high_threshold, float low_threshold ,  bool allow_low_quality_matches = true);
+
 #endif //MIVISIONX_ROCAL_API_META_DATA_H

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -57,9 +57,9 @@ public:
     virtual decoded_image_info get_decode_image_info() = 0;
     virtual crop_image_info get_crop_image_info() = 0;
     virtual void set_prefetch_queue_depth(size_t prefetch_queue_depth) = 0;
-    virtual void shut_down() = 0;
     // introduce meta data reader
     virtual void set_random_bbox_data_reader(std::shared_ptr<RandomBBoxCrop_MetaDataReader> randombboxcrop_meta_data_reader) = 0;
+    virtual void shut_down() = 0;
     // virtual std::vector<size_t> get_sequence_start_frame_number() = 0;
     // virtual std::vector<std::vector<float>> get_sequence_frame_timestamps() = 0;
 };

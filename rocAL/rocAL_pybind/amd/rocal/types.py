@@ -1,3 +1,22 @@
+# Copyright (c) 2018 - 2023 Advanced Micro Devices, Inc. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 
 # RocalStatus
@@ -62,27 +81,27 @@ _known_types = {
 
     OK: ("OK", OK),
     CONTEXT_INVALID: ("CONTEXT_INVALID", CONTEXT_INVALID),
-   	RUNTIME_ERROR: ("RUNTIME_ERROR", RUNTIME_ERROR),
+    RUNTIME_ERROR: ("RUNTIME_ERROR", RUNTIME_ERROR),
     UPDATE_PARAMETER_FAILED: ("UPDATE_PARAMETER_FAILED", UPDATE_PARAMETER_FAILED),
-   	INVALID_PARAMETER_TYPE: ("INVALID_PARAMETER_TYPE", INVALID_PARAMETER_TYPE),
+    INVALID_PARAMETER_TYPE: ("INVALID_PARAMETER_TYPE", INVALID_PARAMETER_TYPE),
 
-   	GPU: ("GPU", GPU),
+    GPU: ("GPU", GPU),
     CPU: ("CPU", CPU),
-   	FLOAT: ("FLOAT", FLOAT),
+    FLOAT: ("FLOAT", FLOAT),
     FLOAT16: ("FLOAT16", FLOAT16),
     UINT8 : ("UINT8", UINT8),
 
-   	MAX_SIZE: ("MAX_SIZE", MAX_SIZE),
+    MAX_SIZE: ("MAX_SIZE", MAX_SIZE),
     USER_GIVEN_SIZE: ("USER_GIVEN_SIZE", USER_GIVEN_SIZE),
-   	MOST_FREQUENT_SIZE: ("MOST_FREQUENT_SIZE", MOST_FREQUENT_SIZE),
+    MOST_FREQUENT_SIZE: ("MOST_FREQUENT_SIZE", MOST_FREQUENT_SIZE),
     MAX_SIZE_ORIG: ("MAX_SIZE_ORIG", MAX_SIZE_ORIG),
     USER_GIVEN_SIZE_ORIG: ("USER_GIVEN_SIZE_ORIG", USER_GIVEN_SIZE_ORIG),
 
-   	NHWC: ("NHWC", NHWC),
+    NHWC: ("NHWC", NHWC),
     NCHW: ("NCHW", NCHW),
-   	BGR: ("BGR", BGR),
+    BGR: ("BGR", BGR),
     RGB: ("RGB", RGB),
-   	GRAY: ("GRAY", GRAY),
+    GRAY: ("GRAY", GRAY),
     RGB_PLANAR: ("RGB_PLANAR", RGB_PLANAR),
 
     HARDWARE_DECODE: ("HARDWARE_DECODE", HARDWARE_DECODE),

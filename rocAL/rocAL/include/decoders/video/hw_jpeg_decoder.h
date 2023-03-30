@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -64,7 +64,7 @@ public:
                            size_t max_decoded_width, size_t max_decoded_height,
                            size_t original_image_width, size_t original_image_height,
                            size_t &actual_decoded_width, size_t &actual_decoded_height,
-                           Decoder::ColorFormat desired_decoded_color_format, DecoderConfig config, bool keep_original_size = false) override;
+                           Decoder::ColorFormat desired_decoded_color_format, DecoderConfig config, bool keep_original_size=false) override;
 
     ~HWJpegDecoder() override;
     void initialize(int device_id=0);

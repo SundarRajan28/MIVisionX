@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,12 +48,15 @@ extern "C" RocalTensor ROCAL_API_CALL rocalCopyTensor(RocalContext context, Roca
 
 extern "C" RocalTensor ROCAL_API_CALL rocalResizeMirrorNormalize(RocalContext p_context, 
                                             RocalTensor p_input,
-                                            unsigned resize_height,
-                                            unsigned resize_width,
-                                            int interpolation_type,
+                                            unsigned dest_width, unsigned dest_height,
                                             std::vector<float> &mean,
                                             std::vector<float> &std_dev,
                                             bool is_output,
+                                            RocalResizeScalingMode scaling_mode = ROCAL_SCALING_MODE_STRETCH,
+                                            std::vector<unsigned> max_size = {},
+                                            unsigned resize_shorter = 0,
+                                            unsigned resize_longer = 0,
+                                            RocalResizeInterpolationType interpolation_type = ROCAL_LINEAR_INTERPOLATION,
                                             RocalIntParam mirror = NULL,
                                             RocalTensorLayout rocal_tensor_output_layout = ROCAL_NHWC,
                                             RocalTensorOutputType rocal_tensor_output_datatype = ROCAL_UINT8);

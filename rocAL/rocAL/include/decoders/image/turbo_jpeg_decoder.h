@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -85,5 +85,5 @@ private:
     bool _is_partial_decoder = false;
     std::vector <float> _bbox_coord;
     const static unsigned _max_scaling_factor = 8;
-  CropWindow _crop_window;
+    CropWindow _crop_window;
 };

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,9 @@ void FusedJpegCropSingleShardNode::init(unsigned shard_id, unsigned shard_count,
     reader_cfg.set_shard_id(shard_id);
     reader_cfg.set_batch_count(load_batch_count);
     reader_cfg.set_meta_data_reader(meta_data_reader);
+
     auto decoder_cfg = DecoderConfig(decoder_type);
+
     decoder_cfg.set_random_area(area_factor);
     decoder_cfg.set_random_aspect_ratio(aspect_ratio);
     decoder_cfg.set_num_attempts(num_attempts);

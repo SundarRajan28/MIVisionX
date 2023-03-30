@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@ class CropMirrorNormalizeMetaNode:public MetaNode
 {
     public:
         CropMirrorNormalizeMetaNode() {};
-        void update_parameters(MetaDataBatch* input_meta_data, bool segmentation)override;
+        void update_parameters(MetaDataBatch* input_meta_data)override;
         std::shared_ptr<CropMirrorNormalizeNode> _node = nullptr;
     private:
         void initialize();

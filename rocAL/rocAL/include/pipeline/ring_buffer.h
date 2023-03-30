@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -58,7 +58,8 @@ public:
     MetaDataNamePair& get_meta_data();
     MetaDataDimensionsBatch& get_meta_data_info();
     std::vector<void*> get_meta_read_buffers();
-    void set_meta_data(ImageNameBatch names, pMetaDataBatch meta_data, bool is_segmentation = false);
+    std::vector<void*> get_meta_write_buffers();
+    void set_meta_data(ImageNameBatch names, pMetaDataBatch meta_data);
     void rellocate_meta_data_buffer(void * buffer, size_t buffer_size, unsigned buff_idx);
     void reset();
     void pop();

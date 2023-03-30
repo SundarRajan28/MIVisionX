@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,41 @@ interpret_color_format(RocalColorFormat color_format )
     }
 }
 
+size_t compute_optimum_internal_batch_size(size_t user_batch_size)
+{
+    const unsigned MINIMUM_CPU_THREAD_COUNT = 2;
+    const unsigned DEFAULT_SMT_COUNT = 2;
+
+    unsigned THREAD_COUNT = std::thread::hardware_concurrency();
+    if(THREAD_COUNT >= MINIMUM_CPU_THREAD_COUNT)
+        INFO("Can run " + TOSTR(THREAD_COUNT) + " threads simultaneously on this machine")
+    else
+    {
+        THREAD_COUNT = MINIMUM_CPU_THREAD_COUNT;
+        WRN("hardware_concurrency() call failed assuming can run " + TOSTR(THREAD_COUNT) + " threads")
+    }
+    size_t ret = user_batch_size;
+    size_t CORE_COUNT = THREAD_COUNT / DEFAULT_SMT_COUNT;
+
+    if(CORE_COUNT <= 0)
+        THROW("Wrong core count detected less than 0")
+
+    for( size_t i = CORE_COUNT; i <= THREAD_COUNT; i++)
+        if(user_batch_size % i == 0)
+        {
+            ret = i;
+            break;
+        }
+
+    for(size_t i = CORE_COUNT; i > 1; i--)
+        if(user_batch_size % i == 0)
+        {
+            ret = i;
+            break;
+        }
+    INFO("User batch size "+ TOSTR(user_batch_size)+" Internal batch size set to "+ TOSTR(ret))
+    return ret;
+}
 
 Timing
 ImageReadAndDecode::timing()
@@ -72,6 +107,7 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
 {
     // Can initialize it to any decoder types if needed
     _batch_size = batch_size;
+    _internal_batch_size = compute_optimum_internal_batch_size(_batch_size);
     _compressed_buff.resize(batch_size);
     _decoder.resize(batch_size);
     _actual_read_size.resize(batch_size);

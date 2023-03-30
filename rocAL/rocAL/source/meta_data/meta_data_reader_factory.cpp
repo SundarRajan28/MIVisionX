@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ THE SOFTWARE.
 #include "meta_data_reader_factory.h"
 #include "exception.h"
 #include "coco_meta_data_reader.h"
+#include "text_file_meta_data_reader.h"
 #include "cifar10_meta_data_reader.h"
 #include "tf_meta_data_reader.h"
 #include "caffe_meta_data_reader.h"
@@ -58,6 +59,15 @@ std::shared_ptr<MetaDataReader> create_meta_data_reader(const MetaDataConfig& co
         }
             break;
 #endif
+        case MetaDataReaderType::TEXT_FILE_META_DATA_READER:
+        {
+            if(config.type() != MetaDataType::Label)
+                THROW("TEXT_FILE_META_DATA_READER can only be used to load labels")
+            auto ret = std::make_shared<TextFileMetaDataReader>();
+            ret->init(config);
+            return ret;
+        }
+            break;
         case MetaDataReaderType::TF_META_DATA_READER:
         {
             if(config.type() != MetaDataType::Label)

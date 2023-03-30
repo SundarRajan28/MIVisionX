@@ -1,6 +1,6 @@
 
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -63,6 +63,8 @@ vx_size tensor_data_size(RocalTensorDataType data_type) {
             return sizeof(vx_uint32);
         case RocalTensorDataType::INT32:
             return sizeof(vx_int32);
+        case RocalTensorDataType::FP64:
+            return sizeof(vx_float64);
         default:
             throw std::runtime_error("tensor data_type not valid");
     }
@@ -77,6 +79,8 @@ vx_enum interpret_tensor_data_type(RocalTensorDataType data_type) {
             return VX_TYPE_FLOAT16;
         case RocalTensorDataType::UINT8:
             return VX_TYPE_UINT8;
+        case RocalTensorDataType::FP64:
+            return VX_TYPE_FLOAT64;
         default:
             THROW("Unsupported Tensor type " + TOSTR(data_type))
     }
@@ -325,14 +329,17 @@ unsigned rocalTensor::copy_data(void *user_buffer) {
         hipError_t status;
         if ((status = hipMemcpyDtoD((void *)user_buffer, _mem_handle, _info.data_size())))
             THROW("copy_data::hipMemcpyDtoH failed: " + TOSTR(status))
-    } else
-#endif
-    {
+    } else if (_info._mem_type == RocalMemType::HOST) {
         // copy from host to device
         hipError_t status;
         if ((status = hipMemcpyHtoD((void *)user_buffer, _mem_handle, _info.data_size())))
             THROW("copy_data::hipMemcpyHtoD failed: " + TOSTR(status))
     }
+#else
+    if (_info._mem_type == RocalMemType::HOST)
+        memcpy(user_buffer, _mem_handle, _info.data_size());
+#endif
+
     return 0;
 }
 

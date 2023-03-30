@@ -2,7 +2,7 @@
 #
 # MIT License
 #
-# Copyright (c) 2018 - 2022 Advanced Micro Devices, Inc.
+# Copyright (c) 2018 - 2023 Advanced Micro Devices, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -52,10 +52,8 @@ find_package(AMDRPP QUIET)
 find_package(hip QUIET)
 
 # Application Includes & Libraries
-include_directories(${ROCM_PATH}/include/mivisionx/rocal)
-include_directories(${ROCM_PATH}/include/mivisionx)
-link_directories(${ROCM_PATH}/lib/)
-file(GLOB My_Source_Files ./*.cpp)
+include_directories(${ROCM_PATH}/${CMAKE_INSTALL_INCLUDEDIR}/mivisionx ${ROCM_PATH}/${CMAKE_INSTALL_INCLUDEDIR}/mivisionx/rocal)
+link_directories(${ROCM_PATH}/${CMAKE_INSTALL_LIBDIR})
 
 add_executable(${PROJECT_NAME} image_augmentation.cpp)
 

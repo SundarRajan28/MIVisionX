@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,9 @@ class SSDRandomCropMetaNode : public MetaNode
 {
 public:
     SSDRandomCropMetaNode(){};
-    void update_parameters(MetaDataBatch *input_meta_data, bool segmentation) override;
+    void update_parameters(MetaDataBatch *input_meta_data) override;
     std::shared_ptr<SSDRandomCropNode> _node = nullptr;
+    std::vector<uint32_t> in_width, in_height;
     void set_threshold(float threshold) { _threshold = threshold; }
     void set_num_of_attempts(int num_of_attempts){_num_of_attempts = num_of_attempts;}
     Parameter<float> *x_drift_factor;

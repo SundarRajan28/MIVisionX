@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -55,7 +55,8 @@ enum class RocalTensorDataType
     UINT8,
     INT8,
     UINT32,
-    INT32
+    INT32,
+    FP64
 };
 
 enum class RocalAffinity
@@ -134,7 +135,4 @@ struct Timing
     long long unsigned video_read_time= 0;
     long long unsigned video_decode_time= 0;
     long long unsigned video_process_time= 0;
-    long long unsigned image_output_routine_time= 0;
-    long long unsigned wait_if_empty_time= 0;
-    long long unsigned wait_if_full_time= 0;
 };

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -56,7 +56,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_BrightnessbatchPD(vx_graph graph, 
     }
     return node;
 }
-VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_ResizeMirrorNormalize(vx_graph graph, vx_tensor pSrc, vx_array srcROI, vx_tensor pDst, vx_array dstROI,vx_array dst_width,vx_array dst_height, vx_scalar interpolation_type, vx_array mean, vx_array std_dev, vx_array flip, vx_scalar is_packed, vx_scalar chnShift,vx_scalar layout, vx_scalar roiType, vx_uint32 nbatchSize)
+VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_ResizeMirrorNormalize(vx_graph graph, vx_tensor pSrc, vx_tensor srcROI, vx_tensor pDst, vx_array dst_width, vx_array dst_height, vx_scalar interpolation_type, vx_array mean, vx_array std_dev, vx_array flip, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType, vx_uint32 nbatchSize)
 {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
@@ -64,25 +64,21 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_ResizeMirrorNormalize(vx_graph gra
     {
         vx_uint32 dev_type = getGraphAffinity(graph);
         vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
-        vx_scalar NBATCHSIZE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &nbatchSize);
         vx_reference params[] = {
             (vx_reference)pSrc,
             (vx_reference)srcROI,
             (vx_reference)pDst,
-            (vx_reference)dstROI,
             (vx_reference)dst_width,
             (vx_reference)dst_height,
             (vx_reference)interpolation_type,
             (vx_reference)mean,
             (vx_reference)std_dev,
             (vx_reference)flip,
-            (vx_reference)is_packed,
-            (vx_reference)chnShift,
-            (vx_reference)layout,
+            (vx_reference)inputLayout,
+            (vx_reference)outputLayout,
             (vx_reference)roiType,
-            (vx_reference)NBATCHSIZE,
             (vx_reference)DEV_TYPE};
-        node = createNode(graph, VX_KERNEL_RPP_RESIZEMIRRORNORMALIZE, params, 16);
+        node = createNode(graph, VX_KERNEL_RPP_RESIZEMIRRORNORMALIZE, params, 13);
     }
     return node;
 }
@@ -876,6 +872,31 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_ResizebatchPD(vx_graph graph, vx_i
             (vx_reference)NBATCHSIZE,
             (vx_reference)DEV_TYPE};
         node = createNode(graph, VX_KERNEL_RPP_RESIZEBATCHPD, params, 8);
+    }
+    return node;
+}
+
+VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_Resizetensor(vx_graph graph, vx_image pSrc, vx_array srcImgWidth, vx_array srcImgHeight, vx_image pDst, vx_array dstImgWidth, vx_array dstImgHeight, vx_int32 interpolation_type, vx_uint32 nbatchSize)
+{
+    vx_node node = NULL;
+    vx_context context = vxGetContext((vx_reference)graph);
+    if (vxGetStatus((vx_reference)context) == VX_SUCCESS)
+    {
+        vx_uint32 dev_type = getGraphAffinity(graph);
+        vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
+        vx_scalar NBATCHSIZE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &nbatchSize);
+        vx_scalar INTERPOLATION_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_INT32, &interpolation_type);
+        vx_reference params[] = {
+            (vx_reference)pSrc,
+            (vx_reference)srcImgWidth,
+            (vx_reference)srcImgHeight,
+            (vx_reference)pDst,
+            (vx_reference)dstImgWidth,
+            (vx_reference)dstImgHeight,
+            (vx_reference)INTERPOLATION_TYPE,
+            (vx_reference)NBATCHSIZE,
+            (vx_reference)DEV_TYPE};
+        node = createNode(graph, VX_KERNEL_RPP_RESIZETENSOR, params, 9);
     }
     return node;
 }
@@ -1795,6 +1816,33 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_ResizeCropMirrorPD(vx_graph graph,
     return node;
 }
 
+VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_ResizeMirrorNormalizeTensor(vx_graph graph, vx_image pSrc, vx_array srcImgWidth, vx_array srcImgHeight, vx_image pDst, vx_array dstImgWidth, vx_array dstImgHeight, vx_array mean, vx_array std_dev, vx_array flip, vx_scalar chnShift, vx_uint32 nbatchSize)
+{
+    vx_node node = NULL;
+    vx_context context = vxGetContext((vx_reference)graph);
+    if(vxGetStatus((vx_reference)context) == VX_SUCCESS) {
+        vx_uint32 dev_type = getGraphAffinity(graph);
+        vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
+        vx_scalar NBATCHSIZE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &nbatchSize);
+        vx_reference params[] = {
+            (vx_reference) pSrc,
+            (vx_reference) srcImgWidth,
+            (vx_reference) srcImgHeight,
+            (vx_reference) pDst,
+            (vx_reference) dstImgWidth,
+            (vx_reference) dstImgHeight,
+            (vx_reference) mean,
+            (vx_reference) std_dev,
+            (vx_reference) flip,
+            (vx_reference) chnShift,
+            (vx_reference) NBATCHSIZE,
+            (vx_reference) DEV_TYPE
+        };
+        node = createNode(graph, VX_KERNEL_RPP_RESIZEMIRRORNORMALIZETENSOR, params, 12);
+    }
+    return node;
+}
+
 VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_CopybatchPD(vx_graph graph, vx_image pSrc, vx_image pDst)
 {
     vx_node node = NULL;
@@ -1832,23 +1880,23 @@ VX_API_CALL vx_node VX_API_CALL vxExtrppNode_NopbatchPD(vx_graph graph, vx_image
 
 VX_API_CALL vx_node VX_API_CALL  vxExtrppNode_SequenceRearrangebatchPD(vx_graph graph,vx_image pSrc,vx_image pDst, vx_array newOrder, vx_uint32 newSequenceLength, vx_uint32 sequenceLength, vx_uint32 sequenceCount)
 {
-    vx_node node = NULL;
-    vx_context context = vxGetContext((vx_reference)graph);
-    if(vxGetStatus((vx_reference)context) == VX_SUCCESS) {
-        vx_uint32 dev_type = getGraphAffinity(graph);
-        vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
-        vx_scalar NEWSEQUENCELENGTH = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &newSequenceLength);
-        vx_scalar SEQUENCELENGTH = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &sequenceLength);
-        vx_scalar SEQUENCECOUNT = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &sequenceCount);
-        vx_reference params[] = {
-            (vx_reference) pSrc,
-            (vx_reference) pDst,
-            (vx_reference) newOrder,
-            (vx_reference) NEWSEQUENCELENGTH,
-            (vx_reference) SEQUENCELENGTH,
-            (vx_reference) SEQUENCECOUNT,
-            (vx_reference) DEV_TYPE
-        };
+	vx_node node = NULL;
+	vx_context context = vxGetContext((vx_reference)graph);
+	if(vxGetStatus((vx_reference)context) == VX_SUCCESS) {
+		vx_uint32 dev_type = getGraphAffinity(graph);
+		vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
+		vx_scalar NEWSEQUENCELENGTH = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &newSequenceLength);
+		vx_scalar SEQUENCELENGTH = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &sequenceLength);
+		vx_scalar SEQUENCECOUNT = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &sequenceCount);
+		vx_reference params[] = {
+			(vx_reference) pSrc,
+			(vx_reference) pDst,
+			(vx_reference) newOrder,
+			(vx_reference) NEWSEQUENCELENGTH,
+			(vx_reference) SEQUENCELENGTH,
+			(vx_reference) SEQUENCECOUNT,
+			(vx_reference) DEV_TYPE
+		};
          node = createNode(graph, VX_KERNEL_RPP_SEQUENCEREARRANGEBATCHPD, params, 7);
     }
     return node;
@@ -1876,60 +1924,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_Brightness(vx_graph graph, vx_tens
     }
     return node;
 }
-
-VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_GammaCorrection(vx_graph graph, vx_tensor pSrc, vx_array srcImgWidth, vx_array srcImgHeight, vx_tensor pDst, vx_array gamma, vx_uint32 nbatchSize)
-{
-    vx_node node = NULL;
-    vx_context context = vxGetContext((vx_reference)graph);
-    if (vxGetStatus((vx_reference)context) == VX_SUCCESS)
-    {
-        vx_uint32 dev_type = getGraphAffinity(graph);
-        vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
-        vx_scalar NBATCHSIZE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &nbatchSize);
-        vx_reference params[] = {
-            (vx_reference)pSrc,
-            (vx_reference)srcImgWidth,
-            (vx_reference)srcImgHeight,
-            (vx_reference)pDst,
-            (vx_reference)gamma,
-            (vx_reference)NBATCHSIZE,
-            (vx_reference)DEV_TYPE};
-        node = createNode(graph, VX_KERNEL_RPP_GAMMACORRECTION, params, 7);
-    }
-    return node;
-}
-
-// VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_CropMirrorNormalize(vx_graph graph, vx_tensor pSrc, vx_array srcROI, vx_tensor pDst, vx_array dstROI,vx_array crop_w,vx_array crop_h, vx_array x1, vx_array y1, vx_array mean, vx_array std_dev, vx_array flip, vx_scalar is_packed, vx_scalar chnShift,vx_scalar layout, vx_scalar roiType, vx_uint32 nbatchSize)
-// {
-//     vx_node node = NULL;
-//     vx_context context = vxGetContext((vx_reference)graph);
-//     if (vxGetStatus((vx_reference)context) == VX_SUCCESS)
-//     {
-//         vx_uint32 dev_type = getGraphAffinity(graph);
-//         vx_scalar DEV_TYPE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &dev_type);
-//         vx_scalar NBATCHSIZE = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &nbatchSize);
-//         vx_reference params[] = {
-//             (vx_reference)pSrc,
-//             (vx_reference)srcROI,
-//             (vx_reference)pDst,
-//             (vx_reference)dstROI,
-//             (vx_reference)crop_w,
-//             (vx_reference)crop_h,
-//             (vx_reference)x1,
-//             (vx_reference)y1,
-//             (vx_reference)mean,
-//             (vx_reference)std_dev,
-//             (vx_reference)flip,
-//             (vx_reference)is_packed,
-//             (vx_reference)chnShift,
-//             (vx_reference)layout,
-//             (vx_reference)roiType,
-//             (vx_reference)NBATCHSIZE,
-//             (vx_reference)DEV_TYPE};
-//         node = createNode(graph, VX_KERNEL_RPP_CROPMIRRORNORMALIZE, params, 17);
-//     }
-//     return node;
-// }
 
 VX_API_ENTRY vx_node VX_API_CALL vxExtrppNode_CropMirrorNormalize(vx_graph graph, vx_tensor pSrc, vx_tensor srcROI, vx_tensor pDst, vx_array multiplier, vx_array offset, vx_array flip, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType)
 {
@@ -2009,7 +2003,7 @@ VX_API_CALL vx_node VX_API_CALL vxExtrppNode_Nop(vx_graph graph, vx_tensor pSrc,
             (vx_reference)pSrc,
             (vx_reference)pDst,
             (vx_reference)DEV_TYPE};
-        node = createNode(graph, VX_KERNEL_RPP_NOP, params, 3);
+        node = createNode(graph, VX_KERNEL_RPP_NOPBATCHPD, params, 3);
     }
     return node;
 }

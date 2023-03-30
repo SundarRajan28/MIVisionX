@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -50,9 +50,6 @@ struct TimingInfo
     long long unsigned decode_time;
     long long unsigned process_time;
     long long unsigned transfer_time;
-    long long unsigned output_routine_time;
-    long long unsigned wait_if_empty_time;
-    long long unsigned wait_if_full_time;
 };
 enum RocalStatus
 {
@@ -119,7 +116,7 @@ enum RocalDecoderType
 {
     ROCAL_DECODER_TJPEG = 0,
     ROCAL_DECODER_OPENCV = 1,
-    ROCAL_DECODER_HW_JEPG = 2,
+    ROCAL_DECODER_HW_JPEG = 2,
     ROCAL_DECODER_VIDEO_FFMPEG_SW = 3,
     ROCAL_DECODER_VIDEO_FFMPEG_HW = 4,
 };

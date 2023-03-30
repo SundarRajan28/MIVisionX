@@ -1,3 +1,23 @@
+# Copyright (c) 2018 - 2023 Advanced Micro Devices, Inc. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import numpy as np
 import rocal_pybind as b
 import amd.rocal.types as types
@@ -47,13 +67,16 @@ class RALIGenericIteratorDetection(object):
         self.bs = pipeline._batch_size
         color_format = b.getOutputColorFormat(self.loader._handle)
         self.p = (1 if (color_format == int(types.GRAY)) else 3)
-
         if self.tensor_dtype == types.FLOAT:
-            self.out = np.zeros(( self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype = "float32")
+            data_type="float32"
         elif self.tensor_dtype == types.FLOAT16:
-            self.out = np.zeros(( self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype = "float16")
-        # self.labels = np.zeros((self.bs),dtype = "int32")
-
+            data_type="float16"
+        
+        if(types.NHWC == self.tensor_format):
+            self.out = np.zeros(( self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype = data_type)
+        else: 
+            self.out = np.zeros(( self.bs*self.n, self.p, int(self.h/self.bs), self.w), dtype = data_type)
+                
     def next(self):
         return self.__next__()
 
@@ -68,12 +91,11 @@ class RALIGenericIteratorDetection(object):
 
         if self.loader.run() != 0:
             raise StopIteration
-
+        
         if(types.NCHW == self.tensor_format):
             self.loader.copyToTensorNCHW(self.out, self.multiplier, self.offset, self.reverse_channels, int(self.tensor_dtype))
         else:
             self.loader.copyToTensorNHWC(self.out, self.multiplier, self.offset, self.reverse_channels, int(self.tensor_dtype))
-        
         if(self.loader._name == "TFRecordReaderDetection"):
             self.bbox_list =[]
             self.label_list=[]
@@ -128,11 +150,11 @@ class RALIGenericIteratorDetection(object):
         elif (self.loader._name == "TFRecordReaderClassification"):
             if(self.loader._oneHotEncoding == True):
                 self.labels = np.zeros((self.bs)*(self.loader._numOfClasses),dtype = "int32")
-                self.loader.GetOneHotEncodedLabels(self.labels)
+                self.loader.GetOneHotEncodedLabels(self.labels, device="cpu")
                 self.labels = np.reshape(self.labels, (-1, self.bs, self.loader._numOfClasses))
             else:
                 self.labels = np.zeros((self.bs),dtype = "int32")
-                self.loader.GetImageLabels(self.labels)
+                self.loader.getImageLabels(self.labels)
 
             if self.tensor_dtype == types.FLOAT:
                 return self.out.astype(np.float32), self.labels

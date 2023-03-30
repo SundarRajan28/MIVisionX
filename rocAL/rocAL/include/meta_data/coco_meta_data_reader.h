@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,16 +44,16 @@ public:
 private:
     BoundingBoxBatch* _output;
     std::string _path;
-    bool _mask;
     int meta_data_reader_type;
-    void add(std::string image_name, BoundingBoxCords bbox, BoundingBoxLabels b_labels, ImgSize image_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count);
     void add(std::string image_name, BoundingBoxCords bbox, BoundingBoxLabels b_labels, ImgSize image_size);
     bool exists(const std::string &image_name) override;
     std::map<std::string, std::shared_ptr<MetaData>> _map_content;
     std::map<std::string, std::shared_ptr<MetaData>>::iterator _itr;
     std::map<std::string, ImgSize> _map_img_sizes;
+    std::map<int, std::string> _map_img_names;
     std::map<std::string, ImgSize> ::iterator itr;
     std::map<int, int> _label_info;
     std::map<int, int> ::iterator _it_label;
     TimingDBG _coco_metadata_read_time;
 };
+

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,9 @@ THE SOFTWARE.
 #include "parameter_crop_factory.h"
 #include "meta_data_reader.h"
 #include "coco_meta_data_reader.h"
-// #include "caffe_meta_data_reader_detection.h"
-// #include "caffe2_meta_data_reader_detection.h"
-// #include "tf_meta_data_reader_detection.h"
+#include "caffe_meta_data_reader_detection.h"
+#include "caffe2_meta_data_reader_detection.h"
+#include "tf_meta_data_reader_detection.h"
 #include <random>
 
 // todo:: move this to common header

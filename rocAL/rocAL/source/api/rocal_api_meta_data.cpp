@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,6 @@ THE SOFTWARE.
 #include "commons.h"
 #include "context.h"
 #include "rocal_api.h"
-#define MAX_BUFFER 10000
 
 void
 ROCAL_API_CALL rocalRandomBBoxCrop(RocalContext p_context, bool all_boxes_overlap, bool no_crop, RocalFloatParam p_aspect_ratio, bool has_shape, int crop_width, int crop_height, int num_attempts, RocalFloatParam p_scaling, int total_num_attempts, int64_t seed)
@@ -64,6 +63,7 @@ ROCAL_API_CALL rocalCreateLabelReader(RocalContext p_context, const char* source
     auto context = static_cast<Context*>(p_context);
 
     return context->master_graph->create_label_reader(source_path, MetaDataReaderType::FOLDER_BASED_LABEL_READER);
+
 }
 
 RocalMetaData
@@ -73,15 +73,16 @@ ROCAL_API_CALL rocalCreateVideoLabelReader(RocalContext p_context, const char* s
     auto context = static_cast<Context*>(p_context);
 
     return context->master_graph->create_video_label_reader(source_path, MetaDataReaderType::VIDEO_LABEL_READER, sequence_length, frame_step, frame_stride, file_list_frame_num);
+
 }
 
 RocalMetaData
-ROCAL_API_CALL rocalCreateCOCOReader(RocalContext p_context, const char* source_path, bool is_output, bool mask, bool is_box_encoder) {
+ROCAL_API_CALL rocalCreateCOCOReader(RocalContext p_context, const char* source_path, bool is_output, bool is_box_encoder, bool is_box_iou_matcher) {
     if (!p_context)
         THROW("Invalid rocal context passed to rocalCreateCOCOReader")
     auto context = static_cast<Context*>(p_context);
 
-    return context->master_graph->create_coco_meta_data_reader(source_path, is_output, mask, MetaDataReaderType::COCO_META_DATA_READER,  MetaDataType::BoundingBox, is_box_encoder);
+    return context->master_graph->create_coco_meta_data_reader(source_path, is_output, MetaDataReaderType::COCO_META_DATA_READER,  MetaDataType::BoundingBox, is_box_encoder, is_box_iou_matcher);
 }
 
 RocalMetaData
@@ -93,12 +94,12 @@ ROCAL_API_CALL rocalCreateTFReader(RocalContext p_context, const char* source_pa
     std::string user_key_for_label_str(user_key_for_label);
     std::string user_key_for_filename_str(user_key_for_filename);
 
+
     std::map<std::string, std::string> feature_key_map = {
         {"image/class/label", user_key_for_label_str},
         {"image/filename",user_key_for_filename_str}
     };
-    return context->master_graph->create_tf_record_meta_data_reader(source_path , MetaDataReaderType::TF_META_DATA_READER , MetaDataType::Label, feature_key_map);
-}
+    return context->master_graph->create_tf_record_meta_data_reader(source_path , MetaDataReaderType::TF_META_DATA_READER , MetaDataType::Label, feature_key_map);}
 
 RocalMetaData
 ROCAL_API_CALL rocalCreateTFReaderDetection(RocalContext p_context, const char* source_path, bool is_output,
@@ -131,57 +132,6 @@ ROCAL_API_CALL rocalCreateTFReaderDetection(RocalContext p_context, const char* 
     return context->master_graph->create_tf_record_meta_data_reader(source_path , MetaDataReaderType::TF_DETECTION_META_DATA_READER,  MetaDataType::BoundingBox, feature_key_map);
 }
 
-RocalMetaData 
-ROCAL_API_CALL rocalCreateCaffeLMDBLabelReader(RocalContext p_context, const char *source_path)
-{
-    if (!p_context)
-        THROW("Invalid rocal context passed to rocalCreateCaffeLMDBLabelReader")
-    auto context = static_cast<Context *>(p_context);
-    return context->master_graph->create_caffe_lmdb_record_meta_data_reader(source_path, MetaDataReaderType::CAFFE_META_DATA_READER, MetaDataType::Label);
-}
-
-RocalMetaData 
-ROCAL_API_CALL rocalCreateCaffeLMDBReaderDetection(RocalContext p_context, const char *source_path)
-{
-    if (!p_context)
-        THROW("Invalid rocal context passed to rocalCreateCaffeLMDBReaderDetection")
-    auto context = static_cast<Context *>(p_context);
-    return context->master_graph->create_caffe_lmdb_record_meta_data_reader(source_path, MetaDataReaderType::CAFFE_DETECTION_META_DATA_READER, MetaDataType::BoundingBox);
-}
-
-RocalMetaData
-ROCAL_API_CALL rocalCreateCaffe2LMDBLabelReader(RocalContext p_context, const char *source_path, bool is_output)
-{
-
-    if (!p_context)
-        THROW("Invalid rocal context passed to rocalCreateCaffe2LMDBLabelReader")
-
-    auto context = static_cast<Context *>(p_context);
-    return context->master_graph->create_caffe2_lmdb_record_meta_data_reader(source_path, MetaDataReaderType::CAFFE2_META_DATA_READER, MetaDataType::Label);
-}
-
-RocalMetaData
-ROCAL_API_CALL
-rocalCreateCaffe2LMDBReaderDetection(RocalContext p_context, const char *source_path, bool is_output)
-{
-    if (!p_context)
-        THROW("Invalid rocal context passed to rocalCreateCaffe2LMDBReaderDetection")
-    auto context = static_cast<Context *>(p_context);
-
-    return context->master_graph->create_caffe2_lmdb_record_meta_data_reader(source_path, MetaDataReaderType::CAFFE2_DETECTION_META_DATA_READER, MetaDataType::BoundingBox);
-}
-
-RocalMetaData
-ROCAL_API_CALL rocalCreateTextCifar10LabelReader(RocalContext p_context, const char* source_path, const char* file_prefix) {
-
-    if (!p_context)
-        THROW("Invalid rocal context passed to rocalCreateTextCifar10LabelReader")
-    auto context = static_cast<Context*>(p_context);
-
-    return context->master_graph->create_cifar10_label_reader(source_path, file_prefix);
-
-}
-
 RocalMetaData
 ROCAL_API_CALL rocalCreateMXNetReader(RocalContext p_context, const char* source_path, bool is_output)
 {
@@ -190,6 +140,16 @@ ROCAL_API_CALL rocalCreateMXNetReader(RocalContext p_context, const char* source
     auto context = static_cast<Context*>(p_context);
 
     return context->master_graph->create_mxnet_label_reader(source_path, is_output);
+
+}
+
+RocalMetaData
+ROCAL_API_CALL rocalCreateTextFileBasedLabelReader(RocalContext p_context, const char* source_path) {
+
+    if (!p_context)
+        THROW("Invalid rocal context passed to rocalCreateTextFileBasedLabelReader")
+    auto context = static_cast<Context*>(p_context);
+    return context->master_graph->create_label_reader(source_path, MetaDataReaderType::TEXT_FILE_META_DATA_READER);
 
 }
 
@@ -278,12 +238,12 @@ ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext p_context)
 }
 
 RocalTensorList
-ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context)
+ROCAL_API_CALL rocalGetMatchedIndices(RocalContext p_context)
 {
     if (!p_context)
-        THROW("Invalid rocal context passed to rocalGetBoundingBoxCords")
+        THROW("Invalid rocal context passed to rocalGetMatchedIndices")
     auto context = static_cast<Context*>(p_context);
-    return context->master_graph->bbox_meta_data();
+    return context->master_graph->matches_meta_data();
 }
 
 #if 0 // Commented out for now
@@ -321,64 +281,30 @@ ROCAL_API_CALL rocalGetOneHotImageLabels(RocalContext p_context, int* buf, int n
         }
 
     }
-    memcpy(buf,one_hot_encoded, sizeof(int) * meta_data_batch_size * numOfClasses);
+    if (dest == 0) // HOST DESTINATION
+        memcpy(buf, one_hot_encoded, sizeof(int) * meta_data_batch_size * numOfClasses);
+    else
+    {
+#if ENABLE_HIP
+        hipError_t err = hipMemcpy(buf, one_hot_encoded, sizeof(int) * meta_data_batch_size * numOfClasses, hipMemcpyHostToDevice);
+        if (err != hipSuccess)
+            THROW("Invalid Data Pointer: Error copying to device memory")
+#elif ENABLE_OPENCL
+        if(clEnqueueWriteBuffer(context->master_graph->get_ocl_cmd_q(), (cl_mem)buf, CL_TRUE, 0, sizeof(int) * meta_data_batch_size * numOfClasses, one_hot_encoded, 0, NULL, NULL) != CL_SUCCESS)
+            THROW("Invalid Data Pointer: Error copying to device memory")
+
+#endif
+    }
 }
 #endif
 
-unsigned
-ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* buf)
-{
-    if (p_context == nullptr)
-        THROW("Invalid rocal context passed to rocalGetMaskCount")
-    unsigned size = 0, count = 0;
-    auto context = static_cast<Context*>(p_context);
-    auto meta_data = context->master_graph->meta_data();
-    size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
-    if(context->user_batch_size() != meta_data_batch_size)
-        THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
-    if(!meta_data.second)
-        THROW("No mask has been loaded for this output image")
-    for(unsigned i = 0; i < meta_data_batch_size; i++)
-    {
-        unsigned object_count = meta_data.second->get_bb_labels_batch()[i].size();
-        for(unsigned int j = 0; j < object_count; j++) {
-            unsigned polygon_count = meta_data.second->get_mask_polygons_count_batch()[i][j];
-            buf[count++] = polygon_count;
-            size += polygon_count;
-        }
-    }
-    return size;
-}
-
 RocalTensorList
-ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount)
+ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context)
 {
-    if (p_context == nullptr)
-        THROW("Invalid rocal context passed to rocalGetMaskCoordinates")
+    if (!p_context)
+        THROW("Invalid rocal context passed to rocalGetBoundingBoxCords")
     auto context = static_cast<Context*>(p_context);
-    auto meta_data = context->master_graph->meta_data();
-    size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
-    if(context->user_batch_size() != meta_data_batch_size)
-        THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
-    if(!meta_data.second)
-        THROW("No mask has been loaded for this output image")
-    int size = 0;
-    for(unsigned image_idx = 0; image_idx < meta_data_batch_size; image_idx++)
-    {
-        int poly_size = 0;
-        unsigned object_count = meta_data.second->get_bb_labels_batch()[image_idx].size();
-        for(unsigned int i = 0; i < object_count; i++)
-        {
-            unsigned polygon_count = meta_data.second->get_mask_polygons_count_batch()[image_idx][i];
-            for(unsigned int j = 0; j < polygon_count; j++)
-            {
-                unsigned polygon_size = meta_data.second->get_mask_vertices_count_batch()[image_idx][i][j];
-                bufcount[size++] = polygon_size;
-                poly_size += polygon_size;
-            }
-        }
-    }
-    return context->master_graph->mask_meta_data();
+    return context->master_graph->bbox_meta_data();
 }
 
 void
@@ -399,7 +325,45 @@ ROCAL_API_CALL rocalGetImageSizes(RocalContext p_context, int* buf)
     for(unsigned i = 0; i < meta_data_batch_size; i++)
     {
         memcpy(buf, &(img_sizes[i]), sizeof(ImgSize));
-        buf += 2;
+        buf += 3;
+    }
+}
+
+RocalMetaData
+ROCAL_API_CALL rocalCreateTextCifar10LabelReader(RocalContext p_context, const char* source_path, const char* file_prefix) {
+
+    if (!p_context)
+        THROW("Invalid rocal context passed to rocalCreateTextCifar10LabelReader")
+    auto context = static_cast<Context*>(p_context);
+
+    return context->master_graph->create_cifar10_label_reader(source_path, file_prefix);
+
+}
+
+void
+ROCAL_API_CALL rocalGetSequenceStartFrameNumber(RocalContext p_context,  unsigned int* buf)
+{
+    if (!p_context)
+        THROW("Invalid rocal context passed to rocalGetSequenceStartFrameNumber")
+    auto context = static_cast<Context*>(p_context);
+    std::vector<size_t> sequence_start_frame;
+    context->master_graph->sequence_start_frame_number(sequence_start_frame);
+    std::copy(sequence_start_frame.begin(), sequence_start_frame.end(), buf);
+}
+
+void
+ROCAL_API_CALL rocalGetSequenceFrameTimestamps(RocalContext p_context,  float* buf)
+{
+    if (!p_context)
+        THROW("Invalid rocal context passed to rocalGetSequenceFrameTimestamps")
+    auto context = static_cast<Context*>(p_context);
+    std::vector<std::vector<float>> sequence_frame_timestamps;
+    context->master_graph->sequence_frame_timestamps(sequence_frame_timestamps);
+    auto sequence_length = sequence_frame_timestamps[0].size();
+    for (unsigned int i = 0; i < sequence_frame_timestamps.size(); i++)
+    {
+        std::copy(sequence_frame_timestamps[i].begin(), sequence_frame_timestamps[i].end(), buf);
+        buf = buf + sequence_length;
     }
 }
 
@@ -410,6 +374,15 @@ void ROCAL_API_CALL rocalBoxEncoder(RocalContext p_context, std::vector<float>& 
         THROW("Invalid rocal context passed to rocalBoxEncoder")
     auto context = static_cast<Context *>(p_context);
     context->master_graph->box_encoder(anchors, criteria, means, stds, offset, scale);
+}
+
+void ROCAL_API_CALL rocalBoxIOUMatcher(RocalContext p_context, std::vector<float>& anchors, float criteria,
+                                  float high_threshold, float low_threshold ,  bool allow_low_quality_matches)
+{
+    if (!p_context)
+        THROW("Invalid rocal context passed to rocalBoxIOUMatcher")
+    auto context = static_cast<Context *>(p_context);
+    context->master_graph->box_iou_matcher(anchors, criteria, high_threshold, low_threshold, allow_low_quality_matches);
 }
 
 // RocalMetaData
@@ -433,10 +406,5 @@ ROCAL_API_CALL rocalGetEncodedBoxesAndLables(RocalContext p_context, int num_enc
     }
     auto context = static_cast<Context *>(p_context);
     return context->master_graph->get_bbox_encoded_buffers(num_encoded_boxes);
-    // if (!*boxes_buf_ptr || !*labels_buf_ptr)
-    // {
-    //     WRN("rocalGetEncodedBoxesAndLables::Empty tensors returned from rocAL")
-    // }
 }
-
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +27,9 @@ THE SOFTWARE.
 class BoundingBoxGraph : public MetaDataGraph
 {
 public:
-    void process(MetaDataBatch* meta_data, bool segmentation) override;
-    void update_meta_data(MetaDataBatch* meta_data, decoded_image_info decode_image_info, bool segmentation) override;
+    void process(MetaDataBatch* meta_data) override;
     void update_random_bbox_meta_data(MetaDataBatch* meta_data, decoded_image_info decoded_image_info,crop_image_info crop_image_info) override;
     void update_box_encoder_meta_data(std::vector<float> *anchors, pMetaDataBatch full_batch_meta_data ,float criteria, bool offset , float scale, std::vector<float>& means, std::vector<float>& stds) override;
+    void update_box_iou_matcher(std::vector<double> *anchors, int * matches_idx_buffer, pMetaDataBatch full_batch_meta_data, float criteria, float high_threshold, float low_threshold, bool allow_low_quality_matches) override;
 };
 

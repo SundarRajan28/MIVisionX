@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,18 @@ THE SOFTWARE.
 #pragma once
 #include <string>
 #include <map>
+#include <vector>
+#include <tuple>
 #include "meta_data_reader.h"
 #include "video_properties.h"
 #include "tensor.h"
 
-#define E(expr) CHECK_CAFFE((rc = (expr)) == MDB_SUCCESS, #expr)
-#define CHECK_CAFFE(test, msg) \
-    ;                          \
-    ((test) ? (void)0 : ((void)fprintf(stderr, "%s:%d: %s: %s\n", __FILE__, __LINE__, msg, mdb_strerror(rc)), abort()))
+#define CHECK_LMDB_RETURN_STATUS(status)          \
+    do {                            \
+        if(status != MDB_SUCCESS)   \
+            THROW("LMDB error, " + std::string(__FILE__) + ":" + std::to_string(__LINE__) + " " + \
+            #status + ":" + std::string(mdb_strerror(status)));    \
+    } while (0)
 
 enum class StorageType
 {
@@ -40,10 +44,14 @@ enum class StorageType
     CAFFE_LMDB_RECORD = 3,
     CAFFE2_LMDB_RECORD = 4,
     COCO_FILE_SYSTEM = 5,
-    VIDEO_FILE_SYSTEM = 6,
+    SEQUENCE_FILE_SYSTEM = 6,
     MXNET_RECORDIO = 7,
+<<<<<<< HEAD
     SEQUENCE_FILE_SYSTEM = 8,
     NUMPY_DATA = 9
+=======
+    VIDEO_FILE_SYSTEM = 8,
+>>>>>>> eefaf2b69131edff65d019e091145b6282ff8edd
 };
 
 #ifdef ROCAL_VIDEO
@@ -74,16 +82,16 @@ struct ReaderConfig
     void set_shuffle(bool shuffle) { _shuffle = shuffle; }
     void set_loop(bool loop) { _loop = loop; }
     void set_meta_data_reader(std::shared_ptr<MetaDataReader> meta_data_reader) { _meta_data_reader = meta_data_reader; }
-    size_t get_shard_count() { return _shard_count; }
-    size_t get_shard_id() { return _shard_id; }
-    size_t get_batch_size() { return _batch_count; }
-    std::string path() { return _path; }
     void set_sequence_length(unsigned sequence_length) { _sequence_length = sequence_length; }
     void set_frame_step(unsigned step) { _sequence_frame_step = step; }
     void set_frame_stride(unsigned stride) { _sequence_frame_stride = stride; }
+    size_t get_shard_count() { return _shard_count; }
+    size_t get_shard_id() { return _shard_id; }
+    size_t get_batch_size() { return _batch_count; }
     size_t get_sequence_length() { return _sequence_length; }
     size_t get_frame_step() { return _sequence_frame_step; }
     size_t get_frame_stride() { return _sequence_frame_stride; }
+    std::string path() { return _path; }
 #ifdef ROCAL_VIDEO
     // void set_total_frames_count(size_t total) { _total_frames_count = total; }
     void set_video_properties(VideoProperties video_prop) { _video_prop = video_prop;}
@@ -94,7 +102,7 @@ struct ReaderConfig
     std::map<std::string, std::string> feature_key_map() { return _feature_key_map; }
     void set_file_prefix(const std::string &prefix) { _file_prefix = prefix; }
     std::string file_prefix() { return _file_prefix; }
-    std::shared_ptr<MetaDataReader> meta_data_reader() {return _meta_data_reader;}
+    std::shared_ptr<MetaDataReader> meta_data_reader() { return _meta_data_reader; }
 private:
     StorageType _type = StorageType::FILE_SYSTEM;
     std::string _path = "";
@@ -103,13 +111,13 @@ private:
     size_t _shard_count = 1;
     size_t _shard_id = 0;
     size_t _batch_count = 1;     //!< The reader will repeat images if necessary to be able to have images in multiples of the _batch_count.
+    size_t _sequence_length = 1; // Video reader module sequence length
+    size_t _sequence_frame_step;
+    size_t _sequence_frame_stride = 1;
     bool _shuffle = false;
     bool _loop = false;
     std::string _file_prefix = ""; //!< to read only files with prefix. supported only for cifar10_data_reader and tf_record_reader
     std::shared_ptr<MetaDataReader> _meta_data_reader = nullptr;
-    size_t _sequence_length = 1; // Video reader module sequence length
-    size_t _sequence_frame_step;
-    size_t _sequence_frame_stride = 1;
 #ifdef ROCAL_VIDEO
     VideoProperties _video_prop;
     // size_t _total_frames_count;

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -67,14 +67,14 @@ std::shared_ptr<Reader> create_reader(ReaderConfig config) {
             return ret;
         }
         break;
-        // case StorageType::UNCOMPRESSED_BINARY_DATA:
-        // {
-        //     auto ret = std::make_shared<CIFAR10DataReader>();
-        //     if(ret->initialize(config) != Reader::Status::OK)
-        //         throw std::runtime_error("CFar10 data reader cannot access the storage");
-        //     return ret;
-        // }
-        // break;
+        case StorageType::UNCOMPRESSED_BINARY_DATA:
+        {
+            auto ret = std::make_shared<CIFAR10DataReader>();
+            if(ret->initialize(config) != Reader::Status::OK)
+                throw std::runtime_error("CFar10 data reader cannot access the storage");
+            return ret;
+        }
+        break;
         case StorageType::CAFFE_LMDB_RECORD:
         {
             auto ret = std::make_shared<CaffeLMDBRecordReader>();
@@ -91,14 +91,14 @@ std::shared_ptr<Reader> create_reader(ReaderConfig config) {
             return ret;
         }
         break;
-        // case StorageType::MXNET_RECORDIO:
-        // {
-        //     auto ret = std::make_shared<MXNetRecordIOReader>();
-        //     if(ret->initialize(config) != Reader::Status::OK)
-        //         throw std::runtime_error("MXNetRecordIOReader cannot access the storage");
-        //     return ret;
-        // }
-        // break;
+        case StorageType::MXNET_RECORDIO:
+        {
+            auto ret = std::make_shared<MXNetRecordIOReader>();
+            if(ret->initialize(config) != Reader::Status::OK)
+                throw std::runtime_error("MXNetRecordIOReader cannot access the storage");
+            return ret;
+        }
+        break;
          case StorageType::NUMPY_DATA:
         {
             auto ret = std::make_shared<NumpyDataReader>();

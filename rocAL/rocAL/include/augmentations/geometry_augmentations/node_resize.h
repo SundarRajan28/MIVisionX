@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,23 +23,21 @@ THE SOFTWARE.
 #pragma once
 #include "node.h"
 #include "rocal_api_types.h"
-//final
-class ResizeNode : public Node
-{
+
+class ResizeNode : public Node {
 public:
     ResizeNode(const std::vector<rocalTensor *> &inputs, const std::vector<rocalTensor *> &outputs);
     ResizeNode() = delete;
     unsigned int get_dst_width() { return _outputs[0]->info().max_shape()[0]; }
     unsigned int get_dst_height() { return _outputs[0]->info().max_shape()[1]; }
     void init(unsigned dest_width, unsigned dest_height, RocalResizeScalingMode scaling_mode,
-              std::vector<unsigned> max_size, RocalResizeInterpolationType interpolation_type);
+              const std::vector<unsigned>& max_size, RocalResizeInterpolationType interpolation_type);
     void adjust_out_roi_size();
 protected:
     void create_node() override;
     void update_node() override;
 private:
     vx_array  _dst_roi_width , _dst_roi_height;
-    unsigned _layout, _roi_type;
     int _interpolation_type;
     RocalResizeScalingMode _scaling_mode;
     unsigned _src_width, _src_height, _dst_width, _dst_height, _out_width, _out_height;

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -95,7 +95,7 @@ private:
     bool decoder_keep_original;
     std::vector<std::vector <float>> _bbox_coords, _crop_coords_batch;
     std::shared_ptr<RandomBBoxCrop_MetaDataReader> _randombboxcrop_meta_data_reader = nullptr;
-    // pCropCord _CropCord;
+    pCropCord _CropCord;
     RocalRandomCropDecParam *_random_crop_dec_param = nullptr;
 };
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ void CropMetaNode::initialize()
     _x1_val.resize(_batch_size);
     _y1_val.resize(_batch_size);
 }
-void CropMetaNode::update_parameters(MetaDataBatch* input_meta_data, bool segmentation)
+void CropMetaNode::update_parameters(MetaDataBatch* input_meta_data)
 {
     initialize();
     if(_batch_size != input_meta_data->size())

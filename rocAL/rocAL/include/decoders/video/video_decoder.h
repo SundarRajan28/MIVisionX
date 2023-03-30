@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,20 +44,6 @@ extern "C"
 #endif
 #include "parameter_factory.h"
 
-// enum class VideoDecoderType
-// {
-//     FFMPEG_SOFTWARE_DECODE = 0,
-//     FFMPEG_HARDWARE_DECODE = 1,
-// };
-
-// class VideoDecoderConfig
-// {
-// public:
-//     VideoDecoderConfig() {}
-//     explicit VideoDecoderConfig(VideoDecoderType type) : _type(type) {}
-//     virtual VideoDecoderType type() { return _type; };
-//     VideoDecoderType _type = VideoDecoderType::FFMPEG_SOFTWARE_DECODE;
-// };
 
 #ifdef ROCAL_VIDEO
 class VideoDecoder

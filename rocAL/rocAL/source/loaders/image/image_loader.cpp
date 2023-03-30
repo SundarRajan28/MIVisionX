@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -111,7 +111,7 @@ ImageLoader::load_next()
 void ImageLoader::set_output (rocalTensor* output_tensor)
 {
     _output_tensor = output_tensor;
-    _output_mem_size = ((_output_tensor->info().data_size()/ 8) * 8 + 8);
+    _output_mem_size = ((_output_tensor->info().data_size()/ 8) * 8 + 8); // TODO - CHECK why this is a multiple of 8 here
 }
 
 void ImageLoader::set_random_bbox_data_reader(std::shared_ptr<RandomBBoxCrop_MetaDataReader> randombboxcrop_meta_data_reader)
@@ -208,7 +208,7 @@ ImageLoader::load_routine()
                                             _decoded_img_info._original_height,
                                             _output_tensor->info().color_format(), _decoder_keep_original );
 
-            if(load_status == LoaderModuleStatus::OK)
+            if (load_status == LoaderModuleStatus::OK)
             {
                 if (_randombboxcrop_meta_data_reader)
                 {

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ class MetaNode
 public:
     MetaNode() {}
     virtual ~MetaNode() {};
-    virtual void update_parameters(MetaDataBatch* input_meta_data, bool segmentation) = 0;
+    virtual void update_parameters(MetaDataBatch* input_meta_data) = 0;
     double BBoxIntersectionOverUnion(const BoundingBoxCord &box1, const BoundingBoxCord &box2, bool is_iou) const;
     int _batch_size;
     float _iou_threshold = 0.25;

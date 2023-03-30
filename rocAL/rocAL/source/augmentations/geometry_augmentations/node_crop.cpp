@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -107,6 +107,7 @@ void CropNode::init(unsigned int crop_h, unsigned int crop_w, float x_drift_, fl
     _crop_param->set_y_drift_factor(core(y_drift));
 }
 
+// This init is used only for centre crop
 void CropNode::init(unsigned int crop_h, unsigned int crop_w)
 {
     _crop_param->crop_w = crop_w;

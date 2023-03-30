@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2019 - 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2019 - 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,8 @@ THE SOFTWARE.
 CropMirrorNormalizeNode::CropMirrorNormalizeNode(const std::vector<rocalTensor *> &inputs,
                                                  const std::vector<rocalTensor *> &outputs) :
         Node(inputs, outputs),
-        _mirror(MIRROR_RANGE[0], MIRROR_RANGE[1]) {
+        _mirror(MIRROR_RANGE[0], MIRROR_RANGE[1])
+{
         _crop_param = std::make_shared<RocalCropParam>(_batch_size);
 }
 
@@ -126,6 +127,7 @@ void CropMirrorNormalizeNode::update_node() {
 }
 
 void CropMirrorNormalizeNode::init(int crop_h, int crop_w, float anchor_x, float anchor_y, std::vector<float>& mean, std::vector<float>& std_dev, IntParam *mirror) {
+    // current implementation does a fixed crop with specified dims and anchor
     _crop_param->x1 = 0;
     _crop_param->y1 = 0;
     _crop_param->crop_h = crop_h;
