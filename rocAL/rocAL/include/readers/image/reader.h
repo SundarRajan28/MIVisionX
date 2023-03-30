@@ -46,12 +46,8 @@ enum class StorageType
     COCO_FILE_SYSTEM = 5,
     SEQUENCE_FILE_SYSTEM = 6,
     MXNET_RECORDIO = 7,
-<<<<<<< HEAD
     SEQUENCE_FILE_SYSTEM = 8,
     NUMPY_DATA = 9
-=======
-    VIDEO_FILE_SYSTEM = 8,
->>>>>>> eefaf2b69131edff65d019e091145b6282ff8edd
 };
 
 #ifdef ROCAL_VIDEO
