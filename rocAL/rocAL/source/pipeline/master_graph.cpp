@@ -130,8 +130,6 @@ MasterGraph::MasterGraph(size_t batch_size, RocalAffinity affinity, int gpu_id, 
 #endif        
         _first_run(true),
         _processing(false),
-        _internal_batch_size(compute_optimum_internal_batch_size(batch_size, affinity)),
-        _user_to_internal_batch_ratio (_user_batch_size/_internal_batch_size),
         _prefetch_queue_depth(prefetch_queue_depth),
         _out_data_type(output_tensor_data_type),
 #if ENABLE_HIP
@@ -414,7 +412,7 @@ MasterGraph::output_width()
 size_t
 MasterGraph::output_height()
 {
-    return _output_image_info.height_batch() * (_is_sequence_reader_output ? _sequence_batch_ratio : _user_to_internal_batch_ratio);
+    return _output_image_info.height_batch() * (_is_sequence_reader_output ? _sequence_length : 1);
 }
 
 void
@@ -687,7 +685,7 @@ MasterGraph::copy_out_tensor(void *out_ptr, RocalTensorFormat format, float mult
         for( auto&& out_image: output_buffers)
         {
             unsigned int single_image_size = w * c * h;
-            #pragma omp parallel for num_threads(_internal_batch_size)
+            #pragma omp parallel for num_threads(_user_batch_size)
             for(unsigned int batchCount = 0; batchCount < n; batchCount ++)
             {
                 size_t dest_buf_offset = dest_buf_offset_start + single_image_size*batchCount;
@@ -960,22 +958,9 @@ MasterGraph::copy_output(unsigned char *out_ptr, size_t out_size_in_bytes)
 void MasterGraph::output_routine()
 {
     INFO("Output routine started with "+TOSTR(_remaining_count) + " to load");
-    size_t batch_ratio = _is_sequence_reader_output ? _sequence_batch_ratio : _user_to_internal_batch_ratio;
-    if(!_is_sequence_reader_output) // _sequence_batch_ratio and _user_to_internal_batch_ratio is different. Will be removed in TensorSupport.
-    {
-#if !ENABLE_HIP
-    if(processing_on_device_ocl() && batch_ratio != 1)
-        THROW("Internal failure, in the GPU processing case, user and input batch size must be equal")
-#else
-    if(processing_on_device_hip() && batch_ratio != 1)
-        THROW("Internal failure, in the GPU processing case, user and input batch size must be equal")
-#endif
-    }
     try {
         while (_processing)
         {
-            const size_t each_cycle_size = output_byte_size()/batch_ratio;
-
             ImageNameBatch full_batch_image_names = {};
             pMetaDataBatch full_batch_meta_data = nullptr;
             pMetaDataBatch augmented_batch_meta_data = nullptr;
@@ -995,56 +980,46 @@ void MasterGraph::output_routine()
             _rb_block_if_full_time.end();
 
             _process_time.start();
-            // When executing on CPU the internal batch count can be smaller than the user batch count
-            // In that case the user_batch_size will be an integer multiple of the _internal_batch_size
-            // Multiple cycles worth of internal_batch_size images should be processed to complete a full _user_batch_size
-            for(unsigned cycle_idx = 0; cycle_idx< batch_ratio; cycle_idx++)
+
+            // Swap handles on the input image, so that new image is loaded to be processed
+            auto load_ret = _loader_module->load_next();
+            if (load_ret != LoaderModuleStatus::OK)
+                THROW("Loader module failed to load next batch of images, status " + TOSTR(load_ret))
+
+            if (!_processing)
+                break;
+            auto this_cycle_names =  _loader_module->get_id();
+            auto decode_image_info = _loader_module->get_decode_image_info();
+            auto crop_image_info = _loader_module->get_crop_image_info();
+
+            if(this_cycle_names.size() != _user_batch_size)
+                WRN("Internal problem: names count "+ TOSTR(this_cycle_names.size()))
+
+            // meta_data lookup is done before _meta_data_graph->process() is called to have the new meta_data ready for processing
+            if (_meta_data_reader)
+                _meta_data_reader->lookup(this_cycle_names);
+
+            full_batch_image_names += this_cycle_names;
+
+            if (!_processing)
+                break;
+
+            // Swap handles on the output images, so that new processed image will be written to the a new buffer
+            for (size_t idx = 0; idx < _output_images.size(); idx++)
             {
-                // Swap handles on the input image, so that new image is loaded to be processed
-                auto load_ret = _loader_module->load_next();
-                if (load_ret != LoaderModuleStatus::OK)
-                    THROW("Loader module failed to load next batch of images, status " + TOSTR(load_ret))
+                _output_images[idx]->swap_handle(write_buffers[idx]);
+            }
 
-                if (!_processing)
-                    break;
-                auto this_cycle_names =  _loader_module->get_id();
-                auto decode_image_info = _loader_module->get_decode_image_info();
-                auto crop_image_info = _loader_module->get_crop_image_info();
+            if (!_processing)
+                break;
 
-                if(this_cycle_names.size() != _internal_batch_size)
-                    WRN("Internal problem: names count "+ TOSTR(this_cycle_names.size()))
-
-                // meta_data lookup is done before _meta_data_graph->process() is called to have the new meta_data ready for processing
-                if (_meta_data_reader)
-                    _meta_data_reader->lookup(this_cycle_names);
-
-                full_batch_image_names += this_cycle_names;
-
-                if (!_processing)
-                    break;
-
-                // Swap handles on the output images, so that new processed image will be written to the a new buffer
-                for (size_t idx = 0; idx < _output_images.size(); idx++)
+            for(auto node: _nodes)
+            {
+                if(node->_is_ssd)
                 {
-                    if(_affinity == RocalAffinity::GPU)
-                        _output_images[idx]->swap_handle(write_buffers[idx]);
-                    else
-                    {
-                        auto this_cycle_buffer_ptr = (unsigned char *) write_buffers[idx] + each_cycle_size * cycle_idx;
-                        _output_images[idx]->swap_handle(this_cycle_buffer_ptr);
-                    }
+                    node->set_meta_data(_augmented_meta_data);
                 }
-
-                if (!_processing)
-                    break;
-
-                for(auto node: _nodes)
-                {
-                    if(node->_is_ssd)
-                    {
-                        node->set_meta_data(_augmented_meta_data);
-                    }
-                }
+            }
 
                 update_node_parameters();
                 if(_augmented_meta_data)
@@ -1065,7 +1040,7 @@ void MasterGraph::output_routine()
                 // get roi width and height of output image
                 std::vector<uint32_t> temp_width_arr;
                 std::vector<uint32_t> temp_height_arr;
-                for (unsigned int i = 0; i < _internal_batch_size; i++)
+                for (unsigned int i = 0; i < _user_batch_size; i++)
                 {
                     temp_width_arr.push_back(_output_image_info.get_roi_width()[i]);
                     temp_height_arr.push_back(_output_image_info.get_roi_height()[i]);
@@ -1073,7 +1048,6 @@ void MasterGraph::output_routine()
                 _resize_width.insert(_resize_width.begin(), temp_width_arr);
                 _resize_height.insert(_resize_height.begin(), temp_height_arr);
                 _graph->process();
-            }
             _bencode_time.start();
             if(_is_box_encoder )
             {
@@ -1092,7 +1066,6 @@ void MasterGraph::output_routine()
             _ring_buffer.push(); // Image data and metadata is now stored in output the ring_buffer, increases it's level by 1
         }
         _process_time.end();
-
     }
     catch (const std::exception &e)
     {
@@ -1107,18 +1080,9 @@ void MasterGraph::output_routine_video()
 {
     _process_time.start();
     INFO("Output routine of video pipeline started with "+TOSTR(_remaining_count) + " to load");
-#if !ENABLE_HIP
-    if(processing_on_device_ocl() && _user_to_internal_batch_ratio != 1)
-        THROW("Internal failure, in the GPU processing case, user and input batch size must be equal")
-#else
-    if(processing_on_device_hip() && _user_to_internal_batch_ratio != 1)
-        THROW("Internal failure, in the GPU processing case, user and input batch size must be equal")
-#endif
     try {
         while (_processing)
         {
-            const size_t each_cycle_size = output_byte_size()/_user_to_internal_batch_ratio;
-
             ImageNameBatch full_batch_image_names = {};
             pMetaDataBatch full_batch_meta_data = nullptr;
             pMetaDataBatch augmented_batch_meta_data = nullptr;
@@ -1138,72 +1102,60 @@ void MasterGraph::output_routine_video()
             auto write_buffers = _ring_buffer.get_write_buffers();
             _rb_block_if_full_time.end();
 
-            // When executing on CPU the internal batch count can be smaller than the user batch count
-            // In that case the user_batch_size will be an integer multiple of the _internal_batch_size
-            // Multiple cycles worth of internal_batch_size images should be processed to complete a full _user_batch_size
-            for(unsigned cycle_idx = 0; cycle_idx< _user_to_internal_batch_ratio; cycle_idx++)
+            // Swap handles on the input sequence, so that new sequence is loaded to be processed
+            auto load_ret = _video_loader_module->load_next();
+            if (load_ret != VideoLoaderModuleStatus::OK)
+                THROW("Video Loader module failed to load next batch of images, status " + TOSTR(load_ret))
+
+            if (!_processing)
+                break;
+            auto this_cycle_names = _video_loader_module->get_id();
+            auto decode_image_info = _video_loader_module->get_decode_image_info();
+            _sequence_start_framenum_vec.insert(_sequence_start_framenum_vec.begin(), _video_loader_module->get_sequence_start_frame_number());
+            _sequence_frame_timestamps_vec.insert(_sequence_frame_timestamps_vec.begin(), _video_loader_module->get_sequence_frame_timestamps());
+
+            if(this_cycle_names.size() != _user_batch_size)
+                WRN("Internal problem: names count "+ TOSTR(this_cycle_names.size()))
+
+            // meta_data lookup is done before _meta_data_graph->process() is called to have the new meta_data ready for processing
+            if (_meta_data_reader)
+                _meta_data_reader->lookup(this_cycle_names);
+
+            full_batch_image_names += this_cycle_names;
+
+            if (!_processing)
+                break;
+
+            // Swap handles on the output images, so that new processed image will be written to the a new buffer
+            for (size_t idx = 0; idx < _output_images.size(); idx++)
             {
-                // Swap handles on the input sequence, so that new sequence is loaded to be processed
-                auto load_ret = _video_loader_module->load_next();
-                if (load_ret != VideoLoaderModuleStatus::OK)
-                    THROW("Video Loader module failed to load next batch of images, status " + TOSTR(load_ret))
-
-                if (!_processing)
-                    break;
-                auto this_cycle_names = _video_loader_module->get_id();
-                auto decode_image_info = _video_loader_module->get_decode_image_info();
-                _sequence_start_framenum_vec.insert(_sequence_start_framenum_vec.begin(), _video_loader_module->get_sequence_start_frame_number());
-                _sequence_frame_timestamps_vec.insert(_sequence_frame_timestamps_vec.begin(), _video_loader_module->get_sequence_frame_timestamps());
-
-                if(this_cycle_names.size() != _internal_batch_size)
-                    WRN("Internal problem: names count "+ TOSTR(this_cycle_names.size()))
-
-                // meta_data lookup is done before _meta_data_graph->process() is called to have the new meta_data ready for processing
-                if (_meta_data_reader)
-                    _meta_data_reader->lookup(this_cycle_names);
-
-                full_batch_image_names += this_cycle_names;
-
-                if (!_processing)
-                    break;
-
-                // Swap handles on the output images, so that new processed image will be written to the a new buffer
-                for (size_t idx = 0; idx < _output_images.size(); idx++)
-                {
-                    if(_affinity == RocalAffinity::GPU)
-                        _output_images[idx]->swap_handle(write_buffers[idx]);
-                    else
-                    {
-                        auto this_cycle_buffer_ptr = (unsigned char *) write_buffers[idx] + each_cycle_size * cycle_idx;
-                        _output_images[idx]->swap_handle(this_cycle_buffer_ptr);
-                    }
-                }
-
-                if (!_processing)
-                    break;
-
-                for(auto node: _nodes)
-                {
-                    if(node->_is_ssd)
-                    {
-                        node->set_meta_data(_augmented_meta_data);
-                    }
-                }
-
-                update_node_parameters();
-                if(_augmented_meta_data)
-                {
-                    if (_meta_data_graph)
-                    {
-                        _meta_data_graph->process(_augmented_meta_data);
-                    }
-                    if (full_batch_meta_data)
-                        full_batch_meta_data->concatenate(_augmented_meta_data);
-                    else
-                        full_batch_meta_data = _augmented_meta_data->clone();
-                }
-                _graph->process();
+                _output_images[idx]->swap_handle(write_buffers[idx]);
             }
+
+            if (!_processing)
+                break;
+
+            for(auto node: _nodes)
+            {
+                if(node->_is_ssd)
+                {
+                    node->set_meta_data(_augmented_meta_data);
+                }
+            }
+
+            update_node_parameters();
+            if(_augmented_meta_data)
+            {
+                if (_meta_data_graph)
+                {
+                    _meta_data_graph->process(_augmented_meta_data);
+                }
+                if (full_batch_meta_data)
+                    full_batch_meta_data->concatenate(_augmented_meta_data);
+                else
+                    full_batch_meta_data = _augmented_meta_data->clone();
+            }
+            _graph->process();
             if(_is_box_encoder )
             {
                 _meta_data_graph->update_box_encoder_meta_data(&_anchors, full_batch_meta_data, _criteria, _offset, _scale, _means, _stds);
@@ -1449,49 +1401,6 @@ size_t MasterGraph::bounding_box_batch_count(int *buf, pMetaDataBatch meta_data_
         size += buf[i];
     }
     return size;
-}
-
-
-size_t MasterGraph::compute_optimum_internal_batch_size(size_t user_batch_size, RocalAffinity affinity)
-{
-    const unsigned MINIMUM_CPU_THREAD_COUNT = 2;
-    const unsigned DEFAULT_SMT_COUNT = 2;
-
-
-    if(affinity == RocalAffinity::GPU)
-        return user_batch_size;
-
-    unsigned THREAD_COUNT = std::thread::hardware_concurrency();
-    if(THREAD_COUNT >= MINIMUM_CPU_THREAD_COUNT)
-    {
-        INFO("Can run " + TOSTR(THREAD_COUNT) + " threads simultaneously on this machine")
-    }
-    else
-    {
-        THREAD_COUNT = MINIMUM_CPU_THREAD_COUNT;
-        WRN("hardware_concurrency() call failed assuming can run " + TOSTR(THREAD_COUNT) + " threads")
-    }
-    size_t ret = user_batch_size;
-    size_t CORE_COUNT = THREAD_COUNT / DEFAULT_SMT_COUNT;
-
-    if(CORE_COUNT <= 0)
-        THROW("Wrong core count detected less than 0")
-
-    for( size_t i = CORE_COUNT; i <= THREAD_COUNT; i++)
-        if(user_batch_size % i == 0)
-        {
-            ret = i;
-            break;
-        }
-
-    for(size_t i = CORE_COUNT; i > 1; i--)
-        if(user_batch_size % i == 0)
-        {
-            ret = i;
-            break;
-        }
-    INFO("User batch size "+ TOSTR(user_batch_size)+" Internal batch size set to "+ TOSTR(ret))
-    return ret;
 }
 
 size_t MasterGraph::output_sample_size()
