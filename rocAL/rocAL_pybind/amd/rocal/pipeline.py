@@ -179,42 +179,42 @@ class Pipeline(object):
         b.rocalCopyToOutput(
             self._handle, np.ascontiguousarray(out, dtype=array.dtype))
 
-    def copyToTensor(self, array,  multiplier, offset, reverse_channels, tensor_format, tensor_dtype):
+    def toTensor(self, array,  multiplier, offset, reverse_channels, tensor_format, tensor_dtype):
 
-        b.rocalCopyToOutputTensor(self._handle, ctypes.c_void_p(array.data_ptr()), tensor_format, tensor_dtype,
+        b.rocalToTensor(self._handle, ctypes.c_void_p(array.data_ptr()), tensor_format, tensor_dtype,
                                     multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
 
-    def copyToTensorNHWC(self, array,  multiplier, offset, reverse_channels, tensor_dtype):
+    def toTensorNHWC(self, array,  multiplier, offset, reverse_channels, tensor_dtype):
         if(self._rocal_cpu):
             out = np.frombuffer(array, dtype=array.dtype)
             if tensor_dtype == types.FLOAT:
-                b.rocalCopyToOutputTensor32(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NHWC,
+                b.rocalToTensor32(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NHWC,
                                         multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
             elif tensor_dtype == types.FLOAT16:
-                b.rocalCopyToOutputTensor16(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NHWC,
+                b.rocalToTensor16(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NHWC,
                                        multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
         else:
             if tensor_dtype == types.FLOAT:
-                b.rocalCopyCupyToOutputTensor32(self._handle, array.data.ptr, types.NHWC,
+                b.rocalCupyToTensor32(self._handle, array.data.ptr, types.NHWC,
                                         multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
             elif tensor_dtype == types.FLOAT16:
-                b.rocalCopyCupyToOutputTensor16(self._handle, ctypes.c_void_p(array.ctypes.data), types.NHWC,
+                b.rocalCupyToTensor16(self._handle, ctypes.c_void_p(array.ctypes.data), types.NHWC,
                                        multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
-    def copyToTensorNCHW(self, array,  multiplier, offset, reverse_channels, tensor_dtype):
+    def toTensorNCHW(self, array,  multiplier, offset, reverse_channels, tensor_dtype):
         if(self._rocal_cpu):
             out = np.frombuffer(array, dtype=array.dtype)
             if tensor_dtype == types.FLOAT:
-                b.rocalCopyToOutputTensor32(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NCHW,
+                b.rocalToTensor32(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NCHW,
                                         multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
             elif tensor_dtype == types.FLOAT16:
-                b.rocalCopyToOutputTensor16(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NCHW,
+                b.rocalToTensor16(self._handle, np.ascontiguousarray(out, dtype=array.dtype), types.NCHW,
                                         multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
         else:
             if tensor_dtype == types.FLOAT:
-                b.rocalCopyCupyToOutputTensor32(self._handle, array.data.ptr, types.NCHW,
+                b.rocalCupyToTensor32(self._handle, array.data.ptr, types.NCHW,
                                         multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
             elif tensor_dtype == types.FLOAT16:
-                b.rocalCopyCupyToOutputTensor16(self._handle, ctypes.c_void_p(array.ctypes.data), types.NCHW,
+                b.rocalCupyToTensor16(self._handle, ctypes.c_void_p(array.ctypes.data), types.NCHW,
                                        multiplier[0], multiplier[1], multiplier[2], offset[0], offset[1], offset[2], (1 if reverse_channels else 0), self._output_memory_type)
     def GetOneHotEncodedLabels(self, array, device):
         if device=="cpu":
