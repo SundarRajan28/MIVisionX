@@ -72,6 +72,7 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
     // Can initialize it to any decoder types if needed
     _batch_size = batch_size;
     _compressed_buff.resize(batch_size);
+    _decompressed_buff.resize(batch_size);
     _decoder.resize(batch_size);
     _actual_read_size.resize(batch_size);
     _image_names.resize(batch_size);
@@ -96,6 +97,12 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
             _decoder[i] = create_decoder(decoder_config);
             _decoder[i]->initialize(device_id);
         }
+    }
+    _resize_with_decode = decoder_config.is_resize_with_decode();    
+    if (_resize_with_decode) {
+        auto [width, height] = decoder_config.get_max_decode_dims();
+        _max_decoded_width = width;
+        _max_decoded_height = height;
     }
     _num_threads = reader_config.get_cpu_num_threads();
     _reader = create_reader(reader_config);
@@ -144,7 +151,15 @@ ImageReadAndDecode::load(unsigned char* buff,
                          RocalColorFormat output_color_format,
                          bool decoder_keep_original )
 {
-    if(max_decoded_width == 0 || max_decoded_height == 0 )
+    if (_resize_with_decode) {
+        _resize_width = max_decoded_width;
+        _resize_height = max_decoded_height;
+    }
+    else {
+        _max_decoded_width = max_decoded_width;
+        _max_decoded_height = max_decoded_height;
+    }
+    if(_max_decoded_width == 0 || _max_decoded_height == 0 )
         THROW("Zero image dimension is not valid")
     if(!buff)
         THROW("Null pointer passed as output buffer")
@@ -156,7 +171,7 @@ ImageReadAndDecode::load(unsigned char* buff,
     const Decoder::ColorFormat decoder_color_format = std::get<0>(ret);
     const unsigned output_planes = std::get<1>(ret);
     const bool keep_original = decoder_keep_original;
-    const size_t image_size = max_decoded_width * max_decoded_height * output_planes * sizeof(unsigned char);
+    const size_t image_size = _max_decoded_width * _max_decoded_height * output_planes * sizeof(unsigned char);
 
     // Decode with the height and size equal to a single image
     // File read is done serially since I/O parallelization does not work very well.
@@ -179,10 +194,10 @@ ImageReadAndDecode::load(unsigned char* buff,
             _reader->close();
            // _compressed_image_size[file_counter] = fsize;
             names[file_counter] = _image_names[file_counter];
-            roi_width[file_counter] = max_decoded_width;
-            roi_height[file_counter] = max_decoded_height;
-            actual_width[file_counter] = max_decoded_width;
-            actual_height[file_counter] = max_decoded_height;
+            roi_width[file_counter] = _max_decoded_width;
+            roi_height[file_counter] = _max_decoded_height;
+            actual_width[file_counter] = _max_decoded_width;
+            actual_height[file_counter] = _max_decoded_height;
             file_counter++;
         }
         //_file_load_time.end();// Debug timing
@@ -195,6 +210,10 @@ ImageReadAndDecode::load(unsigned char* buff,
                 continue;
             }
             _compressed_buff[file_counter].reserve(fsize);
+            if (_resize_with_decode) {
+                const size_t resize_image_size = _resize_width * _resize_height * output_planes * sizeof(unsigned char);
+                _decompressed_buff[file_counter].reserve(resize_image_size);
+            }
             _actual_read_size[file_counter] = _reader->read_data(_compressed_buff[file_counter].data(), fsize);
             _image_names[file_counter] = _reader->id();
             _reader->close();
@@ -221,8 +240,8 @@ ImageReadAndDecode::load(unsigned char* buff,
         for (size_t i = 0; i < _batch_size; i++)
         {
             // initialize the actual decoded height and width with the maximum
-            _actual_decoded_width[i] = max_decoded_width;
-            _actual_decoded_height[i] = max_decoded_height;
+            _actual_decoded_width[i] = _max_decoded_width;
+            _actual_decoded_height[i] = _max_decoded_height;
             int original_width, original_height, jpeg_sub_samp;
             if (_decoder[i]->decode_info(_compressed_buff[i].data(), _actual_read_size[i], &original_width, &original_height,
                                          &jpeg_sub_samp) != Decoder::Status::OK) {
@@ -261,19 +280,42 @@ ImageReadAndDecode::load(unsigned char* buff,
                   _decoder[i]->set_crop_window(crop_window);
                 }
             }
-            if (_decoder[i]->decode(_compressed_buff[i].data(), _compressed_image_size[i], _decompressed_buff_ptrs[i],
-                                    max_decoded_width, max_decoded_height,
-                                    original_width, original_height,
-                                    scaledw, scaledh,
-                                    decoder_color_format, _decoder_config, keep_original) != Decoder::Status::OK) {
+            if (_resize_with_decode) {
+                if (_decoder[i]->decode(_compressed_buff[i].data(), _compressed_image_size[i], _decompressed_buff[i].data(),
+                                        _max_decoded_width, _max_decoded_height,
+                                        original_width, original_height,
+                                        scaledw, scaledh,
+                                        decoder_color_format, _decoder_config, keep_original) != Decoder::Status::OK) {
+                }
+                _actual_decoded_width[i] = scaledw;
+                _actual_decoded_height[i] = scaledh;
             }
-            _actual_decoded_width[i] = scaledw;
-            _actual_decoded_height[i] = scaledh;
+            else {
+                if (_decoder[i]->decode(_compressed_buff[i].data(), _compressed_image_size[i], _decompressed_buff_ptrs[i],
+                                        _max_decoded_width, _max_decoded_height,
+                                        original_width, original_height,
+                                        scaledw, scaledh,
+                                        decoder_color_format, _decoder_config, keep_original) != Decoder::Status::OK) {
+                }
+                _actual_decoded_width[i] = scaledw;
+                _actual_decoded_height[i] = scaledh;
+            }
         }
+
+        if (_resize_with_decode) {
+            // Add resize tensor call here
+        }
+
         for (size_t i = 0; i < _batch_size; i++) {
             names[i] = _image_names[i];
-            roi_width[i] = _actual_decoded_width[i];
-            roi_height[i] = _actual_decoded_height[i];
+            if (_resize_with_decode) {
+                roi_width[i] = _resize_width;
+                roi_height[i] = _resize_height;
+            }
+            else {
+                roi_width[i] = _actual_decoded_width[i];
+                roi_height[i] = _actual_decoded_height[i];
+            }
             actual_width[i] = _original_width[i];
             actual_height[i] = _original_height[i];
         }

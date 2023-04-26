@@ -80,6 +80,7 @@ private:
     std::vector<std::shared_ptr<Decoder>> _decoder;
     std::shared_ptr<Reader> _reader;
     std::vector<std::vector<unsigned char>> _compressed_buff;
+    std::vector<std::vector<unsigned char>> _decompressed_buff;
     std::vector<size_t> _actual_read_size;
     std::vector<std::string> _image_names;
     std::vector<size_t> _compressed_image_size;
@@ -93,6 +94,9 @@ private:
     size_t _batch_size, _shard_count, _num_threads;
     DecoderConfig _decoder_config;
     bool decoder_keep_original;
+    bool _resize_with_decode;
+    unsigned _max_decoded_width, _max_decoded_height;
+    unsigned _resize_width, _resize_height;
     std::vector<std::vector <float>> _bbox_coords, _crop_coords_batch;
     std::shared_ptr<RandomBBoxCrop_MetaDataReader> _randombboxcrop_meta_data_reader = nullptr;
     pCropCord _CropCord;

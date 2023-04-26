@@ -303,3 +303,35 @@ def image_slice(*inputs, file_root='', path='', annotations_file='', shard_id=0,
             "max_height": max_decoded_height}
         image_decoder_slice = b.FusedDecoderCropShard(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
     return (image_decoder_slice)
+
+def image_slice_resize(*inputs, file_root='', path='', annotations_file='', shard_id=0, num_shards=1, random_shuffle=False, affine=True, axes=None,
+                axis_names="WH", bytes_per_sample_hint=0, device_memory_padding=16777216, device_memory_padding_jpeg2k=0, 
+                host_memory_padding=8388608, random_aspect_ratio=[0.75, 1.33333], random_area=[0.08, 1.0], num_attempts=100,
+                host_memory_padding_jpeg2k=0, hybrid_huffman_threshold=1000000, memory_stats=False, normalized_anchor=True, 
+                normalized_shape=True, output_type=types.RGB, preserve=False, seed=1, split_stages=False, use_chunk_allocator=False, 
+                use_fast_idct=False, device=None, decode_size_policy=types.USER_GIVEN_SIZE_ORIG, max_decoded_width=1000, max_decoded_height=1000, resize_width=0, resize_height=0):
+
+    reader = Pipeline._current_pipeline._reader
+    #Reader -> Randon BBox Crop -> ImageDecoderSlice
+    #Random crop parameters taken from pytorch's RandomResizedCrop default function arguments
+    #TODO:To pass the crop co-ordinates from random_bbox_crop to image_slice 
+    #in tensor branch integration, 
+    #for now calling partial decoder to match SSD training outer API's .
+    kwargs_pybind = {
+        "source_path": file_root,
+        "color_format": output_type,
+        "shard_id": shard_id,
+        "num_shards": num_shards,
+        'is_output': False,
+        "area_factor": random_area,
+        "aspect_ratio": random_aspect_ratio,
+        "num_attempts": num_attempts,
+        "shuffle": random_shuffle,
+        "loop": False,
+        "decode_size_policy": decode_size_policy,
+        "max_width": max_decoded_width,
+        "max_height": max_decoded_height,
+        "resize_width": resize_width,
+        "resize_height": resize_height}
+    image_decoder_slice_resize = b.FusedDecoderCropResizeShard(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (image_decoder_slice_resize)

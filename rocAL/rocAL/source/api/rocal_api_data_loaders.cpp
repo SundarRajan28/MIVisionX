@@ -37,6 +37,8 @@ THE SOFTWARE.
 #include "node_copy.h"
 #include "node_fused_jpeg_crop.h"
 #include "node_fused_jpeg_crop_single_shard.h"
+#include "node_fused_jpeg_crop_resize.h"
+#include "node_fused_jpeg_crop_resize_single_shard.h"
 #include "node_resize.h"
 #include "meta_node_resize.h"
 
@@ -1896,7 +1898,86 @@ rocalRawTFRecordSourceSingleShard(
 }
 
 RocalImage  ROCAL_API_CALL
-rocalFusedJpegCropSingleShard(
+rocalFusedJpegCropResizeSingleShard(
+        RocalContext p_context,
+        const char* source_path,
+        RocalImageColor rocal_color_format,
+        unsigned shard_id,
+        unsigned shard_count,
+        bool is_output,
+        std::vector<float>& area_factor,
+        std::vector<float>& aspect_ratio,
+        unsigned num_attempts,
+        bool shuffle,
+        bool loop,
+        RocalImageSizeEvaluationPolicy decode_size_policy,
+        unsigned max_width,
+        unsigned max_height,
+        unsigned resize_width,
+        unsigned resize_height)
+{
+    Image* output = nullptr;
+    auto context = static_cast<Context*>(p_context);
+    try
+    {
+        bool use_input_dimension = (decode_size_policy == ROCAL_USE_USER_GIVEN_SIZE) || (decode_size_policy == ROCAL_USE_USER_GIVEN_SIZE_RESTRICTED);
+
+        if(shard_count < 1 )
+            THROW("Shard count should be bigger than 0")
+
+        if(shard_id >= shard_count)
+            THROW("Shard id should be smaller than shard count")
+
+        if(use_input_dimension && (max_width == 0 || max_height == 0))
+        {
+            THROW("Invalid input max width and height");
+        }
+        else
+        {
+            LOG("User input size " + TOSTR(max_width) + " x " + TOSTR(max_height))
+        }
+
+        auto [width, height] = use_input_dimension? std::make_tuple(max_width, max_height):
+                               evaluate_image_data_set(decode_size_policy, StorageType::FILE_SYSTEM, DecoderType::FUSED_TURBO_JPEG, source_path, "");
+
+        auto [color_format, num_of_planes] = convert_color_format(rocal_color_format);
+
+        auto info = ImageInfo(resize_width, resize_height,
+                              context->user_batch_size(),
+                              num_of_planes,
+                              context->master_graph->mem_type(),
+                              color_format );
+        output = context->master_graph->create_loader_output_image(info);
+        auto cpu_num_threads = context->master_graph->calculate_cpu_num_threads(shard_count);
+        context->master_graph->add_node<FusedJpegCropResizeSingleShardNode>({}, {output})->init(shard_id, shard_count, cpu_num_threads,
+                                                                          source_path, "",
+                                                                          StorageType::FILE_SYSTEM,
+                                                                          DecoderType::FUSED_TURBO_JPEG,
+                                                                          shuffle,
+                                                                          loop,
+                                                                          context->user_batch_size(),
+                                                                          context->master_graph->mem_type(),
+                                                                          context->master_graph->meta_data_reader(),
+                                                                          num_attempts, area_factor, aspect_ratio, width, height);
+        context->master_graph->set_loop(loop);
+
+        if(is_output)
+        {
+            auto actual_output = context->master_graph->create_image(info, is_output);
+            context->master_graph->add_node<CopyNode>({output}, {actual_output});
+        }
+
+    }
+    catch(const std::exception& e)
+    {
+        context->capture_error(e.what());
+        std::cerr << e.what() << '\n';
+    }
+    return output;
+}
+
+RocalImage  ROCAL_API_CALL
+rocalFusedJpegCropResizeSingleShard(
         RocalContext p_context,
         const char* source_path,
         RocalImageColor rocal_color_format,

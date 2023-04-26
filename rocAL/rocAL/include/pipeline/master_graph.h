@@ -33,6 +33,8 @@ THE SOFTWARE.
 #include "node_image_loader_single_shard.h"
 #include "node_fused_jpeg_crop.h"
 #include "node_fused_jpeg_crop_single_shard.h"
+#include "node_fused_jpeg_crop_resize.h"
+#include "node_fused_jpeg_crop_resize_single_shard.h"
 #include "node_video_loader.h"
 #include "node_video_loader_single_shard.h"
 #include "node_cifar10_loader.h"
@@ -289,6 +291,25 @@ template<> inline std::shared_ptr<FusedJpegCropSingleShardNode> MasterGraph::add
     auto node = std::make_shared<FusedJpegCropSingleShardNode>(outputs[0], (void *)_device.resources());
 #else
     auto node = std::make_shared<FusedJpegCropSingleShardNode>(outputs[0], nullptr);
+#endif    
+    _loader_module = node->get_loader_module();
+    _loader_module->set_prefetch_queue_depth(_prefetch_queue_depth);
+    _loader_module->set_random_bbox_data_reader(_randombboxcrop_meta_data_reader);
+    _root_nodes.push_back(node);
+    for(auto& output: outputs)
+        _image_map.insert(std::make_pair(output, node));
+
+    return node;
+}
+
+template<> inline std::shared_ptr<FusedJpegCropResizeSingleShardNode> MasterGraph::add_node(const std::vector<Image*>& inputs, const std::vector<Image*>& outputs)
+{
+    if(_loader_module)
+        THROW("A loader already exists, cannot have more than one loader")
+#if ENABLE_HIP || ENABLE_OPENCL
+    auto node = std::make_shared<FusedJpegCropResizeSingleShardNode>(outputs[0], (void *)_device.resources());
+#else
+    auto node = std::make_shared<FusedJpegCropResizeSingleShardNode>(outputs[0], nullptr);
 #endif    
     _loader_module = node->get_loader_module();
     _loader_module->set_prefetch_queue_depth(_prefetch_queue_depth);

@@ -439,6 +439,35 @@ extern "C"  RocalImage  ROCAL_API_CALL rocalFusedJpegCropSingleShard(RocalContex
                                                         RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MOST_FREQUENT_SIZE,
                                                         unsigned max_width = 0, unsigned max_height = 0);
 
+/// Creates JPEG image reader and partial decoder. It allocates the resources and objects required to read and decode Jpeg images stored on the file systems. It accepts external sharding information to load a singe shard. only
+/// \param context Rocal context
+/// \param source_path A NULL terminated char string pointing to the location on the disk
+/// \param rocal_color_format The color format the images will be decoded to.
+/// \param shard_id Shard id for this loader
+/// \param shard_count Total shard count
+/// \param is_output Determines if the user wants the loaded images to be part of the output or not.
+/// \param area_factor Determines how much area to be cropped. Ranges from from 0.08 - 1.
+/// \param aspect_ratio Determines the aspect ration of crop. Ranges from 0.75 to 1.33.
+/// \param num_attempts Maximum number of attempts to generate crop. Default 10
+/// \param decode_size_policy
+/// \param max_width The maximum width of the decoded images, larger or smaller will be resized to closest
+/// \param max_height The maximum height of the decoded images, larger or smaller will be resized to closest
+/// \return
+extern "C"  RocalImage  ROCAL_API_CALL rocalFusedJpegCropResizeSingleShard(RocalContext context,
+                                                        const char* source_path,
+                                                        RocalImageColor color_format,
+                                                        unsigned shard_id,
+                                                        unsigned shard_count,
+                                                        bool is_output ,
+                                                        std::vector<float>& area_factor,
+                                                        std::vector<float>& aspect_ratio,
+                                                        unsigned num_attempts,
+                                                        bool shuffle = false,
+                                                        bool loop = false,
+                                                        RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MOST_FREQUENT_SIZE,
+                                                        unsigned max_width = 0, unsigned max_height = 0,
+                                                        unsigned resize_width = 0, unsigned resize_height = 0);
+
 /// Creates TensorFlow records JPEG image reader and decoder. It allocates the resources and objects required to read and decode Jpeg images stored on the file systems. It has internal sharding capability to load/decode in parallel is user wants.
 /// If images are not Jpeg compressed they will be ignored.
 /// \param context Rocal context

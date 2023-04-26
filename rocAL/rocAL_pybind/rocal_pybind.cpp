@@ -463,6 +463,8 @@ namespace rocal{
             py::return_value_policy::reference);
         m.def("FusedDecoderCropShard",&rocalFusedJpegCropSingleShard,"Reads file from the source and decodes them partially to output random crops",
             py::return_value_policy::reference);
+        m.def("FusedDecoderCropResizeShard",&rocalFusedJpegCropResizeSingleShard,"Reads file from the source and decodes them partially to output random crops and resizes the image",
+            py::return_value_policy::reference);
         m.def("TF_ImageDecoderRaw",&rocalRawTFRecordSource,"Reads file from the source given and decodes it according to the policy only for TFRecords",
               py::return_value_policy::reference);
         m.def("Cifar10Decoder",&rocalRawCIFAR10Source,"Reads file from the source given and decodes it according to the policy only for TFRecords",

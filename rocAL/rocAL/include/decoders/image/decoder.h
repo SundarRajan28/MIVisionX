@@ -49,14 +49,23 @@ public:
     void set_random_area(std::vector<float> &random_area) { _random_area = std::move(random_area); }
     void set_random_aspect_ratio(std::vector<float> &random_aspect_ratio) { _random_aspect_ratio = std::move(random_aspect_ratio); }
     void set_num_attempts(unsigned num_attempts) { _num_attempts = num_attempts; }
+    void set_max_decode_dims(std::tuple<unsigned, unsigned> max_decode_dims) { 
+        _max_decoded_width = std::get<0>(max_decode_dims);
+        _max_decoded_height = std::get<1>(max_decode_dims); 
+    }
+    void set_resize_with_decode() { _resize_with_decode = true; }
     std::vector<float> get_random_area() { return _random_area; }
     std::vector<float> get_random_aspect_ratio() { return _random_aspect_ratio; }
     unsigned get_num_attempts() { return _num_attempts; }
+    std::tuple<unsigned, unsigned> get_max_decode_dims() { return std::make_tuple(_max_decoded_width, _max_decoded_height); }
     void set_seed(int seed) { _seed = seed; }
     int get_seed() { return _seed; }
+    bool is_resize_with_decode() { return _resize_with_decode; }
 private:
     std::vector<float> _random_area, _random_aspect_ratio;
+    unsigned _max_decoded_width, _max_decoded_height;
     unsigned _num_attempts = 10;
+    bool _resize_with_decode = false;
     int _seed = std::time(0); //seed for decoder random crop
 };
 
