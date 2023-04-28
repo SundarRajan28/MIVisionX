@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <cstring>
 #include "decoder_factory.h"
 #include "image_read_and_decode.h"
+#include "resize.hpp"
 
 std::tuple<Decoder::ColorFormat, unsigned >
 interpret_color_format(RocalColorFormat color_format )
