@@ -107,6 +107,7 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
     }
     _num_threads = reader_config.get_cpu_num_threads();
     _reader = create_reader(reader_config);
+    _tempFloatmem = (float *)malloc(sizeof(float) * 99532800 * batch_size); // 7680 * 4320 * 3
 }
 
 void
@@ -303,8 +304,94 @@ ImageReadAndDecode::load(unsigned char* buff,
             }
         }
 
+        typedef struct
+        {
+            unsigned int width;
+            unsigned int height;
+        } imSize;
+
+        struct ResizetensorLocalData
+        {
+            uint32_t nbatchSize;
+            imSize *srcDimensions;
+            imSize maxSrcDimensions;
+            imSize *dstDimensions;
+            imSize maxDstDimensions;
+            DescPtr srcDescPtr, dstDescPtr;
+            ImageROIPtr roiTensorPtrSrc;
+            ImagePatchPtr dstImgSize;
+            Desc srcDesc, dstDesc;
+        };
+
+        ResizetensorLocalData *data = new ResizetensorLocalData;
+        memset(data, 0, sizeof(*data));
+        data->nbatchSize = _batch_size;
+        data->srcDimensions = (imSize *)malloc(sizeof(imSize) * data->nbatchSize);
+        data->dstDimensions = (imSize *)malloc(sizeof(imSize) * data->nbatchSize);
+        data->dstImgSize = (ImagePatch *)malloc(sizeof(ImagePatch) * data->nbatchSize);
+
+        data->maxSrcDimensions.height = _max_decoded_height;
+        data->maxSrcDimensions.width = _max_decoded_width;
+
+        data->maxDstDimensions.height = _resize_height;
+        data->maxDstDimensions.width = _resize_width;
+
+        data->maxSrcDimensions.height = data->maxSrcDimensions.height / data->nbatchSize;
+        data->maxDstDimensions.height = data->maxDstDimensions.height / data->nbatchSize;
+        uint ip_channel = 3;
+
+        // Initializing tensor config parameters.
+        data->srcDescPtr = &data->srcDesc;
+        data->dstDescPtr = &data->dstDesc;
+
+        Desc tempDesc;
+        tempDesc = *data->srcDescPtr;
+        DescPtr tempDescPtr = &tempDesc;
+        tempDescPtr->h = data->dstDescPtr->h;
+        tempDescPtr->strides.nStride = data->srcDescPtr->w * data->dstDescPtr->h * data->srcDescPtr->c;
+
+        data->srcDescPtr->n = data->nbatchSize;
+        data->srcDescPtr->h = data->maxSrcDimensions.height;
+        data->srcDescPtr->w = data->maxSrcDimensions.width;
+        data->srcDescPtr->c = ip_channel;
+        data->dstDescPtr->n = data->nbatchSize;
+        data->dstDescPtr->h = data->maxDstDimensions.height;
+        data->dstDescPtr->w = data->maxDstDimensions.width;
+        data->dstDescPtr->c = ip_channel;
+
+        data->srcDescPtr->strides.nStride = ip_channel * data->srcDescPtr->w * data->srcDescPtr->h;
+        data->srcDescPtr->strides.hStride = ip_channel * data->srcDescPtr->w;
+        data->srcDescPtr->strides.wStride = ip_channel;
+        data->srcDescPtr->strides.cStride = 1;
+        data->dstDescPtr->strides.nStride = ip_channel * data->dstDescPtr->w * data->dstDescPtr->h;
+        data->dstDescPtr->strides.hStride = ip_channel * data->dstDescPtr->w;
+        data->dstDescPtr->strides.wStride = ip_channel;
+        data->dstDescPtr->strides.cStride = 1;
+
+        // Initialize ROI tensors for src/dst
+        data->roiTensorPtrSrc  = static_cast<ImageROI *>(calloc(data->nbatchSize, sizeof(ImageROI)));
+
+        for (int i = 0; i < data->nbatchSize; i++)
+        {
+            data->srcDimensions[i].width = data->roiTensorPtrSrc[i].roiWidth = _actual_decoded_width[i];
+            data->srcDimensions[i].height = data->roiTensorPtrSrc[i].roiHeight = _actual_decoded_width[i];
+            data->dstDimensions[i].width = data->dstImgSize[i].width = _resize_height;
+            data->dstDimensions[i].height = data->dstImgSize[i].height = _resize_width;
+            data->roiTensorPtrSrc[i].x = 0;
+            data->roiTensorPtrSrc[i].y = 0;
+        }
+
         if (_resize_with_decode) {
             // Add resize tensor call here
+            resize_tensor_host(_decompressed_buff[0].data(),
+                        data->srcDescPtr,
+                        buff,
+                        data->dstDescPtr,
+                        _tempFloatmem,
+                        tempDescPtr,
+                        data->dstImgSize,
+                        data->roiTensorPtrSrc,
+                        _num_threads);
         }
 
         for (size_t i = 0; i < _batch_size; i++) {

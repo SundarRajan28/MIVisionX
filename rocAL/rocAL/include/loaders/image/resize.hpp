@@ -289,12 +289,13 @@ void resize_tensor_host(unsigned char *srcPtr,
                         float * tempPtr,
                         DescPtr tempDescPtr,
                         ImagePatchPtr dstImgSize,
-                        ImageROIPtr roiTensorPtrSrc)
+                        ImageROIPtr roiTensorPtrSrc,
+                        size_t num_threads)
 {
     ImageROI roiDefault = {0, 0, (int)srcDescPtr->w, (int)srcDescPtr->h};
     int bufferMultiplier = 3;
 
-#pragma omp parallel for num_threads(dstDescPtr->n)
+#pragma omp parallel for num_threads(num_threads)
     for(int batchCount = 0; batchCount < (int)dstDescPtr->n; batchCount++)
     {
         ImageROI roi;
