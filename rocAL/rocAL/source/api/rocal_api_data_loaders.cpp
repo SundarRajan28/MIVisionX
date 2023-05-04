@@ -1977,7 +1977,7 @@ rocalFusedJpegCropResizeSingleShard(
 }
 
 RocalImage  ROCAL_API_CALL
-rocalFusedJpegCropResizeSingleShard(
+rocalFusedJpegCropSingleShard(
         RocalContext p_context,
         const char* source_path,
         RocalImageColor rocal_color_format,
