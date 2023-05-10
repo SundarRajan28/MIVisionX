@@ -179,13 +179,11 @@ inline void compute_separable_vertical_resample(unsigned char *inputPtr, float *
                                                 ImagePatch inputImgSize, ImagePatch outputImgSize, int *index, float *coeffs, int size)
 {
 
-    std::cerr << "Starting in computing vertical resample\n";
     static constexpr int maxNumLanes = 16;                                  // Maximum number of pixels that can be present in a vector for U8 type
     static constexpr int loadLanes = maxNumLanes / sizeof(unsigned char);
     static constexpr int storeLanes = maxNumLanes / sizeof(float);
     static constexpr int numLanes = std::max(loadLanes, storeLanes);        // No of pixels that can be present in a vector wrt data type
     static constexpr int numVecs = numLanes * sizeof(float) / maxNumLanes; // No of float vectors required to process numLanes pixels
-    std::cerr << "Calculated constexpr in computing vertical resample\n";
 
     int inputHeightLimit = inputImgSize.height - 1;
     int outPixelsPerIter = 4;
@@ -236,8 +234,8 @@ inline void compute_separable_vertical_resample(unsigned char *inputPtr, float *
                 temp += (inRowPtr[k][outLocCol] * coeffs[k0 + k]);
             outRowPtr[outLocCol] = temp;
         }
-        std::cerr << "vertical resample computed\n";
     }
+    std::cerr << "vertical resample computed\n";
 }
 
 inline void compute_separable_horizontal_resample(float *inputPtr, unsigned char *outputPtr, DescPtr inputDescPtr, DescPtr outputDescPtr,
@@ -332,13 +330,13 @@ struct ResizetensorLocalData
     imSize maxSrcDimensions;
     imSize *dstDimensions;
     imSize maxDstDimensions;
-    DescPtr srcDescPtr, dstDescPtr;
+    DescPtr srcDescPtr, dstDescPtr, tempDescPtr;
     ImageROIPtr roiTensorPtrSrc;
     ImagePatchPtr dstImgSize;
-    Desc srcDesc, dstDesc;
+    Desc srcDesc, dstDesc, tempDesc;
 };
 
-void resize_tensor_host(unsigned char *srcPtr,
+void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
                         DescPtr srcDescPtr,
                         unsigned char *dstPtr,
                         DescPtr dstDescPtr,
