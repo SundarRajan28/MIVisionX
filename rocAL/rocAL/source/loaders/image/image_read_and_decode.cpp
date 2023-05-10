@@ -97,8 +97,7 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
         unsigned char *srcPtrImage, *dstPtrImage;
         srcPtrImage = srcPtr[batchCount].data();
         dstPtrImage = dstPtr + batchCount * dstDescPtr->strides.nStride;
-        // float * tempPtrImage = tempPtr + batchCount * tempDescPtr->strides.nStride;
-        float * tempPtrImage = (float *)malloc(tempDescPtr->strides.nStride * sizeof(float));
+        float * tempPtrImage = tempPtr + batchCount * tempDescPtr->strides.nStride;
         srcPtrImage = srcPtrImage + (roi.y * srcDescPtr->strides.hStride) + (roi.x * bufferMultiplier);
 
         ImagePatch srcImgSize;
@@ -116,7 +115,6 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
         compute_separable_vertical_resample(srcPtrImage, tempPtrImage, srcDescPtr, tempDescPtr, srcImgSize, tempImgSize, rowIndex, rowCoeffs, vSize);
         std::cerr << "Before computing horizontal resample\n";
         compute_separable_horizontal_resample(tempPtrImage, dstPtrImage, tempDescPtr, dstDescPtr, tempImgSize, dstImgSize[batchCount], colIndex, colCoeffs, hSize, hRadius);
-        free(tempPtrImage);
     }
 }
 
@@ -208,7 +206,7 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
     }
     _num_threads = reader_config.get_cpu_num_threads();
     _reader = create_reader(reader_config);
-    // _tempFloatmem = (float *)malloc(sizeof(float) * 99532800 * batch_size); // 7680 * 4320 * 3
+    _tempFloatmem = (float *)malloc(sizeof(float) * 99532800 * batch_size); // 7680 * 4320 * 3
 }
 
 void
