@@ -335,8 +335,8 @@ ImageReadAndDecode::load(unsigned char* buff,
 
     _decode_time.start();// Debug timing
     if (_decoder_config._type != DecoderType::SKIP_DECODE) {
-        // for (size_t i = 0; i < _batch_size; i++)
-        //     _decompressed_buff_ptrs[i] = buff + resize_image_size * i;
+        for (size_t i = 0; i < _batch_size; i++)
+            _decompressed_buff_ptrs[i] = buff + resize_image_size * i;
 
 #pragma omp parallel for num_threads(_num_threads)  // default(none) TBD: option disabled in Ubuntu 20.04
         for (size_t i = 0; i < _batch_size; i++)
