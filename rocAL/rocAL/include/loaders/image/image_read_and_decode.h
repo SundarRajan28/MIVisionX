@@ -188,9 +188,9 @@ inline void compute_separable_vertical_resample(unsigned char *inputPtr, float *
     int inputHeightLimit = inputImgSize.height - 1;
     int outPixelsPerIter = 4;
     
-    std::cerr << "Before creating uchar buffer in computing vertical resample: " << size << "\n";
+    // std::cerr << "Before creating uchar buffer in computing vertical resample: " << size << "\n";
     unsigned char *inRowPtr[size];
-    std::cerr << "Before for loop in computing vertical resample\n";
+    // std::cerr << "Before for loop in computing vertical resample\n";
     for (int outLocRow = 0; outLocRow < (int)outputImgSize.height; outLocRow++)
     {
         __m128 pCoeff[size];
@@ -235,7 +235,6 @@ inline void compute_separable_vertical_resample(unsigned char *inputPtr, float *
             outRowPtr[outLocCol] = temp;
         }
     }
-    std::cerr << "vertical resample computed\n";
 }
 
 inline void compute_separable_horizontal_resample(float *inputPtr, unsigned char *outputPtr, DescPtr inputDescPtr, DescPtr outputDescPtr,

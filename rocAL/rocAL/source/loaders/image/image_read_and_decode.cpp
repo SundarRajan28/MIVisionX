@@ -39,7 +39,7 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
 {
     ImageROI roiDefault = {0, 0, (int)srcDescPtr->w, (int)srcDescPtr->h};
     int bufferMultiplier = 3;
-    std::cerr << "Coming to the resize kernel\n";
+    // std::cerr << "Coming to the resize kernel\n";
 
 #pragma omp parallel for num_threads(num_threads)
     for(int batchCount = 0; batchCount < (int)dstDescPtr->n; batchCount++)
@@ -54,7 +54,7 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
         roi.roiWidth = std::min(roiDefault.roiHeight - roiPtrImage->x, roiPtrImage->roiWidth);
         roi.roiHeight = std::min(roiDefault.roiHeight - roiPtrImage->y, roiPtrImage->roiHeight);
 
-        std::cerr << "ROI " << roiDefault.x << " " << roiDefault.y << " " << roiDefault.roiWidth << " " << roiDefault.roiHeight << " " << roiPtrImage->roiWidth << " " << roiPtrImage->roiHeight << "\n";
+        // std::cerr << "ROI " << roiDefault.x << " " << roiDefault.y << " " << roiDefault.roiWidth << " " << roiDefault.roiHeight << " " << roiPtrImage->roiWidth << " " << roiPtrImage->roiHeight << "\n";
         dstImgSize[batchCount].width = std::min(dstImgSize[batchCount].width, dstDescPtr->w);
         dstImgSize[batchCount].height = std::min(dstImgSize[batchCount].height, dstDescPtr->h);
         float wRatio = ((float)(roi.roiWidth)) / ((float)(dstImgSize[batchCount].width));
@@ -67,7 +67,7 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
         hScale = 1/hRadius;
         vSize = std::ceil(2 * vRadius);
         hSize = std::ceil(2 * hRadius);
-        std::cerr << roi.roiHeight << " " << dstImgSize[batchCount].height << " " << dstDescPtr->h << " " << hRatio  << " " << vRadius  << " " << vSize  << " " << "\n";
+        // std::cerr << roi.roiHeight << " " << dstImgSize[batchCount].height << " " << dstDescPtr->h << " " << hRatio  << " " << vRadius  << " " << vSize  << " " << "\n";
 
         float hOffset = (hRatio - 1) * 0.5f - vRadius;
         float wOffset = (wRatio - 1) * 0.5f - hRadius;
@@ -76,7 +76,7 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
         float rowCoeffs[dstImgSize[batchCount].height * vSize];
         float colCoeffs[((dstImgSize[batchCount].width + 3) & ~3) * hSize]; // Buffer size is made a multiple of 4 inorder to allocate sufficient memory for Horizontal coefficients
 
-        std::cerr << "Before computing row coefficients\n";
+        // std::cerr << "Before computing row coefficients\n";
         // Pre-compute row index and coefficients
         for(int indexCount = 0, coeffCount = 0; indexCount < (int)dstImgSize[batchCount].height; indexCount++, coeffCount += vSize)
         {
@@ -84,7 +84,7 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
             compute_resize_src_loc(indexCount, hRatio, rowIndex[indexCount], weightParam, hOffset);
             compute_row_coefficients(vRadius, vScale, vSize, weightParam, &rowCoeffs[coeffCount]);
         }
-        std::cerr << "Before computing col coefficients\n";
+        // std::cerr << "Before computing col coefficients\n";
         // Pre-compute col index and coefficients
         for(int indexCount = 0, coeffCount = 0; indexCount < (int)dstImgSize[batchCount].width; indexCount++)
         {
@@ -111,9 +111,9 @@ void resize_tensor_host(std::vector<std::vector<unsigned char>>& srcPtr,
         // std::cerr << srcDescPtr->strides.nStride << " & " << srcDescPtr->strides.hStride << " & " << srcDescPtr->strides.wStride << "\n";
         // std::cerr << dstDescPtr->strides.nStride << " & " << dstDescPtr->strides.hStride << " & " << dstDescPtr->strides.wStride << "\n";
         // std::cerr << tempDescPtr->strides.nStride << " & " << tempDescPtr->strides.hStride << " & " << tempDescPtr->strides.wStride << "\n";
-        std::cerr << "Before computing vertical resample\n";
+        // std::cerr << "Before computing vertical resample\n";
         compute_separable_vertical_resample(srcPtrImage, tempPtrImage, srcDescPtr, tempDescPtr, srcImgSize, tempImgSize, rowIndex, rowCoeffs, vSize);
-        std::cerr << "Before computing horizontal resample\n";
+        // std::cerr << "Before computing horizontal resample\n";
         compute_separable_horizontal_resample(tempPtrImage, dstPtrImage, tempDescPtr, dstDescPtr, tempImgSize, dstImgSize[batchCount], colIndex, colCoeffs, hSize, hRadius);
     }
 }
@@ -203,10 +203,10 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
         auto [width, height] = decoder_config.get_max_decode_dims();
         _max_decoded_width = width;
         _max_decoded_height = height;
+        _tempFloatmem = (float *)malloc(sizeof(float) * 99532800 * batch_size); // 7680 * 4320 * 3
     }
     _num_threads = reader_config.get_cpu_num_threads();
     _reader = create_reader(reader_config);
-    _tempFloatmem = (float *)malloc(sizeof(float) * 99532800 * batch_size); // 7680 * 4320 * 3
 }
 
 void
@@ -314,7 +314,7 @@ ImageReadAndDecode::load(unsigned char* buff,
             _compressed_buff[file_counter].reserve(fsize);
             if (_resize_with_decode) {
                 // 
-                _decompressed_buff[file_counter].reserve(image_size);
+                _decompressed_buff[file_counter].reserve((image_size / 256 * 256) + 256);
             }
             _actual_read_size[file_counter] = _reader->read_data(_compressed_buff[file_counter].data(), fsize);
             _image_names[file_counter] = _reader->id();
@@ -336,7 +336,7 @@ ImageReadAndDecode::load(unsigned char* buff,
     _decode_time.start();// Debug timing
     if (_decoder_config._type != DecoderType::SKIP_DECODE) {
         for (size_t i = 0; i < _batch_size; i++)
-            _decompressed_buff_ptrs[i] = buff + resize_image_size * i;
+            _decompressed_buff_ptrs[i] = buff + image_size * i;
 
 #pragma omp parallel for num_threads(_num_threads)  // default(none) TBD: option disabled in Ubuntu 20.04
         for (size_t i = 0; i < _batch_size; i++)
@@ -383,6 +383,7 @@ ImageReadAndDecode::load(unsigned char* buff,
                 }
             }
             if (_resize_with_decode) {
+                // std::cerr << "Resize with decoder is called\n";
                 if (_decoder[i]->decode(_compressed_buff[i].data(), _compressed_image_size[i], _decompressed_buff[i].data(),
                                         _max_decoded_width, _max_decoded_height,
                                         original_width, original_height,
@@ -403,57 +404,57 @@ ImageReadAndDecode::load(unsigned char* buff,
                 _actual_decoded_height[i] = scaledh;
             }
         }
-
-        data->maxSrcDimensions.height = _max_decoded_height;
-        data->maxSrcDimensions.width = _max_decoded_width;
-
-        data->maxDstDimensions.height = _resize_height;
-        data->maxDstDimensions.width = _resize_width;
-
-        // data->maxSrcDimensions.height = data->maxSrcDimensions.height / data->nbatchSize;
-        // data->maxDstDimensions.width = data->maxDstDimensions.height / data->nbatchSize;
-        uint ip_channel = 3;
-
-        // Initializing tensor config parameters.
-        data->srcDescPtr = &data->srcDesc;
-        data->dstDescPtr = &data->dstDesc;
-
-        data->srcDescPtr->n = data->nbatchSize;
-        data->srcDescPtr->h = data->maxSrcDimensions.height;
-        data->srcDescPtr->w = data->maxSrcDimensions.width;
-        data->srcDescPtr->c = ip_channel;
-        data->dstDescPtr->n = data->nbatchSize;
-        data->dstDescPtr->h = data->maxDstDimensions.height;
-        data->dstDescPtr->w = data->maxDstDimensions.width;
-        data->dstDescPtr->c = ip_channel;
-
-        data->srcDescPtr->strides.nStride = ip_channel * data->srcDescPtr->w * data->srcDescPtr->h;
-        data->srcDescPtr->strides.hStride = ip_channel * data->srcDescPtr->w;
-        data->srcDescPtr->strides.wStride = ip_channel;
-        data->srcDescPtr->strides.cStride = 1;
-        data->dstDescPtr->strides.nStride = ip_channel * data->dstDescPtr->w * data->dstDescPtr->h;
-        data->dstDescPtr->strides.hStride = ip_channel * data->dstDescPtr->w;
-        data->dstDescPtr->strides.wStride = ip_channel;
-        data->dstDescPtr->strides.cStride = 1;
-
-        data->tempDesc = *data->srcDescPtr;
-        data->tempDescPtr = &data->tempDesc;
-        data->tempDescPtr->h = data->dstDescPtr->h;
-        data->tempDescPtr->strides.nStride = data->srcDescPtr->w * data->dstDescPtr->h * data->srcDescPtr->c;
-
-        for (int i = 0; i < data->nbatchSize; i++)
-        {
-            data->srcDimensions[i].width = data->roiTensorPtrSrc[i].roiWidth = _actual_decoded_width[i];
-            data->srcDimensions[i].height = data->roiTensorPtrSrc[i].roiHeight = _actual_decoded_height[i];
-            std::cerr << "Actual Width and height \t" << _actual_decoded_width[i] << " " << _actual_decoded_height[i] << "\t";
-            data->dstDimensions[i].width = data->dstImgSize[i].width = _resize_width;
-            data->dstDimensions[i].height = data->dstImgSize[i].height = _resize_height;
-            data->roiTensorPtrSrc[i].x = 0;
-            data->roiTensorPtrSrc[i].y = 0;
-            std::cerr << data->roiTensorPtrSrc[i].roiWidth << " - " << data->roiTensorPtrSrc[i].roiHeight << "\n";
-        }
-
         if (_resize_with_decode) {
+            data->maxSrcDimensions.height = _max_decoded_height;
+            data->maxSrcDimensions.width = _max_decoded_width;
+
+            data->maxDstDimensions.height = _resize_height;
+            data->maxDstDimensions.width = _resize_width;
+
+            // data->maxSrcDimensions.height = data->maxSrcDimensions.height / data->nbatchSize;
+            // data->maxDstDimensions.width = data->maxDstDimensions.height / data->nbatchSize;
+            uint ip_channel = 3;
+
+            // Initializing tensor config parameters.
+            data->srcDescPtr = &data->srcDesc;
+            data->dstDescPtr = &data->dstDesc;
+
+            data->srcDescPtr->n = data->nbatchSize;
+            data->srcDescPtr->h = data->maxSrcDimensions.height;
+            data->srcDescPtr->w = data->maxSrcDimensions.width;
+            data->srcDescPtr->c = ip_channel;
+            data->dstDescPtr->n = data->nbatchSize;
+            data->dstDescPtr->h = data->maxDstDimensions.height;
+            data->dstDescPtr->w = data->maxDstDimensions.width;
+            data->dstDescPtr->c = ip_channel;
+
+            data->srcDescPtr->strides.nStride = ip_channel * data->srcDescPtr->w * data->srcDescPtr->h;
+            data->srcDescPtr->strides.hStride = ip_channel * data->srcDescPtr->w;
+            data->srcDescPtr->strides.wStride = ip_channel;
+            data->srcDescPtr->strides.cStride = 1;
+            data->dstDescPtr->strides.nStride = ip_channel * data->dstDescPtr->w * data->dstDescPtr->h;
+            data->dstDescPtr->strides.hStride = ip_channel * data->dstDescPtr->w;
+            data->dstDescPtr->strides.wStride = ip_channel;
+            data->dstDescPtr->strides.cStride = 1;
+
+            data->tempDesc = *data->srcDescPtr;
+            data->tempDescPtr = &data->tempDesc;
+            data->tempDescPtr->h = data->dstDescPtr->h;
+            data->tempDescPtr->strides.nStride = data->srcDescPtr->w * data->dstDescPtr->h * data->srcDescPtr->c;
+
+            for (int i = 0; i < data->nbatchSize; i++)
+            {
+                data->srcDimensions[i].width = data->roiTensorPtrSrc[i].roiWidth = _actual_decoded_width[i];
+                data->srcDimensions[i].height = data->roiTensorPtrSrc[i].roiHeight = _actual_decoded_height[i];
+                // std::cerr << "Actual Width and height \t" << _actual_decoded_width[i] << " " << _actual_decoded_height[i] << "\t";
+                data->dstDimensions[i].width = data->dstImgSize[i].width = _resize_width;
+                data->dstDimensions[i].height = data->dstImgSize[i].height = _resize_height;
+                data->roiTensorPtrSrc[i].x = 0;
+                data->roiTensorPtrSrc[i].y = 0;
+                // std::cerr << data->roiTensorPtrSrc[i].roiWidth << " - " << data->roiTensorPtrSrc[i].roiHeight << "\n";
+            }
+
+        
             // Add resize tensor call here
             resize_tensor_host(_decompressed_buff,
                         data->srcDescPtr,
