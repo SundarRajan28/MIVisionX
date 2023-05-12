@@ -195,8 +195,6 @@ ImageReadAndDecode::create(ReaderConfig reader_config, DecoderConfig decoder_con
         data = new ResizetensorLocalData;
         memset(data, 0, sizeof(*data));
         data->nbatchSize = _batch_size;
-        data->srcDimensions = (imSize *)malloc(sizeof(imSize) * data->nbatchSize);
-        data->dstDimensions = (imSize *)malloc(sizeof(imSize) * data->nbatchSize);
         data->dstImgSize = (ImagePatch *)malloc(sizeof(ImagePatch) * data->nbatchSize);
         data->roiTensorPtrSrc  = static_cast<ImageROI *>(calloc(data->nbatchSize, sizeof(ImageROI)));
 
@@ -444,11 +442,11 @@ ImageReadAndDecode::load(unsigned char* buff,
 
             for (int i = 0; i < data->nbatchSize; i++)
             {
-                data->srcDimensions[i].width = data->roiTensorPtrSrc[i].roiWidth = _actual_decoded_width[i];
-                data->srcDimensions[i].height = data->roiTensorPtrSrc[i].roiHeight = _actual_decoded_height[i];
+                data->roiTensorPtrSrc[i].roiWidth = _actual_decoded_width[i];
+                data->roiTensorPtrSrc[i].roiHeight = _actual_decoded_height[i];
                 // std::cerr << "Actual Width and height \t" << _actual_decoded_width[i] << " " << _actual_decoded_height[i] << "\t";
-                data->dstDimensions[i].width = data->dstImgSize[i].width = _resize_width;
-                data->dstDimensions[i].height = data->dstImgSize[i].height = _resize_height;
+                data->dstImgSize[i].width = _resize_width;
+                data->dstImgSize[i].height = _resize_height;
                 data->roiTensorPtrSrc[i].x = 0;
                 data->roiTensorPtrSrc[i].y = 0;
                 // std::cerr << data->roiTensorPtrSrc[i].roiWidth << " - " << data->roiTensorPtrSrc[i].roiHeight << "\n";
