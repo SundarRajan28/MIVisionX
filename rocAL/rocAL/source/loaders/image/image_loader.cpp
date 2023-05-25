@@ -300,6 +300,8 @@ Timing ImageLoader::timing()
 {
     auto t = _image_loader->timing();
     t.image_process_time = _swap_handle_time.get_timing();
+    t.circular_buffer_wait_if_empty_time = _circ_buff._cb_block_if_empty_time.get_timing();
+    t.circular_buffer_wait_if_full_time = _circ_buff._cb_block_if_full_time.get_timing();
     return t;
 }
 

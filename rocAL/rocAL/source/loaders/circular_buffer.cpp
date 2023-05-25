@@ -26,7 +26,9 @@ THE SOFTWARE.
 CircularBuffer::CircularBuffer(void* devres):
           _write_ptr(0),
           _read_ptr(0),
-          _level(0)
+          _level(0),
+          _cb_block_if_empty_time("Circular Buffer Block IF Empty Time"),
+          _cb_block_if_full_time("Circular Buffer Block IF Full Time")
 {
 #if ENABLE_OPENCL
     DeviceResources *ocl = static_cast<DeviceResources *> (devres);
@@ -70,7 +72,9 @@ void CircularBuffer::unblock_writer()
 
 void* CircularBuffer::get_read_buffer_dev()
 {
+    _cb_block_if_empty_time.start();
     block_if_empty();
+    _cb_block_if_empty_time.end();
     return _dev_buffer[_read_ptr];
 }
 
@@ -78,7 +82,9 @@ unsigned char* CircularBuffer::get_read_buffer_host()
 {
     if(!_initialized)
         THROW("Circular buffer not initialized")
+    _cb_block_if_empty_time.start();
     block_if_empty();
+    _cb_block_if_empty_time.end();
     return _host_buffer_ptrs[_read_ptr];
 }
 
@@ -86,7 +92,9 @@ unsigned char*  CircularBuffer::get_write_buffer()
 {
     if(!_initialized)
         THROW("Circular buffer not initialized")
+    _cb_block_if_full_time.start();
     block_if_full();
+    _cb_block_if_full_time.end();
     return(_host_buffer_ptrs[_write_ptr]);
 }
 
@@ -381,7 +389,9 @@ CircularBuffer::~CircularBuffer()
 
 decoded_image_info &CircularBuffer::get_image_info()
 {
+    _cb_block_if_empty_time.start();
     block_if_empty();
+    _cb_block_if_empty_time.end();
     std::unique_lock<std::mutex> lock(_names_buff_lock);
     if(_level != _circ_image_info.size())
         THROW("CircularBuffer internals error, image and image info sizes not the same "+TOSTR(_level) + " != "+TOSTR(_circ_image_info.size()))
@@ -390,7 +400,9 @@ decoded_image_info &CircularBuffer::get_image_info()
 
 crop_image_info &CircularBuffer::get_cropped_image_info()
 {
+    _cb_block_if_empty_time.start();
     block_if_empty();
+    _cb_block_if_empty_time.end();
     std::unique_lock<std::mutex> lock(_names_buff_lock);
     if(_level != _circ_crop_image_info.size())
         THROW("CircularBuffer internals error, image and image info sizes not the same "+TOSTR(_level) + " != "+TOSTR(_circ_crop_image_info.size()))

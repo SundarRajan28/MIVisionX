@@ -30,6 +30,7 @@ THE SOFTWARE.
 #include "device_manager.h"
 #include "device_manager_hip.h"
 #include "commons.h"
+#include "timing_debug.h"
 struct decoded_image_info
 {
     std::vector<std::string> _image_names;
@@ -68,6 +69,7 @@ public:
     void reset();// sets the buffer level to 0
     void block_if_empty();// blocks the caller if the buffer is empty
     void block_if_full();// blocks the caller if the buffer is full
+    TimingDBG _cb_block_if_empty_time, _cb_block_if_full_time;
 
 private:
     void increment_read_ptr();
