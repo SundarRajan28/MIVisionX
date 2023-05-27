@@ -133,6 +133,15 @@ class ROCALGenericIterator(object):
 
     def __next__(self):
         if(b.isEmpty(self.loader._handle)):
+            timing_info = self.loader.Timing_Info()
+            print("Load     time ::", timing_info.load_time/1000000)
+            print("Decode   time ::", timing_info.decode_time/1000000)
+            print("Process  time ::", timing_info.process_time/1000000)
+            print("Transfer time ::", timing_info.transfer_time/1000000)
+            print("wait_if_empty_time ::", timing_info.wait_if_empty_time/1000000)
+            print("wait_if_full_time ::", timing_info.wait_if_full_time/1000000)
+            print("circular_buffer_wait_if_empty_time ::", timing_info.circular_buffer_wait_if_empty_time/1000000)
+            print("circular_buffer_wait_if_full_time ::", timing_info.circular_buffer_wait_if_full_time/1000000)
             raise StopIteration
 
         if self.loader.run() != 0:

@@ -1013,8 +1013,7 @@ void MasterGraph::output_routine()
             // _ring_buffer.get_write_buffers() is blocking and blocks here until user uses processed image by calling run() and frees space in the ring_buffer
             auto write_buffers = _ring_buffer.get_write_buffers();
             _rb_block_if_full_time.end();
-
-            _process_time.start();
+            
 
             // Swap handles on the input image, so that new image is loaded to be processed
             auto load_ret = _loader_module->load_next();
@@ -1072,7 +1071,9 @@ void MasterGraph::output_routine()
                 else
                     full_batch_meta_data = _augmented_meta_data->clone();
             }
+            _process_time.start();
             _graph->process();
+            _process_time.end();
             _bencode_time.start();
             if(_is_box_encoder )
             {
@@ -1089,8 +1090,7 @@ void MasterGraph::output_routine()
             _bencode_time.end();
             _ring_buffer.set_meta_data(full_batch_image_names, full_batch_meta_data);
             _ring_buffer.push(); // Image data and metadata is now stored in output the ring_buffer, increases it's level by 1
-        }
-        _process_time.end();
+        }        
 
     }
     catch (const std::exception &e)
