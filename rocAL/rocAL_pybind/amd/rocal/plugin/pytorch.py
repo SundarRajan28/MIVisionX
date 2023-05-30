@@ -89,6 +89,37 @@ class ROCALGenericIterator(object):
         color_format = b.getOutputColorFormat(self.loader._handle)
         self.p = (1 if (color_format == int(types.GRAY)) else 3)
         self.labels_size = ((self.bs*self.loader._numOfClasses) if (self.loader._oneHotEncoding == True) else self.bs)
+
+        if self.bs != 0:
+            self.len = b.getRemainingImages(self.loader._handle)//self.bs
+        else:
+            self.len = b.getRemainingImages(self.loader._handle)
+
+        self._first_batch = None
+        try:
+            self._first_batch = ROCALGenericIterator.__next__(self)
+            # call to `next` sets _ever_consumed to True but if we are just calling it from
+            # here we should set if to False again
+            self._ever_consumed = False
+        except StopIteration:
+            assert False, "It seems that there is no data in the pipeline."
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        if(b.isEmpty(self.loader._handle)):
+            raise StopIteration
+
+        if self.loader.run() != 0:
+            raise StopIteration
+        
+        self._ever_consumed = True
+        if self._first_batch is not None:
+            batch = self._first_batch
+            self._first_batch = None
+            return batch
+
         if self.tensor_format == types.NCHW:
             if self.output_memory_type == "cpu":
                 if self.tensor_dtype == types.FLOAT:
@@ -122,31 +153,7 @@ class ROCALGenericIterator(object):
                     self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float16, device=torch_gpu_device)
                 torch_gpu_device = torch.device('cuda', self.device_id)
                 self.labels = torch.empty(self.labels_size, dtype = torch.int32, device = torch_gpu_device)
-
-        if self.bs != 0:
-            self.len = b.getRemainingImages(self.loader._handle)//self.bs
-        else:
-            self.len = b.getRemainingImages(self.loader._handle)
-
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):
-        if(b.isEmpty(self.loader._handle)):
-            timing_info = self.loader.Timing_Info()
-            print("Load     time ::", timing_info.load_time/1000000)
-            print("Decode   time ::", timing_info.decode_time/1000000)
-            print("Process  time ::", timing_info.process_time/1000000)
-            print("Transfer time ::", timing_info.transfer_time/1000000)
-            print("wait_if_empty_time ::", timing_info.wait_if_empty_time/1000000)
-            print("wait_if_full_time ::", timing_info.wait_if_full_time/1000000)
-            print("circular_buffer_wait_if_empty_time ::", timing_info.circular_buffer_wait_if_empty_time/1000000)
-            print("circular_buffer_wait_if_full_time ::", timing_info.circular_buffer_wait_if_full_time/1000000)
-            raise StopIteration
-
-        if self.loader.run() != 0:
-            raise StopIteration
-
+        
         self.loader.copyToExternalTensor(
             self.out, self.multiplier, self.offset, self.reverse_channels, self.tensor_format, self.tensor_dtype)
 
