@@ -1073,7 +1073,7 @@ void MasterGraph::output_routine()
             if(full_batch_meta_data)
             {
                 // get roi width and height of output image
-                for (unsigned int i = 0; i < _user_batch_size; i++)
+                for (unsigned int i = 0; i < full_batch_meta_data->get_img_roi_sizes_batch().size(); i++)
                 {
                     ImgSize img_roi_size;
                     img_roi_size.w = _output_image_info.get_roi_width()[i];
