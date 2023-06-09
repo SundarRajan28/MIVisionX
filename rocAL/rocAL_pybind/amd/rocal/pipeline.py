@@ -332,6 +332,9 @@ class Pipeline(object):
     def getRemainingImages(self):
         return b.getRemainingImages(self._handle)
 
+    def rocalRelease(self):
+        return b.rocalRelease(self._handle)
+
     def rocalResetLoaders(self):
         return b.rocalResetLoaders(self._handle)
 
