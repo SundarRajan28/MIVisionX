@@ -104,16 +104,20 @@ Reader::Status COCOFileSourceReader::initialize(ReaderConfig desc)
         }
     }
     for (const auto &filename: _file_names) {
-        auto img_size = _meta_data_reader->lookup_image_size(filename);
+        std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
+        auto img_size = _meta_data_reader->lookup_image_size(base_filename);
         auto aspect_ratio = static_cast<float> (img_size.h) / img_size.w;
         _aspect_ratios.push_back(aspect_ratio);
     };
     _file_names = sortVecAByVecB(_file_names, _aspect_ratios);
+    std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
     auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
     //shuffle dataset if set
     if (ret == Reader::Status::OK && _shuffle)
+    {
         std::random_shuffle(_file_names.begin(), _file_names.begin() + mid);
         std::random_shuffle(_file_names.begin() + mid, _file_names.end());
+    }
     return ret;
 }
 
@@ -210,15 +214,19 @@ int COCOFileSourceReader::release()
 void COCOFileSourceReader::reset()
 {
     for (const auto &filename: _file_names) {
-        auto img_size = _meta_data_reader->lookup_image_size(filename);
+        std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
+        auto img_size = _meta_data_reader->lookup_image_size(base_filename);
         auto aspect_ratio = static_cast<float> (img_size.h) / img_size.w;
         _aspect_ratios.push_back(aspect_ratio);
     };
     _file_names = sortVecAByVecB(_file_names, _aspect_ratios);
+    std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
     auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
     if (_shuffle)
+    {
         std::random_shuffle(_file_names.begin(), _file_names.begin() + mid);
         std::random_shuffle(_file_names.begin() + mid, _file_names.end());
+    }
     _read_counter = 0;
     _curr_file_idx = 0;
 }
