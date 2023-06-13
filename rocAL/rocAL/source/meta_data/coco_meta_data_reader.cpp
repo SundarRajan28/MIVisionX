@@ -41,6 +41,14 @@ bool COCOMetaDataReader::exists(const std::string &image_name)
     return _map_content.find(image_name) != _map_content.end();
 }
 
+ImgSize& COCOMetaDataReader::lookup_image_size(const std::string& image_name)
+{
+    auto it = _map_content.find(image_name);
+    if (_map_content.end() == it)
+        THROW("ERROR: Given name not present in the map" + image_name)
+    return it->second->get_img_size();
+}
+
 void COCOMetaDataReader::lookup(const std::vector<std::string> &image_names)
 {
 

@@ -32,6 +32,7 @@ class COCOMetaDataReader: public MetaDataReader
 public:
     void init(const MetaDataConfig& cfg) override;
     void lookup(const std::vector<std::string>& image_names) override;
+    ImgSize& lookup_image_size(const std::string& image_name) override;
     void read_all(const std::string& path) override;
     void release(std::string image_name);
     void release() override;
