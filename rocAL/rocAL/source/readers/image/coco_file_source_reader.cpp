@@ -213,6 +213,7 @@ int COCOFileSourceReader::release()
 
 void COCOFileSourceReader::reset()
 {
+    _aspect_ratios.clear();
     for (const auto &filename: _file_names) {
         std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
         auto img_size = _meta_data_reader->lookup_image_size(base_filename);
