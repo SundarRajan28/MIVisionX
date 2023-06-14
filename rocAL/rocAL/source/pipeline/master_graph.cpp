@@ -574,6 +574,7 @@ MasterGraph::Status
 MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier0, float multiplier1,
                              float multiplier2, float offset0, float offset1, float offset2, bool reverse_channels, RocalTensorDataType output_data_type, RocalOutputMemType output_mem_type, int max_height, int max_width)
 {
+    std::cerr << "To tensor\n";
     if(no_more_processed_data())
         return MasterGraph::Status::NO_MORE_DATA;
 
@@ -831,7 +832,7 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                         else if(output_data_type == RocalTensorDataType::FP16) 
                         {
                             half *output_tensor_16 = static_cast<half *>(out_ptr);
-                            auto channel_size = w * h;
+                            auto channel_size = max_width * max_height;
                             if(c != 3) {
                                 for(unsigned i = 0; i < channel_size; i++)
                                     output_tensor_16[dest_buf_offset + i] = offset[0] + multiplier[0] * (half)in_buffer[c * i];
@@ -864,36 +865,67 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                                 __m256 padd0 = _mm256_set1_ps(offset0);
                                 __m256 padd1 = _mm256_set1_ps(offset1);
                                 __m256 padd2 = _mm256_set1_ps(offset2);
-                                unsigned int alignedLength = (channel_size & ~7);    // multiple of 8
-                                unsigned int i = 0;
+                                // unsigned int alignedLength = (channel_size & ~7);    // multiple of 8
+                                int alignedLength = (max_width & ~7);    // multiple of 8
+                                int i = 0;
 
                                 __m256 fR, fG, fB;
                                 __m128i tempR, tempG, tempB;
-                                for (; i < alignedLength; i += 8) {
-                                    __m256i pix0 = _mm256_loadu_si256((const __m256i *) in_buffer);
-                                    pix0 = _mm256_permutevar8x32_epi32(pix0, _mm256_setr_epi32(0, 1, 2, 3, 3, 4, 5, 6));
-                                    fB = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_R));
-                                    fG = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_G));
-                                    fR = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_B));
-                                    fB = _mm256_fmadd_ps(fB, pmul0, padd0);
-                                    fG = _mm256_fmadd_ps(fG, pmul1, padd1);
-                                    fR = _mm256_fmadd_ps(fR, pmul2, padd2);
-                                    tempB = _mm256_cvtps_ph(fB, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-                                    tempG = _mm256_cvtps_ph(fG, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-                                    tempR = _mm256_cvtps_ph(fR, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-                                    _mm_storeu_si128((__m128i *)B_buf_16, tempB);
-                                    _mm_storeu_si128((__m128i *)G_buf_16, tempG);
-                                    _mm_storeu_si128((__m128i *)R_buf_16, tempR);
-                                    B_buf_16 += 8;
-                                    G_buf_16 += 8;
-                                    R_buf_16 += 8;
-                                    in_buffer += 24;
+                                
+                                for(int row = 0; row < max_height; row++) {
+                                    unsigned char *in_buffer_row = reinterpret_cast<unsigned char *>(in_buffer) + (row * w * c);
+                                    int col = 0;
+                                    for (; col < alignedLength; col += 8) {
+                                        __m256i pix0 = _mm256_loadu_si256((const __m256i *) in_buffer_row);
+                                        pix0 = _mm256_permutevar8x32_epi32(pix0, _mm256_setr_epi32(0, 1, 2, 3, 3, 4, 5, 6));
+                                        fB = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_R));
+                                        fG = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_G));
+                                        fR = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_B));
+                                        fB = _mm256_fmadd_ps(fB, pmul0, padd0);
+                                        fG = _mm256_fmadd_ps(fG, pmul1, padd1);
+                                        fR = _mm256_fmadd_ps(fR, pmul2, padd2);
+                                        tempB = _mm256_cvtps_ph(fB, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+                                        tempG = _mm256_cvtps_ph(fG, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+                                        tempR = _mm256_cvtps_ph(fR, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+                                        _mm_storeu_si128((__m128i *)B_buf_16, tempB);
+                                        _mm_storeu_si128((__m128i *)G_buf_16, tempG);
+                                        _mm_storeu_si128((__m128i *)R_buf_16, tempR);
+                                        B_buf_16 += 8;
+                                        G_buf_16 += 8;
+                                        R_buf_16 += 8;
+                                        in_buffer_row += 24;
+                                    }
+                                    for (; col < max_width; col++, in_buffer_row += 3) {
+                                        *B_buf_16++ = (half) (in_buffer_row[0] * multiplier0) + offset0;
+                                        *G_buf_16++ = (half) (in_buffer_row[1] * multiplier1) + offset1;
+                                        *R_buf_16++ = (half) (in_buffer_row[2] * multiplier2) + offset2;
+                                    }
                                 }
-                                for (; i < channel_size; i++, in_buffer += 3) {
-                                    *B_buf_16++ = (half) (in_buffer[0] * multiplier0) + offset0;
-                                    *G_buf_16++ = (half) (in_buffer[1] * multiplier1) + offset1;
-                                    *R_buf_16++ = (half) (in_buffer[2] * multiplier2) + offset2;
-                                }
+                                // for (; i < alignedLength; i += 8) {
+                                //     __m256i pix0 = _mm256_loadu_si256((const __m256i *) in_buffer);
+                                //     pix0 = _mm256_permutevar8x32_epi32(pix0, _mm256_setr_epi32(0, 1, 2, 3, 3, 4, 5, 6));
+                                //     fB = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_R));
+                                //     fG = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_G));
+                                //     fR = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_B));
+                                //     fB = _mm256_fmadd_ps(fB, pmul0, padd0);
+                                //     fG = _mm256_fmadd_ps(fG, pmul1, padd1);
+                                //     fR = _mm256_fmadd_ps(fR, pmul2, padd2);
+                                //     tempB = _mm256_cvtps_ph(fB, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+                                //     tempG = _mm256_cvtps_ph(fG, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+                                //     tempR = _mm256_cvtps_ph(fR, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
+                                //     _mm_storeu_si128((__m128i *)B_buf_16, tempB);
+                                //     _mm_storeu_si128((__m128i *)G_buf_16, tempG);
+                                //     _mm_storeu_si128((__m128i *)R_buf_16, tempR);
+                                //     B_buf_16 += 8;
+                                //     G_buf_16 += 8;
+                                //     R_buf_16 += 8;
+                                //     in_buffer += 24;
+                                // }
+                                // for (; i < max_width; i++, in_buffer += 3) {
+                                //     *B_buf_16++ = (half) (in_buffer[0] * multiplier0) + offset0;
+                                //     *G_buf_16++ = (half) (in_buffer[1] * multiplier1) + offset1;
+                                //     *R_buf_16++ = (half) (in_buffer[2] * multiplier2) + offset2;
+                                // }
         #else
                                 for (unsigned channel_idx = 0; channel_idx < c; channel_idx++) {
                                     for (unsigned i = 0; i < channel_size; i++)
