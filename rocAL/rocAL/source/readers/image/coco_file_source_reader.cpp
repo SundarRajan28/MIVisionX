@@ -32,23 +32,6 @@ THE SOFTWARE.
 namespace filesys = boost::filesystem;
 #define USE_STDIO_FILE 0
 
-template< typename T, typename U >
-std::vector<T> sortVecAByVecB( std::vector<T> & a, std::vector<U> & b ){
-
-    // zip the two vectors (A,B)
-    std::vector<std::pair<T,U>> zipped(a.size());
-    for( size_t i = 0; i < a.size(); i++ ) zipped[i] = std::make_pair( a[i], b[i] );
-
-    // sort according to B
-    std::sort(zipped.begin(), zipped.end(), []( auto & lop, auto & rop ) { return lop.second < rop.second; }); 
-
-    // extract sorted A
-    std::vector<T> sorted;
-    std::transform(zipped.begin(), zipped.end(), std::back_inserter(sorted), []( auto & pair ){ return pair.first; }); 
-
-    return sorted;
-}
-
 COCOFileSourceReader::COCOFileSourceReader()
 {
     _src_dir = nullptr;
@@ -103,15 +86,33 @@ Reader::Status COCOFileSourceReader::initialize(ReaderConfig desc)
             replicate_last_batch_to_pad_partial_shard();
         }
     }
-    for (const auto &filename: _file_names) {
+
+    for (const auto &filename : _file_names)
+    {
         std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
         auto img_size = _meta_data_reader->lookup_image_size(base_filename);
-        auto aspect_ratio = static_cast<float> (img_size.h) / img_size.w;
+        auto aspect_ratio = static_cast<float>(img_size.h) / img_size.w;
         _aspect_ratios.push_back(aspect_ratio);
     };
-    _file_names = sortVecAByVecB(_file_names, _aspect_ratios);
+
+    // zip the two vectors
+    std::vector<std::pair<std::string, float>> zipped(_file_names.size());
+    for (size_t i = 0; i < _file_names.size(); i++)
+        zipped[i] = std::make_pair(_file_names[i], _aspect_ratios[i]);
+
+    // sort according to aspect ratios
+    std::sort(zipped.begin(), zipped.end(), [](auto &lop, auto &rop)
+              { return lop.second < rop.second; });
+
+    // extract sorted file_names
+    std::vector<std::string> sorted;
+    std::transform(zipped.begin(), zipped.end(), std::back_inserter(sorted), [](auto &pair)
+                   { return pair.first; });
+
+    _file_names = sorted;
     std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
     auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
+
     //shuffle dataset if set
     if (ret == Reader::Status::OK && _shuffle)
     {
@@ -213,15 +214,6 @@ int COCOFileSourceReader::release()
 
 void COCOFileSourceReader::reset()
 {
-    _aspect_ratios.clear();
-    for (const auto &filename: _file_names) {
-        std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
-        auto img_size = _meta_data_reader->lookup_image_size(base_filename);
-        auto aspect_ratio = static_cast<float> (img_size.h) / img_size.w;
-        _aspect_ratios.push_back(aspect_ratio);
-    };
-    _file_names = sortVecAByVecB(_file_names, _aspect_ratios);
-    std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
     auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
     if (_shuffle)
     {
