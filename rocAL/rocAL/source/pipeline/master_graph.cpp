@@ -572,7 +572,7 @@ MasterGraph::timing()
 
 MasterGraph::Status
 MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier0, float multiplier1,
-                             float multiplier2, float offset0, float offset1, float offset2, bool reverse_channels, RocalTensorDataType output_data_type, RocalOutputMemType output_mem_type)
+                             float multiplier2, float offset0, float offset1, float offset2, bool reverse_channels, RocalTensorDataType output_data_type, RocalOutputMemType output_mem_type, int max_height, int max_width)
 {
     if(no_more_processed_data())
         return MasterGraph::Status::NO_MORE_DATA;

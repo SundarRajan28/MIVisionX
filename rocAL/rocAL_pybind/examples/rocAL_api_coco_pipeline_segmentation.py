@@ -7,6 +7,7 @@ from amd.rocal.pipeline import Pipeline
 import amd.rocal.fn as fn
 import amd.rocal.types as types
 
+import math
 import os
 from PIL import Image
 import cv2
@@ -324,7 +325,34 @@ class ROCALCOCOIterator(object):
         print("____________REMAINING IMAGES____________:", self.rim)
         color_format = self.loader.getOutputColorFormat()
         self.p = (1 if color_format is types.GRAY else 3)
-        if tensor_layout == types.NCHW:
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        if(self.loader.isEmpty()):
+            timing_info = self.loader.Timing_Info()
+            print("Load     time ::", timing_info.load_time)
+            print("Decode   time ::", timing_info.decode_time)
+            print("Process  time ::", timing_info.process_time)
+            print("Transfer time ::", timing_info.transfer_time)
+            raise StopIteration
+
+        if self.loader.run() != 0:
+            raise StopIteration
+
+        #Image ROI width and height
+        self.roi_sizes_wh = np.zeros((self.bs * 2),dtype = "int32")
+        self.loader.GetROIImgSizes(self.roi_sizes_wh)
+        max_size = tuple(max(s) for s in zip(*[self.roi_sizes_wh[i*2:(i*2)+2] for i in range(self.bs)]))
+
+        stride = 32
+        max_size = list(max_size)
+        max_size[0] = int(math.ceil(max_size[0] / stride) * stride)
+        max_size[1] = int(math.ceil(max_size[1] / stride) * stride)
+        max_size = tuple(max_size)
+
+        if self.tensor_format == types.NCHW:
             if self.device == "cpu":
                 if self.tensor_dtype == types.FLOAT:
                     self.out = torch.empty((self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype=torch.float32)
@@ -348,24 +376,9 @@ class ROCALCOCOIterator(object):
                     self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float32, device=torch_gpu_device)
                 elif self.tensor_dtype == types.FLOAT16:
                     self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float16, device=torch_gpu_device)
-
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):
-        if(self.loader.isEmpty()):
-            timing_info = self.loader.Timing_Info()
-            print("Load     time ::", timing_info.load_time)
-            print("Decode   time ::", timing_info.decode_time)
-            print("Process  time ::", timing_info.process_time)
-            print("Transfer time ::", timing_info.transfer_time)
-            raise StopIteration
-
-        if self.loader.run() != 0:
-            raise StopIteration
-
+        
         self.loader.copyToExternalTensor(
-            self.out, self.multiplier, self.offset, self.reverse_channels, self.tensor_format, self.tensor_dtype)
+            self.out, self.multiplier, self.offset, self.reverse_channels, self.tensor_format, self.tensor_dtype, max_height=max_size[1], max_width=max_size[0])
 
 
         self.img_names_length = np.empty(self.bs, dtype="int32")
@@ -381,9 +394,6 @@ class ROCALCOCOIterator(object):
 # 1D bboxes array in a batch
         self.bboxes = np.zeros((self.count_batch*4), dtype="float64")
         self.loader.GetBBCords(self.bboxes)
-#Image ROI width and height
-        self.roi_sizes_wh = np.zeros((self.bs * 2),dtype = "int32")
-        self.loader.GetROIImgSizes(self.roi_sizes_wh)
 #Mask info of a batch
         self.mask_count = np.zeros(self.count_batch, dtype="int32")
         self.mask_size = self.loader.GetMaskCount(self.mask_count)
@@ -486,7 +496,7 @@ def main():
     except OSError as error:
         print(error)
 
-    pipe = Pipeline(batch_size=bs, num_threads=num_threads, device_id=local_rank, seed=random_seed, rocal_cpu=rocal_cpu, mean=[102.9801, 115.9465, 122.7717], std=[1. , 1., 1.], tensor_layout=tensor_format, tensor_dtype=tensor_dtype)
+    pipe = Pipeline(batch_size=bs, num_threads=num_threads, device_id=local_rank, seed=random_seed, rocal_cpu=rocal_cpu, mean=[102.9801, 115.9465, 122.7717], std=[1. , 1., 1.], tensor_layout=tensor_format, tensor_dtype=tensor_dtype, prefetch_queue_depth=3)
 
     with pipe:
         jpegs, bboxes, labels = fn.readers.coco(
