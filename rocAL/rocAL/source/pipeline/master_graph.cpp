@@ -574,6 +574,7 @@ MasterGraph::Status
 MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier0, float multiplier1,
                              float multiplier2, float offset0, float offset1, float offset2, bool reverse_channels, RocalTensorDataType output_data_type, RocalOutputMemType output_mem_type, int max_height, int max_width)
 {
+    std::cerr << "To tensor\n";
     if(no_more_processed_data())
         return MasterGraph::Status::NO_MORE_DATA;
 
@@ -872,7 +873,7 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                                 __m128i tempR, tempG, tempB;
                                 
                                 for(int row = 0; row < max_height; row++) {
-                                    unsigned char *in_buffer_row = in_buffer + row * w;
+                                    unsigned char *in_buffer_row = reinterpret_cast<unsigned char *>(in_buffer) + (row * w * c);
                                     int col = 0;
                                     for (; col < alignedLength; col += 8) {
                                         __m256i pix0 = _mm256_loadu_si256((const __m256i *) in_buffer_row);
