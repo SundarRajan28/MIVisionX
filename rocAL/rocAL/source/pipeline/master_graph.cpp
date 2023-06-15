@@ -718,10 +718,12 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
             for( auto&& out_image: output_buffers)
             {
                 unsigned int single_image_size = w * c * h;
+                unsigned int output_single_image_size = max_height * max_width * c;
+                unsigned int input_width_stride = w * c;
                 #pragma omp parallel for num_threads(num_threads)
                 for(unsigned int batchCount = 0; batchCount < n; batchCount ++)
                 {
-                    size_t dest_buf_offset = dest_buf_offset_start + single_image_size*batchCount;
+                    size_t dest_buf_offset = dest_buf_offset_start + output_single_image_size*batchCount;
                     auto in_buffer = (unsigned char*)out_image + single_image_size*batchCount;
 
                     if(format == RocalTensorFormat::NHWC)
@@ -873,7 +875,7 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                                 __m128i tempR, tempG, tempB;
                                 
                                 for(int row = 0; row < max_height; row++) {
-                                    unsigned char *in_buffer_row = reinterpret_cast<unsigned char *>(in_buffer) + (row * w * c);
+                                    unsigned char *in_buffer_row = reinterpret_cast<unsigned char *>(in_buffer) + (row * input_width_stride);
                                     int col = 0;
                                     for (; col < alignedLength; col += 8) {
                                         __m256i pix0 = _mm256_loadu_si256((const __m256i *) in_buffer_row);
