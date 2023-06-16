@@ -87,37 +87,40 @@ Reader::Status COCOFileSourceReader::initialize(ReaderConfig desc)
         }
     }
 
-    for (const auto &filename : _file_names)
+    if (_meta_data_reader)
     {
-        std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
-        auto img_size = _meta_data_reader->lookup_image_size(base_filename);
-        auto aspect_ratio = static_cast<float>(img_size.h) / img_size.w;
-        _aspect_ratios.push_back(aspect_ratio);
-    };
+        for (const auto &filename : _file_names)
+        {
+            std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
+            auto img_size = _meta_data_reader->lookup_image_size(base_filename);
+            auto aspect_ratio = static_cast<float>(img_size.h) / img_size.w;
+            _aspect_ratios.push_back(aspect_ratio);
+        };
 
-    // zip the two vectors
-    std::vector<std::pair<std::string, float>> zipped(_file_names.size());
-    for (size_t i = 0; i < _file_names.size(); i++)
-        zipped[i] = std::make_pair(_file_names[i], _aspect_ratios[i]);
+        // zip the two vectors
+        std::vector<std::pair<std::string, float>> zipped(_file_names.size());
+        for (size_t i = 0; i < _file_names.size(); i++)
+            zipped[i] = std::make_pair(_file_names[i], _aspect_ratios[i]);
 
-    // sort according to aspect ratios
-    std::sort(zipped.begin(), zipped.end(), [](auto &lop, auto &rop)
-              { return lop.second < rop.second; });
+        // sort according to aspect ratios
+        std::sort(zipped.begin(), zipped.end(), [](auto &lop, auto &rop)
+                  { return lop.second < rop.second; });
 
-    // extract sorted file_names
-    std::vector<std::string> sorted;
-    std::transform(zipped.begin(), zipped.end(), std::back_inserter(sorted), [](auto &pair)
-                   { return pair.first; });
+        // extract sorted file_names
+        std::vector<std::string> sorted;
+        std::transform(zipped.begin(), zipped.end(), std::back_inserter(sorted), [](auto &pair)
+                       { return pair.first; });
 
-    _file_names = sorted;
-    std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
-    auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
+        _file_names = sorted;
+        std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
+        auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
 
-    //shuffle dataset if set
-    if (ret == Reader::Status::OK && _shuffle)
-    {
-        std::random_shuffle(_file_names.begin(), _file_names.begin() + mid);
-        std::random_shuffle(_file_names.begin() + mid, _file_names.end());
+        // shuffle dataset if set
+        if (ret == Reader::Status::OK && _shuffle)
+        {
+            std::random_shuffle(_file_names.begin(), _file_names.begin() + mid);
+            std::random_shuffle(_file_names.begin() + mid, _file_names.end());
+        }
     }
     return ret;
 }

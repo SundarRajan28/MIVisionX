@@ -902,31 +902,6 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                                         *R_buf_16++ = (half) (in_buffer_row[2] * multiplier2) + offset2;
                                     }
                                 }
-                                // for (; i < alignedLength; i += 8) {
-                                //     __m256i pix0 = _mm256_loadu_si256((const __m256i *) in_buffer);
-                                //     pix0 = _mm256_permutevar8x32_epi32(pix0, _mm256_setr_epi32(0, 1, 2, 3, 3, 4, 5, 6));
-                                //     fB = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_R));
-                                //     fG = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_G));
-                                //     fR = _mm256_cvtepi32_ps(_mm256_shuffle_epi8(pix0, mask_B));
-                                //     fB = _mm256_fmadd_ps(fB, pmul0, padd0);
-                                //     fG = _mm256_fmadd_ps(fG, pmul1, padd1);
-                                //     fR = _mm256_fmadd_ps(fR, pmul2, padd2);
-                                //     tempB = _mm256_cvtps_ph(fB, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-                                //     tempG = _mm256_cvtps_ph(fG, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-                                //     tempR = _mm256_cvtps_ph(fR, _MM_FROUND_TO_ZERO | _MM_FROUND_NO_EXC);
-                                //     _mm_storeu_si128((__m128i *)B_buf_16, tempB);
-                                //     _mm_storeu_si128((__m128i *)G_buf_16, tempG);
-                                //     _mm_storeu_si128((__m128i *)R_buf_16, tempR);
-                                //     B_buf_16 += 8;
-                                //     G_buf_16 += 8;
-                                //     R_buf_16 += 8;
-                                //     in_buffer += 24;
-                                // }
-                                // for (; i < max_width; i++, in_buffer += 3) {
-                                //     *B_buf_16++ = (half) (in_buffer[0] * multiplier0) + offset0;
-                                //     *G_buf_16++ = (half) (in_buffer[1] * multiplier1) + offset1;
-                                //     *R_buf_16++ = (half) (in_buffer[2] * multiplier2) + offset2;
-                                // }
         #else
                                 for (unsigned channel_idx = 0; channel_idx < c; channel_idx++) {
                                     for (unsigned i = 0; i < channel_size; i++)
