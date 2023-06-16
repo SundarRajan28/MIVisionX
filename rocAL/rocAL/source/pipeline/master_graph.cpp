@@ -666,7 +666,7 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
             }else
             {
                 HipExecCopyInt8ToNCHW(_device.resources()->hip_stream, (const void *)img_buffer, out_ptr, dest_buf_offset, n, c, h, w,
-                                        multiplier0, multiplier1, multiplier2, offset0, offset1, offset2, reverse_channels, fp16);
+                                        multiplier0, multiplier1, multiplier2, offset0, offset1, offset2, reverse_channels, fp16, max_height, max_width);
             }
             dest_buf_offset += single_output_image_size;
         }
@@ -696,7 +696,7 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                 }else
                 {
                     HipExecCopyInt8ToNCHW(_device.resources()->hip_stream, (const void *)_output_tensor, out_ptr, dest_buf_offset, n, c, h, w,
-                                            multiplier0, multiplier1, multiplier2, offset0, offset1, offset2, reverse_channels, fp16);
+                                            multiplier0, multiplier1, multiplier2, offset0, offset1, offset2, reverse_channels, fp16, max_height, max_width);
                 }
                 dest_buf_offset += single_output_image_size;
             }
