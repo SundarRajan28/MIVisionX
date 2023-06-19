@@ -119,14 +119,14 @@ namespace rocal{
                                 RocalTensorLayout tensor_format, float multiplier0,
                                 float multiplier1, float multiplier2, float offset0,
                                 float offset1, float offset2,
-                                bool reverse_channels, RocalOutputMemType output_mem_type)
+                                bool reverse_channels, RocalOutputMemType output_mem_type, int max_height, int max_width)
     {
         auto buf = array.request();
         float* ptr = (float*) buf.ptr;
         // call pure C++ function
         int status = rocalToTensor32(context, ptr, tensor_format, multiplier0,
                                               multiplier1, multiplier2, offset0,
-                                              offset1, offset2, reverse_channels, output_mem_type);
+                                              offset1, offset2, reverse_channels, output_mem_type, max_height, max_width);
         // std::cerr<<"\n Copy failed with status :: "<<status;
         return py::cast<py::none>(Py_None);
     }
@@ -135,14 +135,14 @@ namespace rocal{
                                 RocalTensorLayout tensor_format, float multiplier0,
                                 float multiplier1, float multiplier2, float offset0,
                                 float offset1, float offset2,
-                                bool reverse_channels, RocalOutputMemType output_mem_type)
+                                bool reverse_channels, RocalOutputMemType output_mem_type, int max_height, int max_width)
     {
         auto buf = array.request();
         float16* ptr = (float16*) buf.ptr;
         // call pure C++ function
         int status = rocalToTensor16(context, ptr, tensor_format, multiplier0,
                                               multiplier1, multiplier2, offset0,
-                                              offset1, offset2, reverse_channels, output_mem_type);
+                                              offset1, offset2, reverse_channels, output_mem_type, max_height, max_width);
         // std::cerr<<"\n Copy failed with status :: "<<status;
         return py::cast<py::none>(Py_None);
     }
@@ -151,13 +151,13 @@ namespace rocal{
                                 RocalTensorLayout tensor_format, float multiplier0,
                                 float multiplier1, float multiplier2, float offset0,
                                 float offset1, float offset2,
-                                bool reverse_channels, RocalOutputMemType output_mem_type)
+                                bool reverse_channels, RocalOutputMemType output_mem_type, int max_height, int max_width)
     {
         float * ptr = (float*)array_ptr;
         // call pure C++ function
         int status = rocalToTensor32(context, ptr, tensor_format, multiplier0,
                                               multiplier1, multiplier2, offset0,
-                                              offset1, offset2, reverse_channels, output_mem_type);
+                                              offset1, offset2, reverse_channels, output_mem_type, max_height, max_width);
         // std::cerr<<"\n Copy failed with status :: "<<status;
         return py::cast<py::none>(Py_None);
     }
@@ -166,13 +166,13 @@ namespace rocal{
                                 RocalTensorLayout tensor_format, float multiplier0,
                                 float multiplier1, float multiplier2, float offset0,
                                 float offset1, float offset2,
-                                bool reverse_channels, RocalOutputMemType output_mem_type)
+                                bool reverse_channels, RocalOutputMemType output_mem_type, int max_height, int max_width)
     {
         float16 * ptr = (float16*)array_ptr;
         // call pure C++ function
         int status = rocalToTensor16(context, ptr, tensor_format, multiplier0,
                                               multiplier1, multiplier2, offset0,
-                                              offset1, offset2, reverse_channels, output_mem_type);
+                                              offset1, offset2, reverse_channels, output_mem_type, max_height, max_width);
         // std::cerr<<"\n Copy failed with status :: "<<status;
         return py::cast<py::none>(Py_None);
     }

@@ -587,6 +587,11 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
     const size_t h = _output_image_info.height_single();
     const size_t w = output_width();
     const size_t single_output_image_size = output_byte_size();
+    if ((max_height == 0) || (max_width == 0))
+    {
+        max_height = h;
+        max_width = w;
+    }
 
 #if ENABLE_OPENCL
     if(_output_image_info.mem_type() == RocalMemType::OCL)
