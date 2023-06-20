@@ -120,6 +120,14 @@ Reader::Status COCOFileSourceReader::initialize(ReaderConfig desc)
         {
             std::random_shuffle(_file_names.begin(), _file_names.begin() + mid);
             std::random_shuffle(_file_names.begin() + mid, _file_names.end());
+            std::vector<std::string> shuffled_filenames;
+            int split_count = _file_names.size() / _batch_count;
+            std::vector<int> indexes(split_count);
+            std::iota(indexes.begin(), indexes.end(), 0);
+            std::random_shuffle(indexes.begin(), indexes.end());
+            for(auto const idx: indexes)
+                shuffled_filenames.insert(shuffled_filenames.end(), _file_names.begin() + idx * _batch_count, _file_names.begin() + idx * _batch_count + _batch_count);
+            _file_names = shuffled_filenames;
         }
     }
     return ret;
@@ -217,11 +225,44 @@ int COCOFileSourceReader::release()
 
 void COCOFileSourceReader::reset()
 {
+    _aspect_ratios.clear();
+    for (const auto &filename : _file_names)
+    {
+        std::string base_filename = filename.substr(filename.find_last_of("/\\") + 1);
+        auto img_size = _meta_data_reader->lookup_image_size(base_filename);
+        auto aspect_ratio = static_cast<float>(img_size.h) / img_size.w;
+        _aspect_ratios.push_back(aspect_ratio);
+    };
+
+    // zip the two vectors
+    std::vector<std::pair<std::string, float>> zipped(_file_names.size());
+    for (size_t i = 0; i < _file_names.size(); i++)
+        zipped[i] = std::make_pair(_file_names[i], _aspect_ratios[i]);
+
+    // sort according to aspect ratios
+    std::sort(zipped.begin(), zipped.end(), [](auto &lop, auto &rop)
+                { return lop.second < rop.second; });
+
+    // extract sorted file_names
+    std::vector<std::string> sorted;
+    std::transform(zipped.begin(), zipped.end(), std::back_inserter(sorted), [](auto &pair)
+                    { return pair.first; });
+
+    _file_names = sorted;
+    std::sort(_aspect_ratios.begin(), _aspect_ratios.end());
     auto mid = std::upper_bound(_aspect_ratios.begin(), _aspect_ratios.end(), 1.0f) - _aspect_ratios.begin();
     if (_shuffle)
     {
         std::random_shuffle(_file_names.begin(), _file_names.begin() + mid);
         std::random_shuffle(_file_names.begin() + mid, _file_names.end());
+        std::vector<std::string> shuffled_filenames;
+        int split_count = _file_names.size() / _batch_count;
+        std::vector<int> indexes(split_count);
+        std::iota(indexes.begin(), indexes.end(), 0);
+        std::random_shuffle(indexes.begin(), indexes.end());
+        for(auto const idx: indexes)
+            shuffled_filenames.insert(shuffled_filenames.end(), _file_names.begin() + idx * _batch_count, _file_names.begin() + idx * _batch_count + _batch_count);
+        _file_names = shuffled_filenames;
     }
     _read_counter = 0;
     _curr_file_idx = 0;
