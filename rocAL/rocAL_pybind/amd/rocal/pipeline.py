@@ -223,9 +223,9 @@ class Pipeline(object):
                 b.getOneHotEncodedLabels(self._handle, array.ctypes.data_as(ctypes.c_void_p), self._numOfClasses, 0)
             else: #torch tensor
                 return b.getOneHotEncodedLabels(self._handle, ctypes.c_void_p(array.data_ptr()), self._numOfClasses, 0)
-        if device=="gpu":
+        else:
             if (isinstance(array,cp.ndarray)):
-                b.getOneHotEncodedLabels(self._handle, array.data.ptr, self._numOfClasses, 1)
+                b.getCupyOneHotEncodedLabels(self._handle, array.data.ptr, self._numOfClasses, 1)
             else: #torch tensor
                 return b.getOneHotEncodedLabels(self._handle, ctypes.c_void_p(array.data_ptr()), self._numOfClasses, 1)
 
