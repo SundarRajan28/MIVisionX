@@ -350,36 +350,35 @@ class ROCALCOCOIterator(object):
         max_size = list(max_size)
         max_size[0] = int(math.ceil(max_size[0] / stride) * stride)
         max_size[1] = int(math.ceil(max_size[1] / stride) * stride)
-        max_size = tuple(max_size)
+        max_size = tuple(reversed(max_size))
 
         if self.tensor_format == types.NCHW:
             if self.device == "cpu":
                 if self.tensor_dtype == types.FLOAT:
-                    self.out = torch.empty((self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype=torch.float32)
+                    self.out = torch.empty((self.bs*self.n, self.p, max_size[0], max_size[1],), dtype=torch.float32)
                 elif self.tensor_dtype == types.FLOAT16:
-                    self.out = torch.empty((self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype=torch.float16)
+                    self.out = torch.empty((self.bs*self.n, self.p, max_size[0], max_size[1],), dtype=torch.float16)
             else:
                 torch_gpu_device = torch.device('cuda', self.device_id)
                 if self.tensor_dtype == types.FLOAT:
-                    self.out = torch.empty((self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype=torch.float32, device=torch_gpu_device)
+                    self.out = torch.empty((self.bs*self.n, self.p, max_size[0], max_size[1],), dtype=torch.float32, device=torch_gpu_device)
                 elif self.tensor_dtype == types.FLOAT16:
-                    self.out = torch.empty((self.bs*self.n, self.p, int(self.h/self.bs), self.w,), dtype=torch.float16, device=torch_gpu_device)
+                    self.out = torch.empty((self.bs*self.n, self.p, max_size[0], max_size[1],), dtype=torch.float16, device=torch_gpu_device)
         else:
             if self.device == "cpu":
                 if self.tensor_dtype == types.FLOAT:
-                    self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float32)
+                    self.out = torch.empty((self.bs*self.n, max_size[0], max_size[1], self.p), dtype=torch.float32)
                 elif self.tensor_dtype == types.FLOAT16:
-                    self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float16)
+                    self.out = torch.empty((self.bs*self.n, max_size[0], max_size[1], self.p), dtype=torch.float16)
             else:
                 torch_gpu_device = torch.device('cuda', self.device_id)
                 if self.tensor_dtype == types.FLOAT:
-                    self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float32, device=torch_gpu_device)
+                    self.out = torch.empty((self.bs*self.n, max_size[0], max_size[1], self.p), dtype=torch.float32, device=torch_gpu_device)
                 elif self.tensor_dtype == types.FLOAT16:
-                    self.out = torch.empty((self.bs*self.n, int(self.h/self.bs), self.w, self.p), dtype=torch.float16, device=torch_gpu_device)
+                    self.out = torch.empty((self.bs*self.n, max_size[0], max_size[1], self.p), dtype=torch.float16, device=torch_gpu_device)
         
         self.loader.copyToExternalTensor(
-            self.out, self.multiplier, self.offset, self.reverse_channels, self.tensor_format, self.tensor_dtype, max_height=max_size[1], max_width=max_size[0])
-
+            self.out, self.multiplier, self.offset, self.reverse_channels, self.tensor_format, self.tensor_dtype, max_height=max_size[0], max_width=max_size[1])
 
         self.img_names_length = np.empty(self.bs, dtype="int32")
         self.img_names_size = self.loader.GetImageNameLen(self.img_names_length)
