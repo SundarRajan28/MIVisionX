@@ -284,11 +284,11 @@ class Pipeline(object):
     def GetBBCords(self, array):
         return b.getBBCords(self._handle, array)
 
-    def GetMaskCount(self, array):
-        return b.getMaskCount(self._handle, array)
+    # def GetMaskCount(self, array):
+    #     return b.getMaskCount(self._handle, array)
 
-    def GetMaskCoordinates(self, array_count, array):
-        return b.getMaskCoordinates(self._handle, array_count, array)
+    def GetMaskCoordinates(self):
+        return b.getMaskCoordinates(self._handle)
 
     def getImageLabels(self, array):
         if (isinstance(array,np.ndarray)):

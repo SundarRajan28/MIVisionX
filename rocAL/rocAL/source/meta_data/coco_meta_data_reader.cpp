@@ -70,27 +70,21 @@ void COCOMetaDataReader::lookup(const std::vector<std::string> &image_names)
         _output->get_bb_labels_batch()[i] = it->second->get_bb_labels();
         _output->get_img_sizes_batch()[i] = it->second->get_img_size();
         if (_output->metadata_type() == MetaDataType::PolygonMask)
-        {
             _output->get_mask_cords_batch()[i] = it->second->get_mask_cords();
-            _output->get_mask_polygons_count_batch()[i] = it->second->get_polygon_count();
-            _output->get_mask_vertices_count_batch()[i] = it->second->get_vertices_count();
-        }
     }
 }
 
-void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count)
+void COCOMetaDataReader::add(std::string image_name, BoundingBoxCords bb_coords, BoundingBoxLabels bb_labels, ImgSize image_size, MaskCords mask_cords)
 {
     if (exists(image_name))
     {
         auto it = _map_content.find(image_name);
         it->second->get_bb_cords().push_back(bb_coords[0]);
         it->second->get_bb_labels().push_back(bb_labels[0]);
-        it->second->get_mask_cords().insert(it->second->get_mask_cords().end(), mask_cords.begin(), mask_cords.end());
-        it->second->get_polygon_count().push_back(polygon_count[0]);
-        it->second->get_vertices_count().push_back(vertices_count[0]);
+        it->second->get_mask_cords().push_back(mask_cords[0]);
         return;
     }
-    pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords, polygon_count, vertices_count);
+    pMetaDataBox info = std::make_shared<BoundingBox>(bb_coords, bb_labels, image_size, mask_cords);
     _map_content.insert(pair<std::string, std::shared_ptr<BoundingBox>>(image_name, info));
 }
 
@@ -113,8 +107,6 @@ void COCOMetaDataReader::print_map_contents()
     BoundingBoxLabels bb_labels;
     ImgSize img_size;
     MaskCords mask_cords;
-    std::vector<int> polygon_size;
-    std::vector<std::vector<int>> vertices_count;
 
     std::cout << "\nBBox Annotations List: \n";
     for (auto &elem : _map_content)
@@ -124,8 +116,6 @@ void COCOMetaDataReader::print_map_contents()
         bb_labels = elem.second->get_bb_labels();
         img_size = elem.second->get_img_size();
         mask_cords = elem.second->get_mask_cords();
-        polygon_size = elem.second->get_polygon_count();
-        vertices_count = elem.second->get_vertices_count();
         std::cout << "<wxh, num of bboxes>: " << img_size.w << " X " << img_size.h << " , " << bb_coords.size() << std::endl;
         for (unsigned int i = 0; i < bb_coords.size(); i++)
         {
@@ -133,16 +123,15 @@ void COCOMetaDataReader::print_map_contents()
         }
         if (_output->metadata_type() == MetaDataType::PolygonMask)
         {
-            int count = 0;
-            std::cout << "\nNumber of objects : " << bb_coords.size() << std::endl;
-            for (unsigned int i = 0; i < bb_coords.size(); i++)
+            std::cerr << "\nNumber of objects : " << mask_cords.size() << std::endl;
+            for (unsigned int i = 0; i < mask_cords.size(); i++)
             {
-                std::cout << "\nNumber of polygons for object[ << " << i << "]:" << polygon_size[i];
-                for (int j = 0; j < polygon_size[i]; j++)
+                std::cerr << "\nNumber of polygons for object[ << " << i << "]:" << mask_cords[i].size();
+                for (unsigned j = 0; j < mask_cords[i].size(); j++)
                 {
-                    std::cout << "\nPolygon size :" << vertices_count[i][j] << "Elements::";
-                    for (int k = 0; k < vertices_count[i][j]; k++, count++)
-                        std::cout << "\t " << mask_cords[count + vertices_count[i][j]];
+                    std::cerr << "\nPolygon size :" << mask_cords[i][j].size() << "Elements::";
+                    for (unsigned k = 0; k < mask_cords[i][j].size(); k++)
+                        std::cerr << "\t " << mask_cords[i][j][k];
                 }
             }
         }
@@ -177,12 +166,11 @@ void COCOMetaDataReader::read_all(const std::string &path)
     BoundingBoxCords bb_coords;
     BoundingBoxLabels bb_labels;
     ImgSizes img_sizes;
-    std::vector<int> polygon_count;
-    int polygon_size = 0;
-    std::vector<std::vector<int>> vertices_count;
+    MaskCords mask_coords;
 
     BoundingBoxCord box;
     ImgSize img_size;
+    coords polygons;
     RAPIDJSON_ASSERT(parser.PeekType() == kObjectType);
     parser.EnterObject();
     while (const char *key = parser.NextObjectKey())
@@ -306,16 +294,13 @@ void COCOMetaDataReader::read_all(const std::string &path)
                             parser.EnterArray();
                             while (parser.NextArrayValue())
                             {
-                                polygon_size += 1;
-                                int vertex_count = 0;
                                 parser.EnterArray();
                                 while (parser.NextArrayValue())
                                 {
-                                    
                                     mask.push_back(parser.GetDouble());
-                                    vertex_count += 1;
                                 }
-                                vertices_array.push_back(vertex_count);
+                                polygons.push_back(mask);
+                                mask.clear();
                             }
                         }
                     }
@@ -339,14 +324,10 @@ void COCOMetaDataReader::read_all(const std::string &path)
                     box.b = (bbox[1] + bbox[3] - 1) / image_size.h;
                     bb_coords.push_back(box);
                     bb_labels.push_back(label);
-                    polygon_count.push_back(polygon_size);
-                    vertices_count.push_back(vertices_array);
-                    add(file_name, bb_coords, bb_labels, image_size, mask, polygon_count, vertices_count);
-                    mask.clear();
-                    polygon_size = 0;
-                    polygon_count.clear();
-                    vertices_count.clear();
-                    vertices_array.clear();
+                    mask_coords.push_back(polygons);
+                    add(file_name, bb_coords, bb_labels, image_size, mask_coords);
+                    polygons.clear();
+                    mask_coords.clear();
                     bb_coords.clear();
                     bb_labels.clear();
                 }

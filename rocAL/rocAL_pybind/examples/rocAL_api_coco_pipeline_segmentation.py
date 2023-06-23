@@ -394,11 +394,10 @@ class ROCALCOCOIterator(object):
         self.bboxes = np.zeros((self.count_batch*4), dtype="float64")
         self.loader.GetBBCords(self.bboxes)
 #Mask info of a batch
-        self.mask_count = np.zeros(self.count_batch, dtype="int32")
-        self.mask_size = self.loader.GetMaskCount(self.mask_count)
-        self.polygon_size = np.zeros(self.mask_size, dtype= "int32")
-        self.mask_data = np.zeros(100000, dtype = "float32")
-        self.loader.GetMaskCoordinates(self.polygon_size, self.mask_data)
+        # self.mask_count = np.zeros(self.count_batch, dtype="int32")
+        # self.mask_size = self.loader.GetMaskCount(self.mask_count)
+        # self.polygon_size = np.zeros(self.mask_size, dtype= "int32")
+        self.mask_data = self.loader.GetMaskCoordinates()
 
         count =0
         sum_count=0
@@ -416,11 +415,11 @@ class ROCALCOCOIterator(object):
             self.label_2d_numpy = (self.labels[sum_count : sum_count+count])
             self.bb_2d_numpy = (self.bboxes[sum_count*4 : (sum_count+count)*4])
 
-            for index, _ in enumerate(self.bb_2d_numpy):
-                if index % 2 == 0:
-                    self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[0]
-                elif index % 2 != 0:
-                    self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[1]
+            # for index, _ in enumerate(self.bb_2d_numpy):
+            #     if index % 2 == 0:
+            #         self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[0]
+            #     elif index % 2 != 0:
+            #         self.bb_2d_numpy[index] = self.bb_2d_numpy[index] * self.img_roi_size2d_numpy_wh[1]
 
 
             self.bb_2d_numpy = np.reshape(self.bb_2d_numpy, (-1, 4)).tolist()
@@ -429,19 +428,20 @@ class ROCALCOCOIterator(object):
             self.target.add_field("labels", self.label_2d_numpy)
 
             self.count_mask = self.bboxes_label_count[i]
-            poly_batch_list = []
-            for i in range(self.count_mask):
-                poly_list = []
-                for _ in range(self.mask_count[iteration1]):
-                    polygons = []
-                    polygon_size_check = self.polygon_size[iteration]
-                    iteration = iteration + 1
-                    for _ in range(polygon_size_check):
-                        polygons.append(self.mask_data[j])
-                        j = j + 1
-                    poly_list.append(polygons)
-                iteration1 = iteration1 + 1
-                poly_batch_list.append(poly_list)
+            poly_batch_list = self.mask_data[i]
+            
+            # for i in range(self.count_mask):
+            #     poly_list = []
+            #     for _ in range(self.mask_count[iteration1]):
+            #         polygons = []
+            #         polygon_size_check = self.polygon_size[iteration]
+            #         iteration = iteration + 1
+            #         for _ in range(polygon_size_check):
+            #             polygons.append(self.mask_data[j])
+            #             j = j + 1
+            #         poly_list.append(polygons)
+            #     iteration1 = iteration1 + 1
+            #     poly_batch_list.append(poly_list)
 
             masks = SegmentationMask(poly_batch_list, (self.img_roi_size2d_numpy_wh[0],self.img_roi_size2d_numpy_wh[1]))
             self.target.add_field("masks", masks)

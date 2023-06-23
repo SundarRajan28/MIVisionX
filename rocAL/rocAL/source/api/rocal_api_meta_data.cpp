@@ -470,79 +470,62 @@ ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context, double* buf)
     }
 }
 
-unsigned
-ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* buf)
-{
-    if (p_context == nullptr)
-    {
-        ERR("Invalid rocal context passed to rocalGetMaskCount")
-        return 0;
-    }
-    unsigned size = 0, count = 0;
-    auto context = static_cast<Context*>(p_context);
-    try
-    {
-        auto meta_data = context->master_graph->meta_data();
-        size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
-        if(context->user_batch_size() != meta_data_batch_size)
-            THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
-        if(!meta_data.second)
-            THROW("No mask has been loaded for this output image")
-        for(unsigned i = 0; i < meta_data_batch_size; i++)
-        {
-            unsigned object_count = meta_data.second->get_bb_labels_batch()[i].size();
-            for(unsigned int j = 0; j < object_count; j++) {
-                unsigned polygon_count = meta_data.second->get_mask_polygons_count_batch()[i][j];
-                buf[count++] = polygon_count;
-                size += polygon_count;
-            }
-        }
-        return size;
-    }
-    catch(const std::exception& e)
-    {
-        context->capture_error(e.what());
-        std::cerr << e.what() << '\n';
-    }
-}
+// unsigned
+// ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* buf)
+// {
+//     if (p_context == nullptr)
+//     {
+//         ERR("Invalid rocal context passed to rocalGetMaskCount")
+//         return 0;
+//     }
+//     unsigned size = 0, count = 0;
+//     auto context = static_cast<Context*>(p_context);
+//     try
+//     {
+//         auto meta_data = context->master_graph->meta_data();
+//         size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
+//         if(context->user_batch_size() != meta_data_batch_size)
+//             THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
+//         if(!meta_data.second)
+//             THROW("No mask has been loaded for this output image")
+//         for(unsigned i = 0; i < meta_data_batch_size; i++)
+//         {
+//             unsigned object_count = meta_data.second->get_bb_labels_batch()[i].size();
+//             for(unsigned int j = 0; j < object_count; j++) {
+//                 unsigned polygon_count = meta_data.second->get_mask_polygons_count_batch()[i][j];
+//                 buf[count++] = polygon_count;
+//                 size += polygon_count;
+//             }
+//         }
+//         return size;
+//     }
+//     catch(const std::exception& e)
+//     {
+//         context->capture_error(e.what());
+//         std::cerr << e.what() << '\n';
+//     }
+// }
 
-void
-ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, float *buf)
+std::vector<std::vector<std::vector<std::vector<float>>>>
+ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context)
 {
+    std::vector<std::vector<std::vector<std::vector<float>>>> mask_coords;
     if (!p_context)
     {
         ERR("Invalid rocal context passed to rocalGetMaskCoordinates")
-        return;
+        return mask_coords;
     }
-    auto context = static_cast<Context*>(p_context);
+    auto context = static_cast<Context*>(p_context);    
     try
     {
         auto meta_data = context->master_graph->meta_data();
-        size_t meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
+        auto meta_data_batch_size = meta_data.second->get_mask_cords_batch().size();
         if(context->user_batch_size() != meta_data_batch_size)
             THROW("meta data batch size is wrong " + TOSTR(meta_data_batch_size) + " != "+ TOSTR(context->user_batch_size() ))
         if(!meta_data.second)
             THROW("No mask has been loaded for this output image")
-        int size = 0;
-        auto ptr = buf;
-        for(unsigned image_idx = 0; image_idx < meta_data_batch_size; image_idx++)
-        {
-            int poly_size = 0;
-            unsigned object_count = meta_data.second->get_bb_labels_batch()[image_idx].size();
-            for(unsigned int i = 0; i < object_count; i++)
-            {
-                auto mask_data_ptr = meta_data.second->get_mask_cords_batch()[image_idx].data(); 
-                unsigned polygon_count = meta_data.second->get_mask_polygons_count_batch()[image_idx][i];
-                for(unsigned int j = 0; j < polygon_count; j++)
-                {
-                    unsigned polygon_size = meta_data.second->get_mask_vertices_count_batch()[image_idx][i][j];
-                    bufcount[size++] = polygon_size;
-                    memcpy(ptr, mask_data_ptr + poly_size, sizeof(float) * polygon_size);
-                    ptr += polygon_size;
-                    poly_size += polygon_size;
-                }
-            }
-        }
+        mask_coords = meta_data.second->get_mask_cords_batch();
+        return mask_coords;
     }
     catch(const std::exception& e)
     {

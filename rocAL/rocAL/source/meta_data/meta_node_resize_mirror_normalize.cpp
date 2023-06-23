@@ -21,6 +21,7 @@ THE SOFTWARE.
 */
 
 #include "meta_node_resize_mirror_normalize.h"
+#define MAX_BUFFER 10000
 
 void ResizeMirrorNormalizeMetaNode::initialize()
 {
@@ -61,25 +62,58 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
         memcpy(labels_buf.data(), input_meta_data->get_bb_labels_batch()[i].data(), sizeof(int) * bb_count);
         memcpy(static_cast<void *>(coords_buf.data()), input_meta_data->get_bb_cords_batch()[i].data(), input_meta_data->get_bb_cords_batch()[i].size() * sizeof(BoundingBoxCord));
         BoundingBoxCords bb_coords;
+        MaskCords mask_coords;
+        coords polygons;
+        std::vector<float> mask;
         BoundingBoxLabels bb_labels;
+        float mask_data[MAX_BUFFER];
+        int poly_count[bb_count];
+        std::vector<int> poly_size;
         if (input_meta_data->metadata_type() == MetaDataType::PolygonMask)
         {
-            // auto ptr = mask_data;
-            auto mask_data_ptr = input_meta_data->get_mask_cords_batch()[i].data();
-            int mask_size = input_meta_data->get_mask_cords_batch()[i].size();
-            for (int idx = 0; idx < mask_size; idx += 2)
+            int idx = 0, index = 1;
+            auto ptr = mask_data;
+            for (unsigned int object_index = 0; object_index < bb_count; object_index++)
             {
-                if(_mirror_val[i] == 1)
+                unsigned polygon_count = input_meta_data->get_mask_cords_batch()[i][object_index].size();
+                poly_count[object_index] = polygon_count;
+                for (unsigned int polygon_index = 0; polygon_index < polygon_count; polygon_index++)
                 {
-                    mask_data_ptr[idx] = _dst_width_val[i] - (mask_data_ptr[idx] * _dst_to_src_width_ratio) - 1;
-                    mask_data_ptr[idx + 1] = mask_data_ptr[idx + 1] * _dst_to_src_height_ratio;
-                }
-                else
-                {
-                    mask_data_ptr[idx] = mask_data_ptr[idx] * _dst_to_src_width_ratio;
-                    mask_data_ptr[idx + 1] = mask_data_ptr[idx + 1] * _dst_to_src_height_ratio;
+                    unsigned polygon_size = input_meta_data->get_mask_cords_batch()[i][object_index][polygon_index].size();
+                    poly_size.push_back(polygon_size);
+                    memcpy(ptr, input_meta_data->get_mask_cords_batch()[i][object_index][polygon_index].data(), sizeof(float) * input_meta_data->get_mask_cords_batch()[i][object_index][polygon_index].size());
+                    ptr += polygon_size;
                 }
             }
+
+            for (unsigned int loop_index_1 = 0, k = 0; loop_index_1 < poly_size.size(); loop_index_1++)
+            {
+                for (int loop_idx_2 = 0; loop_idx_2 < poly_size[loop_index_1]; loop_idx_2 += 2, idx += 2)
+                {
+                    if(_mirror_val[i] == 1)
+                    {
+                        mask.push_back(_dst_width_val[i] - mask_data[idx] * _dst_to_src_width_ratio - 1);
+                        mask.push_back(mask_data[idx + 1] * _dst_to_src_height_ratio);
+                    }
+                    else
+                    {
+                        mask.push_back(mask_data[idx] * _dst_to_src_width_ratio);
+                        mask.push_back(mask_data[idx + 1] * _dst_to_src_height_ratio);
+                    }                    
+                }
+                polygons.push_back(mask);
+                mask.clear();
+                if (poly_count[k] == index++)
+                {
+                    mask_coords.push_back(polygons);
+                    polygons.clear();
+                    k++;
+                    index = 1;
+                }
+            }
+        input_meta_data->get_mask_cords_batch()[i] = mask_coords;
+        mask_coords.clear();
+        poly_size.clear();
         }
 
         for (uint j = 0; j < bb_count; j++)
@@ -91,6 +125,10 @@ void ResizeMirrorNormalizeMetaNode::update_parameters(MetaDataBatch *input_meta_
                 coords_buf[j].r = 1 - coords_buf[j].l - one_by_width_coeff;
                 coords_buf[j].l = l; 
             }
+            coords_buf[j].l = coords_buf[j].l * _dst_width_val[i];
+            coords_buf[j].t = coords_buf[j].t * _dst_height_val[i];
+            coords_buf[j].r = coords_buf[j].r * _dst_width_val[i];
+            coords_buf[j].b = coords_buf[j].b * _dst_height_val[i];
             bb_coords.push_back(coords_buf[j]);
             bb_labels.push_back(labels_buf[j]);
         }

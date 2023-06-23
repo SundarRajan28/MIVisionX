@@ -272,16 +272,16 @@ namespace rocal{
         return py::cast(count);
     }
 
-    py::object wrapper_mask_coordinates_copy(RocalContext context, py::array_t<int> array_count, py::array_t<float> array)
-    {
-        auto buf = array.request();
-        float* ptr = (float*) buf.ptr;
-        auto buf_count = array_count.request();
-        int* ptr1 = (int*) buf_count.ptr;
-        // call pure C++ function
-        rocalGetMaskCoordinates(context, ptr1, ptr);
-        return py::cast<py::none>(Py_None);
-    }
+    // py::object wrapper_mask_coordinates_copy(RocalContext context, py::array_t<int> array_count, py::array_t<float> array)
+    // {
+    //     auto buf = array.request();
+    //     float* ptr = (float*) buf.ptr;
+    //     auto buf_count = array_count.request();
+    //     int* ptr1 = (int*) buf_count.ptr;
+    //     // call pure C++ function
+    //     rocalGetMaskCoordinates(context, ptr1, ptr);
+    //     return py::cast<py::none>(Py_None);
+    // }
 
     py::object wrapper_img_sizes_copy(RocalContext context, py::array_t<int> array)
     {
@@ -435,8 +435,8 @@ namespace rocal{
         m.def("rocalGetEncodedBoxesAndLables",&wrapper_get_encoded_bbox_label);
         m.def("getImgSizes",&wrapper_img_sizes_copy);
         m.def("getROIImgSizes",&wrapper_img_roi_sizes_copy);
-        m.def("getMaskCount", &wrapper_mask_count_copy);
-        m.def("getMaskCoordinates", &wrapper_mask_coordinates_copy);
+        // m.def("getMaskCount", &wrapper_mask_count_copy);
+        m.def("getMaskCoordinates", &rocalGetMaskCoordinates);
         m.def("getBoundingBoxCount",&wrapper_labels_BB_count_copy);
         m.def("getOneHotEncodedLabels",&wrapper_one_hot_label_copy);
         m.def("isEmpty",&rocalIsEmpty);
