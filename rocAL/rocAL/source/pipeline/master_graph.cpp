@@ -838,7 +838,7 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                         else if(output_data_type == RocalTensorDataType::FP16) 
                         {
                             half *output_tensor_16 = static_cast<half *>(out_ptr);
-                            auto channel_size = max_width * max_height;
+                            unsigned channel_size = max_width * max_height;
                             if(c != 3) {
                                 for(unsigned i = 0; i < channel_size; i++)
                                     output_tensor_16[dest_buf_offset + i] = offset[0] + multiplier[0] * (half)in_buffer[c * i];
@@ -873,7 +873,6 @@ MasterGraph::to_tensor(void *out_ptr, RocalTensorFormat format, float multiplier
                                 __m256 padd2 = _mm256_set1_ps(offset2);
                                 // unsigned int alignedLength = (channel_size & ~7);    // multiple of 8
                                 int alignedLength = (max_width & ~7);    // multiple of 8
-                                int i = 0;
 
                                 __m256 fR, fG, fB;
                                 __m128i tempR, tempG, tempB;

@@ -56,8 +56,7 @@ typedef std::vector<float> Joint,JointVisibility,ScoreBatch,RotationBatch;
 typedef std::vector<std::vector<float>> Joints,JointsVisibility, CenterBatch, ScaleBatch;
 typedef std::vector<std::vector<std::vector<float>>> JointsBatch, JointsVisibilityBatch;
 
-enum class MetaDataType
-{
+enum class MetaDataType {
     Label,
     BoundingBox,
     PolygonMask,
@@ -124,40 +123,40 @@ struct Label : public MetaData
 
 struct BoundingBox : public MetaData
 {
-    BoundingBox()= default;
+    BoundingBox() = default;
     BoundingBox(BoundingBoxCords bb_cords, BoundingBoxLabels bb_label_ids)
     {
-        _bb_cords =std::move(bb_cords);
+        _bb_cords = std::move(bb_cords);
         _bb_label_ids = std::move(bb_label_ids);
     }
     BoundingBox(BoundingBoxCords bb_cords, BoundingBoxLabels bb_label_ids, ImgSize img_size)
     {
-        _bb_cords =std::move(bb_cords);
+        _bb_cords = std::move(bb_cords);
         _bb_label_ids = std::move(bb_label_ids);
         _img_size = std::move(img_size);
     }
-    BoundingBox(BoundingBoxCords bb_cords,BoundingBoxLabels bb_label_ids ,ImgSize img_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count)
+    BoundingBox(BoundingBoxCords bb_cords, BoundingBoxLabels bb_label_ids, ImgSize img_size, MaskCords mask_cords, std::vector<int> polygon_count, std::vector<std::vector<int>> vertices_count)
     {
-        _bb_cords =std::move(bb_cords);
+        _bb_cords = std::move(bb_cords);
         _bb_label_ids = std::move(bb_label_ids);
         _img_size = std::move(img_size);
         _mask_cords = std::move(mask_cords);
         _polygon_count = std::move(polygon_count);
         _vertices_count = std::move(vertices_count);
     }
-    void set_bb_cords(BoundingBoxCords bb_cords) { _bb_cords =std::move(bb_cords); }
+    void set_bb_cords(BoundingBoxCords bb_cords) { _bb_cords = std::move(bb_cords); }
     BoundingBox(BoundingBoxCords_xcycwh bb_cords_xcycwh, BoundingBoxLabels bb_label_ids)
     {
-        _bb_cords_xcycwh =std::move(bb_cords_xcycwh);
+        _bb_cords_xcycwh = std::move(bb_cords_xcycwh);
         _bb_label_ids = std::move(bb_label_ids);
     }
     BoundingBox(BoundingBoxCords_xcycwh bb_cords_xcycwh, BoundingBoxLabels bb_label_ids, ImgSize img_size)
     {
-        _bb_cords_xcycwh =std::move(bb_cords_xcycwh);
+        _bb_cords_xcycwh = std::move(bb_cords_xcycwh);
         _bb_label_ids = std::move(bb_label_ids);
         _img_size = std::move(img_size);
     }
-    void set_bb_cords_xcycwh(BoundingBoxCords_xcycwh bb_cords_xcycwh) { _bb_cords_xcycwh =std::move(bb_cords_xcycwh); }
+    void set_bb_cords_xcycwh(BoundingBoxCords_xcycwh bb_cords_xcycwh) { _bb_cords_xcycwh = std::move(bb_cords_xcycwh); }
     void set_bb_labels(BoundingBoxLabels bb_label_ids) { _bb_label_ids = std::move(bb_label_ids); }
     void set_img_size(ImgSize img_size) { _img_size = std::move(img_size); }
     void set_img_roi_size(ImgSize img_roi_size) { _img_roi_size = std::move(img_roi_size); }

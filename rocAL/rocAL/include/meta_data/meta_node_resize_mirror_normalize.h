@@ -23,14 +23,12 @@ THE SOFTWARE.
 #pragma once
 #include <set>
 #include <memory>
-#include "bounding_box_graph.h"
 #include "meta_data.h"
 #include "node.h"
 #include "node_resize_mirror_normalize.h"
 #include "parameter_vx.h"
 
-class ResizeMirrorNormalizeMetaNode:public MetaNode
-{
+class ResizeMirrorNormalizeMetaNode:public MetaNode {
     public:
         ResizeMirrorNormalizeMetaNode() {};
         void update_parameters(MetaDataBatch* input_meta_data)override;

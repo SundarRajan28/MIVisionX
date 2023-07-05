@@ -133,25 +133,35 @@ extern "C" unsigned ROCAL_API_CALL rocalGetBoundingBoxCount(RocalContext rocal_c
 
 ///
 /// \param rocal_context
-/// \param buf the imageIdx in the output batch
-/// \return The size of the buffer needs to be provided by user to get mask box info associated with image_idx in the output batch.
-extern "C" unsigned ROCAL_API_CALL rocalGetMaskCount(RocalContext rocal_context, int* buf );
+/// \param mask_count The user's buffer that will be filled with number of masks count in the images.
+/// \return The size of the buffer needs to be provided by user to get mask data info associated with image_idx in the output batch.
+extern "C" unsigned ROCAL_API_CALL rocalGetMaskCount(RocalContext rocal_context, int* mask_count);
 
 ///
 /// \param rocal_context
-/// \param bufcount The user's buffer that will be filled with polygon size for the mask info
-/// \param buf The user's buffer that will be filled with mask info for the images in the output batch. It needs to be of size returned by a call to the rocalGetMaskCount
-extern "C" void ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext rocal_context, int* bufcount, float* buf);
+/// \param mask_count The user's buffer that will be filled with polygon size for the mask info
+/// \param mask_coords_buf The user's buffer that will be filled with mask info for the images in the output batch. It needs to be of size returned by a call to the rocalGetMaskCount
+extern "C" void ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext rocal_context, int* mask_count, float* mask_coords_buf);
 
 ///
 /// \param rocal_context
-/// \param buf The user's buffer that will be filled with bounding box label info for the images in the output batch. It needs to be of size returned by a call to the rocalGetBoundingBoxCount
-extern "C" void ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext rocal_context, int* buf);
-extern "C" void ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext rocal_context, double* buf);
+/// \param labels_buf The user's buffer that will be filled with bounding box label info for the images in the output batch. It needs to be of size returned by a call to the rocalGetBoundingBoxCount
+extern "C" void ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext rocal_context, int* labels_buf);
 
-extern "C" void ROCAL_API_CALL rocalGetImageSizes(RocalContext rocal_context, int* buf);
+///
+/// \param rocal_context
+/// \param box_coords_buf The user's buffer that will be filled with bounding box values for the images in the output batch. It needs to be of size returned by a call to the rocalGetBoundingBoxCount * 4
+extern "C" void ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext rocal_context, double* box_coords_buf);
 
-extern "C" void ROCAL_API_CALL rocalGetROIImageSizes(RocalContext rocal_context, int* buf);
+///
+/// \param rocal_context
+/// \param img_sizes_buf The user's buffer that will be filled with original image sizes for the images in the output batch.
+extern "C" void ROCAL_API_CALL rocalGetImageSizes(RocalContext rocal_context, int* img_sizes_buf);
+
+///
+/// \param rocal_context
+/// \param img_sizes_buf The user's buffer that will be filled with image ROI sizes for the images in the output batch.
+extern "C" void ROCAL_API_CALL rocalGetROIImageSizes(RocalContext rocal_context, int* img_sizes_buf);
 
 ///
 /// \param rocal_context

@@ -218,6 +218,7 @@ ROCAL_API_CALL rocalGetImageNameLen(RocalContext p_context, int* buf)
     {
         context->capture_error(e.what());
         std::cerr << e.what() << '\n';
+        return 0;
     }
 }
 
@@ -337,11 +338,12 @@ ROCAL_API_CALL rocalGetBoundingBoxCount(RocalContext p_context, int* buf)
     {
         context->capture_error(e.what());
         std::cerr << e.what() << '\n';
+        return 0;
     }
 }
 
 void
-ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext p_context, int* buf)
+ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext p_context, int* labels_buf)
 {
     if (!p_context)
     {
@@ -363,8 +365,8 @@ ROCAL_API_CALL rocalGetBoundingBoxLabel(RocalContext p_context, int* buf)
         for(unsigned i = 0; i < meta_data_batch_size; i++)
         {
             unsigned bb_count = meta_data.second->get_bb_labels_batch()[i].size();
-            memcpy(buf, meta_data.second->get_bb_labels_batch()[i].data(),  sizeof(int) * bb_count);
-            buf += bb_count;
+            memcpy(labels_buf, meta_data.second->get_bb_labels_batch()[i].data(),  sizeof(int) * bb_count);
+            labels_buf += bb_count;
         }
     }
     catch(const std::exception& e)
@@ -437,7 +439,7 @@ ROCAL_API_CALL rocalGetOneHotImageLabels(RocalContext p_context, void* buf, int 
 
 
 void
-ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context, double* buf)
+ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context, double* box_coords_buf)
 {
     if (!p_context)
     {
@@ -459,8 +461,8 @@ ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context, double* buf)
         for(unsigned i = 0; i < meta_data_batch_size; i++)
         {
             unsigned bb_count = meta_data.second->get_bb_cords_batch()[i].size();
-            memcpy(buf, meta_data.second->get_bb_cords_batch()[i].data(), bb_count * sizeof(BoundingBoxCord));
-            buf += (bb_count * 4);
+            memcpy(box_coords_buf, meta_data.second->get_bb_cords_batch()[i].data(), bb_count * sizeof(BoundingBoxCord));
+            box_coords_buf += (bb_count * 4);
         }
     }
     catch(const std::exception& e)
@@ -471,7 +473,7 @@ ROCAL_API_CALL rocalGetBoundingBoxCords(RocalContext p_context, double* buf)
 }
 
 unsigned
-ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* buf)
+ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* mask_count)
 {
     if (p_context == nullptr)
     {
@@ -493,7 +495,7 @@ ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* buf)
             unsigned object_count = meta_data.second->get_bb_labels_batch()[i].size();
             for(unsigned int j = 0; j < object_count; j++) {
                 unsigned polygon_count = meta_data.second->get_mask_polygons_count_batch()[i][j];
-                buf[count++] = polygon_count;
+                mask_count[count++] = polygon_count;
                 size += polygon_count;
             }
         }
@@ -503,11 +505,12 @@ ROCAL_API_CALL rocalGetMaskCount(RocalContext p_context, int* buf)
     {
         context->capture_error(e.what());
         std::cerr << e.what() << '\n';
+        return 0;
     }
 }
 
 void
-ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, float *buf)
+ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *mask_count, float *mask_coords_buf)
 {
     if (!p_context)
     {
@@ -524,7 +527,7 @@ ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, fl
         if(!meta_data.second)
             THROW("No mask has been loaded for this output image")
         int size = 0;
-        auto ptr = buf;
+        auto ptr = mask_coords_buf;
         for(unsigned image_idx = 0; image_idx < meta_data_batch_size; image_idx++)
         {
             int poly_size = 0;
@@ -536,7 +539,7 @@ ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, fl
                 for(unsigned int j = 0; j < polygon_count; j++)
                 {
                     unsigned polygon_size = meta_data.second->get_mask_vertices_count_batch()[image_idx][i][j];
-                    bufcount[size++] = polygon_size;
+                    mask_count[size++] = polygon_size;
                     memcpy(ptr, mask_data_ptr + poly_size, sizeof(float) * polygon_size);
                     ptr += polygon_size;
                     poly_size += polygon_size;
@@ -552,7 +555,7 @@ ROCAL_API_CALL rocalGetMaskCoordinates(RocalContext p_context, int *bufcount, fl
 }
 
 void
-ROCAL_API_CALL rocalGetImageSizes(RocalContext p_context, int* buf)
+ROCAL_API_CALL rocalGetImageSizes(RocalContext p_context, int* img_sizes_buf)
 {
     if (!p_context)
     {
@@ -573,8 +576,8 @@ ROCAL_API_CALL rocalGetImageSizes(RocalContext p_context, int* buf)
         }
         for(unsigned i = 0; i < meta_data_batch_size; i++)
         {
-            memcpy(buf, &(meta_data.second->get_img_sizes_batch()[i]), sizeof(ImgSize));
-            buf += 2;
+            memcpy(img_sizes_buf, &(meta_data.second->get_img_sizes_batch()[i]), sizeof(ImgSize));
+            img_sizes_buf += 2;
         }
     }
     catch(const std::exception& e)
@@ -585,7 +588,7 @@ ROCAL_API_CALL rocalGetImageSizes(RocalContext p_context, int* buf)
 }
 
 void
-ROCAL_API_CALL rocalGetROIImageSizes(RocalContext p_context, int* buf)
+ROCAL_API_CALL rocalGetROIImageSizes(RocalContext p_context, int* img_sizes_buf)
 {
     if (!p_context)
     {
@@ -604,8 +607,8 @@ ROCAL_API_CALL rocalGetROIImageSizes(RocalContext p_context, int* buf)
         }
         for(unsigned i = 0; i < meta_data_batch_size; i++)
         {
-            memcpy(buf, &(meta_data.second->get_img_roi_sizes_batch()[i]), sizeof(ImgSize));
-            buf += 2;
+            memcpy(img_sizes_buf, &(meta_data.second->get_img_roi_sizes_batch()[i]), sizeof(ImgSize));
+            img_sizes_buf += 2;
         }
     }
     catch(const std::exception& e)
