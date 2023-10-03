@@ -487,6 +487,7 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
         case 23: {
             std::cout << ">>>>>>> Running "
                       << "rocalCopy" << std::endl;
+            input = rocalSetLayout(handle, input, RocalTensorLayout::ROCAL_NCDHW);
             output = rocalCopy(handle, input, true);
         } break;
         case 24: {
@@ -525,7 +526,8 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
         case 32: {
             std::cout << ">>>>>>> Running "
                       << "rocalBrightnessFixed" << std::endl;
-            output = rocalBrightnessFixed(handle, input, 1.90, 20, true);
+            input = rocalSetLayout(handle, input, RocalTensorLayout::ROCAL_NCDHW);
+            output = rocalBrightnessFixed(handle, input, 1.2, 0.0, true, RocalTensorLayout::ROCAL_NCDHW, RocalTensorOutputType::ROCAL_FP32);
         } break;
         case 33: {
             std::cout << ">>>>>>> Running "
