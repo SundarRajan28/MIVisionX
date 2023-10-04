@@ -61,33 +61,9 @@ static vx_status VX_CALLBACK refreshBrightness(vx_node node, const vx_reference 
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
     }
-    if (data->inputLayout == vxTensorLayout::VX_NDHWC) {
-        // TODO: Need to check how to pass roi_tensor_ptr for RpptROI3D
-        // data->pSrcRoi3D = reinterpret_cast<RpptROI3D *>(roi_tensor_ptr);
-        data->pSrcRoi3D = (RpptROI3D *) calloc(data->inputTensorDims[0], sizeof(RpptROI3D));
-        for(int i = 0; i < data->inputTensorDims[0]; i++) {
-            data->pSrcRoi3D[i].xyzwhdROI.xyz.x = 0;                                    // start X dim = 0
-            data->pSrcRoi3D[i].xyzwhdROI.xyz.y = 0;                                    // start Y dim = 0
-            data->pSrcRoi3D[i].xyzwhdROI.xyz.z = 0;                                    // start Z dim = 0
-            data->pSrcRoi3D[i].xyzwhdROI.roiWidth = data->inputTensorDims[3];         // length in X dim
-            data->pSrcRoi3D[i].xyzwhdROI.roiHeight = data->inputTensorDims[2];        // length in Y dim
-            data->pSrcRoi3D[i].xyzwhdROI.roiDepth = data->inputTensorDims[1];         // length in Z dim
-        }
-    }
-    else if (data->inputLayout == vxTensorLayout::VX_NCDHW) {
-        // TODO: Need to check how to pass roi_tensor_ptr for RpptROI3D
-        // data->pSrcRoi3D = reinterpret_cast<RpptROI3D *>(roi_tensor_ptr);
-        data->pSrcRoi3D = (RpptROI3D *) calloc(data->inputTensorDims[0], sizeof(RpptROI3D));
-        for(int i = 0; i < data->inputTensorDims[0]; i++) {
-            data->pSrcRoi3D[i].xyzwhdROI.xyz.x = 0;                                    // start X dim = 0
-            data->pSrcRoi3D[i].xyzwhdROI.xyz.y = 0;                                    // start Y dim = 0
-            data->pSrcRoi3D[i].xyzwhdROI.xyz.z = 0;                                    // start Z dim = 0
-            data->pSrcRoi3D[i].xyzwhdROI.roiWidth = data->inputTensorDims[4];         // length in X dim
-            data->pSrcRoi3D[i].xyzwhdROI.roiHeight = data->inputTensorDims[3];        // length in Y dim
-            data->pSrcRoi3D[i].xyzwhdROI.roiDepth = data->inputTensorDims[2];         // length in Z dim
-        }
-    }
-    else {
+    if (data->inputLayout == vxTensorLayout::VX_NDHWC || data->inputLayout == vxTensorLayout::VX_NCDHW) {
+        data->pSrcRoi3D = reinterpret_cast<RpptROI3D *>(roi_tensor_ptr);
+    } else {
         data->pSrcRoi = reinterpret_cast<RpptROI *>(roi_tensor_ptr);
         if (data->inputLayout == vxTensorLayout::VX_NFHWC || data->inputLayout == vxTensorLayout::VX_NFCHW) {
             unsigned num_of_frames = data->inputTensorDims[1]; // Num of frames 'F'
@@ -152,7 +128,8 @@ static vx_status VX_CALLBACK processBrightness(vx_node node, const vx_reference 
     #if ENABLE_OPENCL
             return_status = VX_ERROR_NOT_IMPLEMENTED;
     #elif ENABLE_HIP
-            return_status = VX_ERROR_NOT_IMPLEMENTED;
+            rppt_fmadd_scalar_gpu(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->pAlpha, data->pBeta, data->pSrcRoi3D, (RpptRoi3DType)data->roiType, data->handle->rppHandle);
+            return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
     #endif
         } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
             rppt_fmadd_scalar_host(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->pAlpha, data->pBeta, data->pSrcRoi3D, (RpptRoi3DType)data->roiType, data->handle->rppHandle);
@@ -244,7 +221,6 @@ static vx_status VX_CALLBACK uninitializeBrightness(vx_node node, const vx_refer
     delete data->pDstDesc;
     delete data->pSrcGenericDesc;
     delete data->pDstGenericDesc;
-    delete data->pSrcRoi3D;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
     delete data;
     return VX_SUCCESS;

@@ -62,7 +62,7 @@ from rocal_pybind.types import NHWC
 from rocal_pybind.types import NCHW
 from rocal_pybind.types import NFHWC
 from rocal_pybind.types import NFCHW
-from rocal_pybind.types import NDCHW
+from rocal_pybind.types import NDHWC
 from rocal_pybind.types import NCDHW
 
 #     RocalDecodeDevice
@@ -118,7 +118,7 @@ _known_types = {
     NCHW: ("NCHW", NCHW),
     NFHWC: ("NFHWC", NFHWC),
     NFCHW: ("NFCHW", NFCHW),
-    NDCHW: ("NDCHW", NDCHW),
+    NDHWC: ("NDHWC", NDHWC),
     NCDHW: ("NCDHW", NCDHW),
     BGR: ("BGR", BGR),
     RGB: ("RGB", RGB),

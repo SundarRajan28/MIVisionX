@@ -178,6 +178,16 @@ class TensorInfo {
                 _max_shape[0] = _dims.at(4);
                 _max_shape[1] = _dims.at(3);
                 _channels = _dims.at(2);
+            } else if (_layout == RocalTensorlayout::NDHWC) {
+                _is_image = false;
+                _max_shape.resize(3);
+                _max_shape = {_dims.at(1), _dims.at(2), _dims.at(3)};
+                _channels = _dims.at(4);
+            } else if (_layout == RocalTensorlayout::NCDHW) {
+                _is_image = false;
+                _max_shape.resize(3);
+                _max_shape = {_dims.at(2), _dims.at(3), _dims.at(4)};
+                _channels = _dims.at(1);
             }
         } else {                                                             // For other tensors
             if (!_max_shape.size()) _max_shape.resize(_num_of_dims - 1, 0);  // Since 2 values will be stored in the vector
@@ -194,6 +204,8 @@ class TensorInfo {
             modify_strides();
         }
         _layout = layout;
+        if (_layout == RocalTensorlayout::NONE)
+            set_max_shape();
     }
     void set_dims(std::vector<size_t>& new_dims) {
         if (_num_of_dims == new_dims.size()) {

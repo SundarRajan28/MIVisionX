@@ -37,11 +37,13 @@ def main():
 
     with pipeline:
         numpy_reader_output = fn.readers.numpy(file_root=data_path, shard_id=local_rank, num_shards=world_size)
-        pipeline.set_outputs(numpy_reader_output)
+        new_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
+        brightness_output = fn.brightness(new_output, brightness=1.25, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        pipeline.set_outputs(brightness_output)
 
     pipeline.build()
     
-    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, tensor_dtype=types.UINT8)
+    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, tensor_dtype=types.UINT8, device='cpu' if rocal_cpu else 'gpu')
     print(len(numpyIteratorPipeline))
     for epoch in range(1):
         print("+++++++++++++++++++++++++++++EPOCH+++++++++++++++++++++++++++++++++++++",epoch)

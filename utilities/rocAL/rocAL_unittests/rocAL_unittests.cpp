@@ -324,6 +324,7 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
             std::cout << ">>>>>>> Running Numpy reader" << std::endl;
             pipeline_type = 4;
             decoded_output = rocalNumpyFileSource(handle, path, num_threads, false, false, false, ROCAL_USE_MAX_SIZE);
+            decoded_output = rocalSetLayout(handle, decoded_output, RocalTensorLayout::ROCAL_NCDHW);
         } break;
         default: {
             std::cout << ">>>>>>> Running IMAGE READER" << std::endl;
@@ -487,7 +488,6 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
         case 23: {
             std::cout << ">>>>>>> Running "
                       << "rocalCopy" << std::endl;
-            input = rocalSetLayout(handle, input, RocalTensorLayout::ROCAL_NCDHW);
             output = rocalCopy(handle, input, true);
         } break;
         case 24: {
@@ -526,8 +526,7 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
         case 32: {
             std::cout << ">>>>>>> Running "
                       << "rocalBrightnessFixed" << std::endl;
-            input = rocalSetLayout(handle, input, RocalTensorLayout::ROCAL_NCDHW);
-            output = rocalBrightnessFixed(handle, input, 1.2, 0.0, true, RocalTensorLayout::ROCAL_NCDHW, RocalTensorOutputType::ROCAL_FP32);
+            output = rocalBrightnessFixed(handle, input, 1.90, 20, true);
         } break;
         case 33: {
             std::cout << ">>>>>>> Running "
@@ -655,7 +654,11 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
             output = rocalResizeMirrorNormalize(handle, input, 400, 400, mean, std_dev, true, ROCAL_SCALING_MODE_DEFAULT,
                                                 {}, 0, 0, ROCAL_LINEAR_INTERPOLATION, mirror);
         } break;
-
+        case 57: {
+            std::cout << ">>>>>>> Running "
+                    << "rocalBrightness3DFixed" << std::endl;
+            output = rocalBrightnessFixed(handle, input, 1.2, 0.0, true, RocalTensorLayout::ROCAL_NCDHW, RocalTensorOutputType::ROCAL_FP32);
+        } break;
         default:
             std::cout << "Not a valid option! Exiting!\n";
             return -1;
