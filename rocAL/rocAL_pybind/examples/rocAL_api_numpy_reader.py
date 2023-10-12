@@ -9,6 +9,7 @@ import amd.rocal.fn as fn
 import amd.rocal.types as types
 import sys
 import os
+import numpy as np
 
 def main():
     if  len(sys.argv) < 3:
@@ -33,6 +34,12 @@ def main():
     world_size = 1
     random_seed = random.SystemRandom().randint(0, 2**32 - 1)
 
+    files_list = []
+    for file in os.listdir(data_path):
+        files_list.append(os.path.join(data_path, file))
+
+    import time
+    start = time.time()
     pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu)
 
     with pipeline:
@@ -45,13 +52,21 @@ def main():
     
     numpyIteratorPipeline = ROCALNumpyIterator(pipeline, tensor_dtype=types.UINT8, device='cpu' if rocal_cpu else 'gpu')
     print(len(numpyIteratorPipeline))
+    cnt = 0
     for epoch in range(1):
         print("+++++++++++++++++++++++++++++EPOCH+++++++++++++++++++++++++++++++++++++",epoch)
         for i , [it] in enumerate(numpyIteratorPipeline):
-            print(it.shape)
+            print(i, it.shape)
+            for j in range(batch_size):
+                arr = np.load(files_list[cnt])
+                shape = arr.shape
+                print(arr.shape, shape)
+                print(np.array_equal(arr * 1.25, it[j].cpu().numpy()[:, :shape[1], :shape[2], :shape[3]]))
+                cnt += 1
             print("************************************** i *************************************",i)
         numpyIteratorPipeline.reset()
     print("*********************************************************************")
+    print(f'Took {time.time() - start} seconds')
 
 if __name__ == '__main__':
     main()

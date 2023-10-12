@@ -285,7 +285,7 @@ void NumpyDataReader::ParseHeader(NumpyHeaderData& parsed_header, std::string fi
     parsed_header._data_offset = offset;
 }
 
-size_t NumpyDataReader::read_numpy_data(void* buf, size_t read_size) {
+size_t NumpyDataReader::read_numpy_data(void* buf, size_t read_size, std::vector<size_t> max_shape) {
     if (!_current_fPtr)
         THROW("Null file pointer");
 
@@ -295,8 +295,48 @@ size_t NumpyDataReader::read_numpy_data(void* buf, size_t read_size) {
     if (std::fseek(_current_fPtr, _file_headers[_curr_file_idx]._data_offset, SEEK_SET))
         THROW("Seek operation failed: " + std::strerror(errno));
 
-    size_t actual_read_size = std::fread(buf, 1, _file_headers[_curr_file_idx].nbytes(), _current_fPtr);
+    auto shape = _file_headers[_curr_file_idx].shape();
+    auto num_dims = max_shape.size();
+    std::vector<unsigned> strides(num_dims + 1);
+    strides[num_dims] = 1;
+    for (int i = num_dims - 1; i >= 0; i--) {
+        strides[i] = strides[i + 1] * max_shape[i];
+    }
+
+    size_t actual_read_size = 0;
+    if (_file_headers[_curr_file_idx].type() == RocalTensorDataType::UINT8)
+        actual_read_size = ParseNumpyData<u_int8_t>((u_int8_t*)buf, strides, shape);
+    if (_file_headers[_curr_file_idx].type() == RocalTensorDataType::UINT32)
+        actual_read_size = ParseNumpyData<u_int32_t>((u_int32_t*)buf, strides, shape);
+    if (_file_headers[_curr_file_idx].type() == RocalTensorDataType::INT8)
+        actual_read_size = ParseNumpyData<int8_t>((int8_t*)buf, strides, shape);
+    if (_file_headers[_curr_file_idx].type() == RocalTensorDataType::INT32)
+        actual_read_size = ParseNumpyData<int32_t>((int32_t*)buf, strides, shape);
+    if (_file_headers[_curr_file_idx].type() == RocalTensorDataType::FP16)
+#if defined(AMD_FP16_SUPPORT)
+        actual_read_size = ParseNumpyData<half>((half*)buf, strides, shape);
+#else
+        THROW("FLOAT16 type tensor not supported")
+#endif
+    if (_file_headers[_curr_file_idx].type() == RocalTensorDataType::FP32)
+        actual_read_size = ParseNumpyData<float>((float*)buf, strides, shape);
+
     return actual_read_size;
+}
+
+template <typename T>
+size_t NumpyDataReader::ParseNumpyData(T* buf, std::vector<unsigned> strides, std::vector<unsigned> shapes, unsigned dim) {
+    if (dim == (shapes.size() - 1)) {
+        auto actual_read_size = std::fread(buf, sizeof(T), shapes[dim], _current_fPtr);
+        return actual_read_size;
+    }
+    T* startPtr = buf;
+    size_t read_size = 0;
+    for (unsigned d = 0; d < shapes[dim]; d++) {
+        read_size += ParseNumpyData<T>(startPtr, strides, shapes, dim + 1);
+        startPtr += strides[dim + 1];
+    }
+    return read_size;
 }
 
 const NumpyHeaderData NumpyDataReader::get_numpy_header_data() {

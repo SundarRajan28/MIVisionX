@@ -130,7 +130,7 @@ void NumpyLoader::initialize(ReaderConfig reader_cfg, DecoderConfig decoder_cfg,
     _mem_type = mem_type;
     _batch_size = batch_size;
     _loop = reader_cfg.loop();
-    _image_size = _output_mem_size / batch_size;
+    _image_size = _output_tensor->info().data_size() / batch_size;
     _output_names.resize(batch_size);
     try {
         _reader = create_reader(reader_cfg);
@@ -173,12 +173,13 @@ NumpyLoader::load_routine() {
 
             while ((file_counter != _batch_size) && _reader->count_items() > 0) {
                 auto read_ptr = data + _image_size * file_counter;
+                auto max_shape = _output_tensor->info().max_shape();
                 size_t readSize = _reader->open();
                 if (readSize == 0) {
                     WRN("Opened file " + _reader->id() + " of size 0");
                     continue;
                 }
-                auto fsize = _reader->read_numpy_data(read_ptr, readSize);
+                auto fsize = _reader->read_numpy_data(read_ptr, readSize, max_shape);
                 if (fsize == 0)
                     THROW("Numpy arrays must contain readable data")
                 _decoded_img_info._image_names[file_counter] = _reader->id();

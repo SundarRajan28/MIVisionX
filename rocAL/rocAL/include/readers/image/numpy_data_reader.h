@@ -52,7 +52,7 @@ class NumpyDataReader : public Reader {
 
     const NumpyHeaderData get_numpy_header_data() override;
 
-    size_t read_numpy_data(void* buf, size_t read_size) override;
+    size_t read_numpy_data(void* buf, size_t read_size, std::vector<size_t> max_shape) override;
 
     //! Resets the object's state to read from the first file in the folder
     void reset() override;
@@ -109,6 +109,8 @@ class NumpyDataReader : public Reader {
     T ParseInteger(const char*& ptr);
     std::string ParseStringValue(const char*& input, char delim_start = '\'', char delim_end = '\'');
     void ParseHeader(NumpyHeaderData& parsed_header, std::string file_path);
+    template <typename T>
+    size_t ParseNumpyData(T* buf, std::vector<unsigned> strides, std::vector<unsigned> shapes, unsigned dim = 0);
     void incremenet_read_ptr();
     int release();
     size_t get_file_shard_id();

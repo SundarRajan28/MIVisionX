@@ -104,6 +104,10 @@ void ImageSourceEvaluator::find_max_numpy_dimensions() {
             THROW("All numpy arrays must have the same number of dimensions")
         }
 
+        if (_numpy_dtype != numpy_header._type_info) {
+            THROW("All numpy arrays must have the same data type")
+        }
+
         for (uint i = 0; i < _max_numpy_dims.size(); i++) {
             if (numpy_header._shape[i] > _max_numpy_dims[i]) {
                 _max_numpy_dims[i] = numpy_header._shape[i];
