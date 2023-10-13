@@ -602,7 +602,7 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
         case 47: {
             std::cout << ">>>>>>> Running "
                       << "rocalFlipFixed" << std::endl;
-            output = rocalFlipFixed(handle, input, 1, 0, true);
+            output = rocalFlipFixed(handle, input, 1, 0, 0, true);
         } break;
         case 48: {
             std::cout << ">>>>>>> Running "
@@ -658,6 +658,11 @@ int test(int test_case, int reader_type, const char *path, const char *outName, 
             std::cout << ">>>>>>> Running "
                     << "rocalBrightness3DFixed" << std::endl;
             output = rocalBrightnessFixed(handle, input, 1.2, 0.0, true, RocalTensorLayout::ROCAL_NCDHW, RocalTensorOutputType::ROCAL_FP32);
+        } break;
+        case 58: {
+            std::cout << ">>>>>>> Running "
+                    << "rocalFlip3DFixed" << std::endl;
+            output = rocalFlipFixed(handle, input, 1, 0, 0, true, RocalTensorLayout::ROCAL_NCDHW, RocalTensorOutputType::ROCAL_FP32);
         } break;
         default:
             std::cout << "Not a valid option! Exiting!\n";

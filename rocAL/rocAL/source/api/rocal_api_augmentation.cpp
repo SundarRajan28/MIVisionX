@@ -1152,6 +1152,7 @@ rocalFlip(
     bool is_output,
     RocalIntParam p_horizontal_flag,
     RocalIntParam p_vertical_flag,
+    RocalIntParam p_depth_flag,
     RocalTensorLayout output_layout,
     RocalTensorOutputType output_datatype) {
     Tensor* output = nullptr;
@@ -1163,6 +1164,7 @@ rocalFlip(
     auto input = static_cast<Tensor*>(p_input);
     auto horizontal_flag = static_cast<IntParam*>(p_horizontal_flag);
     auto vertical_flag = static_cast<IntParam*>(p_vertical_flag);
+    auto depth_flag = static_cast<IntParam*>(p_depth_flag);
     try {
         RocalTensorlayout op_tensor_layout = static_cast<RocalTensorlayout>(output_layout);
         RocalTensorDataType op_tensor_datatype = static_cast<RocalTensorDataType>(output_datatype);
@@ -1171,7 +1173,7 @@ rocalFlip(
         output_info.set_data_type(op_tensor_datatype);
         output = context->master_graph->create_tensor(output_info, is_output);
         std::shared_ptr<FlipNode> flip_node = context->master_graph->add_node<FlipNode>({input}, {output});
-        flip_node->init(horizontal_flag, vertical_flag);
+        flip_node->init(horizontal_flag, vertical_flag, depth_flag);
         if (context->master_graph->meta_data_graph())
             context->master_graph->meta_add_node<FlipMetaNode, FlipNode>(flip_node);
     } catch (const std::exception& e) {
@@ -1187,6 +1189,7 @@ rocalFlipFixed(
     RocalTensor p_input,
     int horizontal_flag,
     int vertical_flag,
+    int depth_flag,
     bool is_output,
     RocalTensorLayout output_layout,
     RocalTensorOutputType output_datatype) {
@@ -1205,7 +1208,7 @@ rocalFlipFixed(
         output_info.set_data_type(op_tensor_datatype);
         output = context->master_graph->create_tensor(output_info, is_output);
         std::shared_ptr<FlipNode> flip_node = context->master_graph->add_node<FlipNode>({input}, {output});
-        flip_node->init(horizontal_flag, vertical_flag);
+        flip_node->init(horizontal_flag, vertical_flag, depth_flag);
         if (context->master_graph->meta_data_graph())
             context->master_graph->meta_add_node<FlipMetaNode, FlipNode>(flip_node);
     } catch (const std::exception& e) {

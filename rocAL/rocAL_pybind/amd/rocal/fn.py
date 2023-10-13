@@ -252,12 +252,13 @@ def contrast(*inputs, contrast=None, contrast_center=None, device=None, output_l
     return (contrast_image)
 
 
-def flip(*inputs, horizontal=0, vertical=0, device=None, output_layout=types.NHWC, output_dtype=types.UINT8):
+def flip(*inputs, horizontal=0, vertical=0, depth=0, device=None, output_layout=types.NHWC, output_dtype=types.UINT8):
     """!Flip images horizontally and/or vertically based on inputs.
 
         @param inputs                                                                 the input image passed to the augmentation
         @param horizontal (int, optional, default = 0)                                flip the horizontal dimension
         @param vertical (int, optional, default = 0)                                  flip the vertical dimension
+        @param depth (int, optional, default = 0)                                     flip the depth dimension
         @param device (string, optional, default = None)                              Parameter unused for augmentation
         @param output_layout (int, optional, default = types.NHWC)                    tensor layout for the augmentation output
         @param output_dtype (int, optional, default = types.UINT8)                    tensor dtype for the augmentation output
@@ -268,10 +269,12 @@ def flip(*inputs, horizontal=0, vertical=0, device=None, output_layout=types.NHW
         horizontal, int) else horizontal
     vertical = b.createIntParameter(
         vertical) if isinstance(vertical, int) else vertical
+    depth = b.createIntParameter(
+        depth) if isinstance(depth, int) else depth
 
     # pybind call arguments
     kwargs_pybind = {"input_image": inputs[0],
-                     "is_output": False, "horizontal": horizontal, "vertical": vertical, "output_layout": output_layout, "output_dtype": output_dtype}
+                     "is_output": False, "horizontal": horizontal, "vertical": vertical, "depth": depth, "output_layout": output_layout, "output_dtype": output_dtype}
     flip_image = b.flip(Pipeline._current_pipeline._handle,
                         *(kwargs_pybind.values()))
     return (flip_image)

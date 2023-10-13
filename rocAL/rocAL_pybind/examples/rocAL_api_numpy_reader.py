@@ -46,11 +46,12 @@ def main():
         numpy_reader_output = fn.readers.numpy(file_root=data_path, shard_id=local_rank, num_shards=world_size)
         new_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
         brightness_output = fn.brightness(new_output, brightness=1.25, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        pipeline.set_outputs(brightness_output)
+        flip_output = fn.flip(brightness_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        pipeline.set_outputs(flip_output)
 
     pipeline.build()
     
-    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, tensor_dtype=types.UINT8, device='cpu' if rocal_cpu else 'gpu')
+    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, device='cpu' if rocal_cpu else 'gpu')
     print(len(numpyIteratorPipeline))
     cnt = 0
     for epoch in range(1):
@@ -61,7 +62,7 @@ def main():
                 arr = np.load(files_list[cnt])
                 shape = arr.shape
                 print(arr.shape, shape)
-                print(np.array_equal(arr * 1.25, it[j].cpu().numpy()[:, :shape[1], :shape[2], :shape[3]]))
+                print(np.array_equal(np.flip(arr * 1.25, axis=[1,2]), it[j].cpu().numpy()[:, :shape[1], :shape[2], :shape[3]]))
                 cnt += 1
             print("************************************** i *************************************",i)
         numpyIteratorPipeline.reset()
