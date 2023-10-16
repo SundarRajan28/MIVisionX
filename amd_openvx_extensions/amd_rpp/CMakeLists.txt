@@ -142,6 +142,7 @@ list(APPEND SOURCES
         source/tensor/Flip.cpp
         source/tensor/Fog.cpp
         source/tensor/GammaCorrection.cpp
+        source/tensor/GaussianNoise.cpp
         source/tensor/Glitch.cpp
         source/tensor/Hue.cpp
         source/tensor/Jitter.cpp

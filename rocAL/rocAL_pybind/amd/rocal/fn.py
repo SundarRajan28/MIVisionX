@@ -1072,3 +1072,28 @@ def set_layout(*inputs, output_layout=types.NHWC):
     new_output = b.setLayout(
         Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
     return (new_output)
+
+def gaussian_noise(*inputs, mean=0.0, std_dev=1.0, seed=0, device=None, output_layout=types.NHWC, output_dtype=types.UINT8):
+    """!Applies Gaussian noise to the input image.
+
+        @param inputs (list)                                                          The input image to which salt-and-pepper noise is applied.
+        @param mean (float, optional, default = 0.0)                                  Mean used for noise generation. Default is 0.0.
+        @param std_dev (float, optional, default = 1.0)                               Standard deviation used for noise generation. Default is 1.0.
+        @param seed (int, optional, default = 0)                                      Random seed. Default is 0.
+        @param device (string, optional, default = None)                              Parameter unused for augmentation
+        @param output_layout (int, optional, default = types.NHWC)                    Tensor layout for the augmentation output. Default is types.NHWC.
+        @param output_dtype (int, optional, default = types.UINT*)                    Tensor dtype for the augmentation output. Default is types.UINT8.
+
+        @return    images with Gaussian noise added.
+    """
+    mean = b.createFloatParameter(
+        mean) if isinstance(mean, float) else mean
+    std_dev = b.createFloatParameter(
+        std_dev) if isinstance(std_dev, float) else std_dev
+
+    # pybind call arguments
+    kwargs_pybind = {"input_image": inputs[0], "is_output": False, "mean": mean, "std_dev": std_dev,
+                     "seed": seed, "output_layout": output_layout, "output_dtype": output_dtype}
+    noise_added_image = b.gaussianNoise(
+        Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (noise_added_image)
