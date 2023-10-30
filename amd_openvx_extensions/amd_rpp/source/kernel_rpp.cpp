@@ -2136,7 +2136,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppFishEye(vx_graph graph, vx_tensor pSrc,
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxExtRppFlip(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pHorizontalFlag, vx_array pVerticalFlag, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
+VX_API_ENTRY vx_node VX_API_CALL vxExtRppFlip(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pHorizontalFlag, vx_array pVerticalFlag, vx_array pDepthFlag, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
     if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
@@ -2148,11 +2148,12 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppFlip(vx_graph graph, vx_tensor pSrc, vx
             (vx_reference)pDst,
             (vx_reference)pHorizontalFlag,
             (vx_reference)pVerticalFlag,
+            (vx_reference)pDepthFlag,
             (vx_reference)inputLayout,
             (vx_reference)outputLayout,
             (vx_reference)roiType,
             (vx_reference)deviceType};
-        node = createNode(graph, VX_KERNEL_RPP_FLIP, params, 9);
+        node = createNode(graph, VX_KERNEL_RPP_FLIP, params, 10);
     }
     return node;
 }
@@ -2304,6 +2305,28 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppNoise(vx_graph graph, vx_tensor pSrc, v
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_NOISE, params, 12);
+    }
+    return node;
+}
+
+VX_API_ENTRY vx_node VX_API_CALL vxExtRppGaussianNoise(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array mean, vx_array std_dev, vx_scalar seed, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
+    vx_node node = NULL;
+    vx_context context = vxGetContext((vx_reference)graph);
+    if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
+        vx_uint32 devType = getGraphAffinity(graph);
+        vx_scalar deviceType = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &devType);
+        vx_reference params[] = {
+            (vx_reference)pSrc,
+            (vx_reference)pSrcRoi,
+            (vx_reference)pDst,
+            (vx_reference)mean,
+            (vx_reference)std_dev,
+            (vx_reference)seed,
+            (vx_reference)inputLayout,
+            (vx_reference)outputLayout,
+            (vx_reference)roiType,
+            (vx_reference)deviceType};
+        node = createNode(graph, VX_KERNEL_RPP_GAUSSIAN_NOISE, params, 10);
     }
     return node;
 }
@@ -2605,6 +2628,46 @@ void fillDescriptionPtrfromDims(RpptDescPtr &descPtr, vxTensorLayout layout, siz
         }
         default: {
             throw std::runtime_error("Invalid layout value in fillDescriptionPtrfromDims.");
+        }
+    }
+}
+
+void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &dscPtr3D, vxTensorLayout layout, size_t *tensorDims) {
+    switch (layout) {
+        case vxTensorLayout::VX_NDHWC: {
+            dscPtr3D->numDims = 5;
+            dscPtr3D->layout = RpptLayout::NDHWC;
+            dscPtr3D->dims[0] = tensorDims[0];
+            dscPtr3D->dims[1] = tensorDims[1];
+            dscPtr3D->dims[2] = tensorDims[2];
+            dscPtr3D->dims[3] = tensorDims[3];
+            dscPtr3D->dims[4] = tensorDims[4];
+
+            dscPtr3D->strides[0] = dscPtr3D->dims[1] * dscPtr3D->dims[2] * dscPtr3D->dims[3] * dscPtr3D->dims[4];
+            dscPtr3D->strides[1] = dscPtr3D->dims[2] * dscPtr3D->dims[3] * dscPtr3D->dims[4];
+            dscPtr3D->strides[2] = dscPtr3D->dims[3] * dscPtr3D->dims[4];
+            dscPtr3D->strides[3] = dscPtr3D->dims[4];
+            dscPtr3D->strides[4] = 1;
+            break;
+        }
+        case vxTensorLayout::VX_NCDHW: {
+            dscPtr3D->numDims = 5;
+            dscPtr3D->layout = RpptLayout::NCDHW;
+            dscPtr3D->dims[0] = tensorDims[0];
+            dscPtr3D->dims[1] = tensorDims[1];
+            dscPtr3D->dims[2] = tensorDims[2];
+            dscPtr3D->dims[3] = tensorDims[3];
+            dscPtr3D->dims[4] = tensorDims[4];
+
+            dscPtr3D->strides[0] = dscPtr3D->dims[1] * dscPtr3D->dims[2] * dscPtr3D->dims[3] * dscPtr3D->dims[4];
+            dscPtr3D->strides[1] = dscPtr3D->dims[2] * dscPtr3D->dims[3] * dscPtr3D->dims[4];
+            dscPtr3D->strides[2] = dscPtr3D->dims[3] * dscPtr3D->dims[4];
+            dscPtr3D->strides[3] = dscPtr3D->dims[4];
+            dscPtr3D->strides[4] = 1;
+            break;
+        }
+        default: {
+            throw std::runtime_error("Invalid layout value in fillGenericDescriptionPtrfromDims.");
         }
     }
 }
