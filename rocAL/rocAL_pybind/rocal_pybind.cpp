@@ -598,5 +598,7 @@ PYBIND11_MODULE(rocal_pybind, m) {
           py::return_value_policy::reference);
     m.def("gaussianNoise", &rocalGaussianNoise,
           py::return_value_policy::reference);
+    m.def("slice", &rocalSlice,
+          py::return_value_policy::reference);
 }
 }  // namespace rocal
