@@ -368,17 +368,4 @@ enum RocalOutOfBoundsPolicy {
     PAD,
 };
 
-/*! \brief RocalROI2DCords struct
- * \ingroup group_rocal_types
- */
-typedef struct {
-    unsigned x1, y1, x2, y2;
-} RocalROI2DCords;
-
-/*! \brief RocalROICords struct
- * \ingroup group_rocal_types
- */
-typedef struct {
-    unsigned x1, y1, x2, y2;
-} RocalROICords;
 #endif  // MIVISIONX_ROCAL_API_TYPES_H
