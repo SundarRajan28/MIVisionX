@@ -1123,3 +1123,9 @@ def gaussian_noise(*inputs, mean=0.0, std_dev=1.0, seed=0, device=None, output_l
     noise_added_image = b.gaussianNoise(
         Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
     return (noise_added_image)
+
+def roi_random_crop(*inputs, crop_shape=None):
+    # pybind call arguments
+    kwargs_pybind = {"crop_shape": crop_shape}
+    roi_random_crop = b.roiRandomCrop(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (roi_random_crop)

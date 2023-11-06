@@ -366,6 +366,7 @@ PYBIND11_MODULE(rocal_pybind, m) {
         int *ptr = static_cast<int *>(buf.ptr);
         rocalGetImageSizes(context, ptr);
     });
+    m.def("roiRandomCrop", &rocalROIRandomCrop);
     // rocal_api_parameter.h
     m.def("setSeed", &rocalSetSeed);
     m.def("getSeed", &rocalGetSeed);

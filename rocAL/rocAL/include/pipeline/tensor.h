@@ -368,6 +368,7 @@ class Tensor : public rocalTensor {
     // create_from_handle() no internal memory allocation is done here since
     // tensor's handle should be swapped with external buffers before usage
     int create_from_handle(vx_context context);
+    int create_from_handle_new(vx_context context, void *ptr);
     int create_virtual(vx_context context, vx_graph graph);
     bool is_handle_set() { return (_vx_handle != 0); }
     void set_dims(std::vector<size_t> dims) { _info.set_dims(dims); }

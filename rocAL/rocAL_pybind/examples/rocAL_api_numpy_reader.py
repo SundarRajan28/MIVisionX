@@ -45,6 +45,8 @@ def main():
     with pipeline:
         numpy_reader_output = fn.readers.numpy(file_root=data_path, shard_id=local_rank, num_shards=world_size)
         new_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
+        anchor = fn.roi_random_crop(new_output, crop_shape=(1, 128, 128, 128))
+        # sliced_output = fn.slice(new_output, anchor=anchor, shape=(128,128,128))
         brightness_output = fn.brightness(new_output, brightness=1.25, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
         flip_output = fn.flip(brightness_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.FLOAT)
         noise_output = fn.gaussian_noise(flip_output, mean=0.0, std_dev=1.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
