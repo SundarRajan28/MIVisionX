@@ -1458,6 +1458,11 @@ Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape)
 
     // create new instance of tensor class
     std::vector<size_t> dims = {_user_batch_size, _input_dims};
+    auto info = TensorInfo(std::move(dims), RocalMemType::HOST, RocalTensorDataType::INT32);
+    _roi_random_crop_tensor = new Tensor(info);
+
+    // allocate memory for the raw buffer pointer in tensor object
+    _roi_random_crop_buf = new int[_user_batch_size * _input_dims];
     _roi_random_crop_tensor->create_from_handle_new(_context, _roi_random_crop_buf);
     return _roi_random_crop_tensor;
 }
