@@ -32,6 +32,7 @@ void SliceNode::create_node() {
     if (_node)
         return;
 
+    create_shape_tensor();
     const int buffer_size = _batch_size;
     int input_layout = static_cast<int>(_inputs[0]->info().layout());
     int roi_type = static_cast<int>(_inputs[0]->info().roi_type());
@@ -58,27 +59,31 @@ void SliceNode::update_node() {
     status = vxCopyArrayRange((vx_array)_fill_values_array, 0, _batch_size, sizeof(vx_float32), _fill_values_vec.data(), VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
     if (status != 0)
         WRN("ERROR: vxCopyArrayRange failed in the slice node (vxExtRppSlice) node: " + TOSTR(status))
+    int* shape_arr = (int *) _shape_array;
+    for (unsigned i = 0; i < _batch_size; i++) {
+        for (unsigned j = 0; j < _shape_vec.size(); j++) {
+            shape_arr[i * _batch_size + j] = _shape_vec[j];
+        }
+    }
 }
 
 void SliceNode::init(Tensor *anchor, std::vector<int> shape, std::vector<float> &fill_values, RocalOutOfBoundsPolicy policy) {
     _policy = policy;
     _anchor = anchor;
-    create_shape_tensor(shape);
+    _shape_vec = shape;
     _fill_values = fill_values;
     _fill_values_vec.resize(_batch_size);
 }
 
 // Create vx_tensor for the shape coordinates
-void SliceNode::create_shape_tensor(std::vector<int> shape) {
+void SliceNode::create_shape_tensor() {
     vx_size num_of_dims = 2;
     vx_size stride[num_of_dims];
-    std::vector<size_t> _shape_tensor_dims = {_batch_size, shape.size()};
-    stride[0] = sizeof(vx_uint32);
+    std::vector<size_t> _shape_tensor_dims = {_batch_size, _shape_vec.size()};
+    stride[0] = sizeof(vx_int32);
     stride[1] = stride[0] * _shape_tensor_dims[0];
     vx_enum mem_type = VX_MEMORY_TYPE_HOST;
-    if (_inputs[0]->info().mem_type() == RocalMemType::HIP)
-        mem_type = VX_MEMORY_TYPE_HIP;
-    allocate_host_or_pinned_mem(&_shape_array, stride[1] * shape.size(), _inputs[0]->info().mem_type());
+    _shape_array = (void *) malloc(stride[1] * _shape_vec.size());
 
     _shape = vxCreateTensorFromHandle(vxGetContext((vx_reference)_graph->get()), num_of_dims, _shape_tensor_dims.data(), VX_TYPE_INT32, 0,
                                       stride, reinterpret_cast<void *>(_shape_array), mem_type);

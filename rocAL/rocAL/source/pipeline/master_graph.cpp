@@ -943,10 +943,11 @@ void MasterGraph::output_routine() {
                     int sample_idx = i * _input_dims;
                     int *roi_begin = &roi_begin_batch[sample_idx];
                     int *roi_end = &roi_end_batch[sample_idx];
+                    int *input_shape = &_roi_batch[sample_idx * 2 + _input_dims];
                     for(uint j = 0; j < _input_dims; j++)
                     {
                         roi_begin[j] = std::rand() % (_input_dims * 5);
-                        roi_end[j] = roi_begin[j] + (std::rand() % (_input_dims * 5));
+                        roi_end[j] = std::min(roi_begin[j] + (std::rand() % input_shape[j]), input_shape[j]);
                     }
                 }
                 update_roi_random_crop(_crop_shape_batch, roi_begin_batch, roi_end_batch);
@@ -1447,6 +1448,7 @@ Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape)
     else
         _input_dims = input->num_of_dims() - 1;
 
+    _roi_batch = reinterpret_cast<int *>(input->info().roi().get_ptr());
     _crop_shape_batch = new int[_input_dims * _user_batch_size]; // TODO handle this case later when different crop_shape is given for each tensor
 
     // replicate crop_shape values for all samples in a batch
@@ -1471,14 +1473,13 @@ void MasterGraph::update_roi_random_crop(int *crop_shape_batch, int *roi_begin_b
     void *roi_random_crop_buf = _roi_random_crop_tensor->buffer();
     int *crop_begin_batch = static_cast<int *>(roi_random_crop_buf);
     uint seed = std::time(0);
-    int *roi_batch = reinterpret_cast<int *>(_internal_tensor_list[0]->info().roi().get_ptr());
 
     BatchRNGUniform _rng = {seed, static_cast<int>(_user_batch_size)};
     for(uint i = 0; i < _user_batch_size; i++) {
         int sample_idx = i * _input_dims;
         int *crop_shape = &crop_shape_batch[sample_idx];
         int *roi_begin = &roi_begin_batch[sample_idx];
-        int *input_shape = &roi_batch[sample_idx * 2 + _input_dims];
+        int *input_shape = &_roi_batch[sample_idx * 2 + _input_dims];
         int *roi_end = &roi_end_batch[sample_idx];
         int *crop_begin = &crop_begin_batch[sample_idx];
 

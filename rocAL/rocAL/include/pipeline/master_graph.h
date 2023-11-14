@@ -210,6 +210,7 @@ class MasterGraph {
     bool _is_roi_random_crop = false;
     uint _input_dims = 1;
     int *_crop_shape_batch = nullptr;
+    int *_roi_batch = nullptr;
     Tensor *_roi_random_crop_tensor = nullptr;
     void *_roi_random_crop_buf = nullptr;
     vx_tensor _roi_random_crop_vx_tensor = nullptr;

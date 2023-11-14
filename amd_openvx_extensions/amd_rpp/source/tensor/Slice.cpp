@@ -36,8 +36,7 @@ struct SliceLocalData {
     RpptDescPtr pDstDesc;
     RpptGenericDescPtr pSrcGenericDesc;
     RpptGenericDescPtr pDstGenericDesc;
-    RpptROI *pSrcRoi;
-    RpptROI3D *pSrcRoi3D;
+    Rpp32u *pSrcRoi3D;
     RpptRoiType roiType;
     vxTensorLayout inputLayout;
     size_t inputTensorDims[RPP_MAX_TENSOR_DIMS];
@@ -64,8 +63,31 @@ static vx_status VX_CALLBACK refreshSlice(vx_node node, const vx_reference *para
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
     }
 
-    if (data->inputLayout == vxTensorLayout::VX_NDHWC || data->inputLayout == vxTensorLayout::VX_NCDHW) {
-        data->pSrcRoi3D = reinterpret_cast<RpptROI3D *>(roi_tensor_ptr);
+    if (!data->pSrcRoi3D) {
+        data->pSrcRoi3D = new Rpp32u[data->inputTensorDims[0] * 3 * 2];
+    }
+    if (data->inputLayout == vxTensorLayout::VX_NDHWC) {
+        unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
+        for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
+            unsigned index = i * 4 * 2;
+            data->pSrcRoi3D[index] = src_roi_ptr[index + 2];
+            data->pSrcRoi3D[index + 1] = src_roi_ptr[index + 1];
+            data->pSrcRoi3D[index + 2] = src_roi_ptr[index];
+            data->pSrcRoi3D[index + 3] = src_roi_ptr[index + 6];
+            data->pSrcRoi3D[index + 4] = src_roi_ptr[index + 5];
+            data->pSrcRoi3D[index + 5] = src_roi_ptr[index + 4];
+        }
+    } else if (data->inputLayout == vxTensorLayout::VX_NCDHW) {
+        unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
+        for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
+            unsigned index = i * 4 * 2;
+            data->pSrcRoi3D[index] = src_roi_ptr[index + 3];
+            data->pSrcRoi3D[index + 1] = src_roi_ptr[index + 2];
+            data->pSrcRoi3D[index + 2] = src_roi_ptr[index + 1];
+            data->pSrcRoi3D[index + 3] = src_roi_ptr[index + 7];
+            data->pSrcRoi3D[index + 4] = src_roi_ptr[index + 6];
+            data->pSrcRoi3D[index + 5] = src_roi_ptr[index + 5];
+        }
     }
     return status;
 }
@@ -74,7 +96,7 @@ static vx_status VX_CALLBACK validateSlice(vx_node node, const vx_reference para
     vx_status status = VX_SUCCESS;
     vx_enum scalar_type;
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[6], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
-    if (scalar_type != VX_TYPE_INT32)
+    if (scalar_type != VX_TYPE_UINT32)
         return ERRMSG(VX_ERROR_INVALID_TYPE, "validate: Paramter: #6 type=%d (must be size)\n", scalar_type);
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[7], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
     if (scalar_type != VX_TYPE_INT32)
@@ -116,11 +138,11 @@ static vx_status VX_CALLBACK processSlice(vx_node node, const vx_reference *para
     refreshSlice(node, parameters, num, data);
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
 #if ENABLE_HIP
-        rpp_status = rppt_slice_voxel_gpu(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->pAnchor, data->pShape, data->pFillValues, (bool)data->policy, data->pSrcRoi3D, (RpptRoi3DType)data->roiType, data->handle->rppHandle);
+        rpp_status = rppt_slice_gpu(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->pAnchor, data->pShape, data->pFillValues, (bool)data->policy, data->pSrcRoi3D, data->handle->rppHandle);
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
-        rpp_status = rppt_slice_voxel_host(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->pAnchor, data->pShape, data->pFillValues, (bool)data->policy, data->pSrcRoi3D, (RpptRoi3DType)data->roiType, data->handle->rppHandle);
+        rpp_status = rppt_slice_host(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->pAnchor, data->pShape, data->pFillValues, (bool)data->policy, data->pSrcRoi3D, data->handle->rppHandle);
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
     }
     return return_status;

@@ -37,13 +37,14 @@ class SliceNode : public Node {
    protected:
     void create_node() override;
     void update_node() override;
-    void create_shape_tensor(std::vector<int> shape);
+    void create_shape_tensor();
 
    private:
     vx_array _fill_values_array;
     void *_shape_array;
     Tensor *_anchor;
     vx_tensor _shape = nullptr;
-    std::vector<float> _fill_values, _fill_values_vec, _anchor_vec, _shape_vec;
+    std::vector<float> _fill_values, _fill_values_vec;
+    std::vector<int> _anchor_vec, _shape_vec;
     RocalOutOfBoundsPolicy _policy = RocalOutOfBoundsPolicy::PAD;
 };
