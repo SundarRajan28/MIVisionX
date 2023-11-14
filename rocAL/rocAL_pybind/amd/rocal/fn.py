@@ -825,7 +825,7 @@ def crop(*inputs, crop=[0, 0], crop_pos_x=0.5, crop_pos_y=0.5, crop_pos_z=0.5,
     return (cropped_image)
 
 
-def slice(*inputs, anchor = [], shape = [], dtype = types.FLOAT, end = [], fill_values = [0.0],  out_of_bounds_policy = types.ERROR, device=None, output_layout=types.NHWC, output_dtype=types.UINT8):
+def slice(*inputs, anchor = [], shape = [], dtype = types.FLOAT, end = [], fill_values = [0.0],  out_of_bounds_policy = types.PAD, device=None, output_layout=types.NHWC, output_dtype=types.UINT8):
     """
     The slice can be specified by proving the start and end coordinates, or start coordinates and shape of the slice. Both coordinates and shapes can be provided in absolute or relative terms.
 

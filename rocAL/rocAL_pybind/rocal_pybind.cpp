@@ -333,6 +333,10 @@ PYBIND11_MODULE(rocal_pybind, m) {
         .value("DECODER_VIDEO_FFMPEG_SW", ROCAL_DECODER_VIDEO_FFMPEG_SW)
         .value("DECODER_VIDEO_FFMPEG_HW", ROCAL_DECODER_VIDEO_FFMPEG_HW)
         .export_values();
+    py::enum_<RocalOutOfBoundsPolicy>(types_m, "RocalOutOfBoundsPolicy", "Rocal Out of Bounds Policy Type")
+        .value("TRIMTOSHAPE", TRIMTOSHAPE)
+        .value("PAD", PAD)
+        .export_values();
     // rocal_api_info.h
     m.def("getRemainingImages", &rocalGetRemainingImages);
     m.def("getImageName", &wrapper_image_name);

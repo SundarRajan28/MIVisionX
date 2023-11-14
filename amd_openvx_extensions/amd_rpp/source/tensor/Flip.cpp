@@ -63,8 +63,31 @@ static vx_status VX_CALLBACK refreshFlip(vx_node node, const vx_reference *param
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
     }
-    if (data->inputLayout == vxTensorLayout::VX_NDHWC || data->inputLayout == vxTensorLayout::VX_NCDHW) {
-        data->pSrcRoi3D = reinterpret_cast<RpptROI3D *>(roi_tensor_ptr);
+    if (!data->pSrcRoi3D) {
+        data->pSrcRoi3D = new RpptROI3D[data->inputTensorDims[0]];
+    }
+    if (data->inputLayout == vxTensorLayout::VX_NDHWC) {
+        unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
+        for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
+            unsigned index = i * 4 * 2;
+            data->pSrcRoi3D[i].xyzwhdROI.xyz.x = src_roi_ptr[index + 2];
+            data->pSrcRoi3D[i].xyzwhdROI.xyz.y = src_roi_ptr[index + 1];
+            data->pSrcRoi3D[i].xyzwhdROI.xyz.z = src_roi_ptr[index];
+            data->pSrcRoi3D[i].xyzwhdROI.roiWidth = src_roi_ptr[index + 6];
+            data->pSrcRoi3D[i].xyzwhdROI.roiHeight = src_roi_ptr[index + 5];
+            data->pSrcRoi3D[i].xyzwhdROI.roiDepth = src_roi_ptr[index + 4];
+        }
+    } else if (data->inputLayout == vxTensorLayout::VX_NCDHW) {
+        unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
+        for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
+            unsigned index = i * 4 * 2;
+            data->pSrcRoi3D[i].xyzwhdROI.xyz.x = src_roi_ptr[index + 3];
+            data->pSrcRoi3D[i].xyzwhdROI.xyz.y = src_roi_ptr[index + 2];
+            data->pSrcRoi3D[i].xyzwhdROI.xyz.z = src_roi_ptr[index + 1];
+            data->pSrcRoi3D[i].xyzwhdROI.roiWidth = src_roi_ptr[index + 7];
+            data->pSrcRoi3D[i].xyzwhdROI.roiHeight = src_roi_ptr[index + 6];
+            data->pSrcRoi3D[i].xyzwhdROI.roiDepth = src_roi_ptr[index + 5];
+        }
     } else {
         data->pSrcRoi = reinterpret_cast<RpptROI *>(roi_tensor_ptr);
         if (data->inputLayout == vxTensorLayout::VX_NFHWC || data->inputLayout == vxTensorLayout::VX_NFCHW) {
@@ -226,6 +249,7 @@ static vx_status VX_CALLBACK uninitializeFlip(vx_node node, const vx_reference *
     delete data->pDstDesc;
     delete data->pSrcGenericDesc;
     delete data->pDstGenericDesc;
+    delete[] data->pSrcRoi3D;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
     delete data;
     return VX_SUCCESS;
