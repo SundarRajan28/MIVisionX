@@ -55,14 +55,17 @@ static vx_status VX_CALLBACK refreshBrightness(vx_node node, const vx_reference 
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HIP, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HIP, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HIP, &data->pDst, sizeof(data->pDst)));
+        if (!data->pSrcRoi3D) {
+            hipError_t err = hipHostMalloc(&data->pSrcRoi3D, data->inputTensorDims[0] * sizeof(RpptROI3D), hipHostMallocDefault);
+            if (err != hipSuccess)
+                return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", data->inputTensorDims[0] * sizeof(RpptROI3D));
+        }
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HOST, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
-    }
-    if (!data->pSrcRoi3D) {
-        data->pSrcRoi3D = new RpptROI3D[data->inputTensorDims[0]];
+        if (!data->pSrcRoi3D) data->pSrcRoi3D = new RpptROI3D[data->inputTensorDims[0]];
     }
     if (data->inputLayout == vxTensorLayout::VX_NDHWC) {
         unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
@@ -244,7 +247,15 @@ static vx_status VX_CALLBACK uninitializeBrightness(vx_node node, const vx_refer
     delete data->pDstDesc;
     delete data->pSrcGenericDesc;
     delete data->pDstGenericDesc;
-    delete[] data->pSrcRoi3D;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        hipError_t err = hipHostFree(data->pSrcRoi3D);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+#endif
+    } else {
+        if (data->pSrcRoi3D) delete[] data->pSrcRoi3D;
+    }
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
     delete data;
     return VX_SUCCESS;

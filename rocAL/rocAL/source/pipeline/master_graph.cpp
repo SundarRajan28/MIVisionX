@@ -325,6 +325,15 @@ void MasterGraph::release() {
     _ring_buffer.release_gpu_res();
     // shut_down loader:: required for releasing any allocated resourses
     _loader_module->shut_down();
+    if (_affinity == RocalAffinity::GPU) {
+#if ENABLE_HIP
+        hipError_t err = hipHostFree(_roi_random_crop_buf);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+#endif
+    } else if (_affinity == RocalAffinity::CPU) {
+        if (_roi_random_crop_buf) free(_roi_random_crop_buf);
+    }
     // release output buffer if allocated
     if (_output_tensor_buffer != nullptr) {
 #if ENABLE_OPENCL
@@ -1460,11 +1469,11 @@ Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape)
 
     // create new instance of tensor class
     std::vector<size_t> dims = {_user_batch_size, _input_dims};
-    auto info = TensorInfo(std::move(dims), RocalMemType::HOST, RocalTensorDataType::INT32);
+    auto info = TensorInfo(std::move(dims), input->info().mem_type(), RocalTensorDataType::INT32);
     _roi_random_crop_tensor = new Tensor(info);
 
     // allocate memory for the raw buffer pointer in tensor object
-    _roi_random_crop_buf = new int[_user_batch_size * _input_dims];
+    allocate_host_or_pinned_mem(&_roi_random_crop_buf, _user_batch_size * _input_dims * sizeof(int), input->info().mem_type());
     _roi_random_crop_tensor->create_from_handle_new(_context, _roi_random_crop_buf);
     return _roi_random_crop_tensor;
 }

@@ -46,8 +46,6 @@ struct SliceLocalData {
 static vx_status VX_CALLBACK refreshSlice(vx_node node, const vx_reference *parameters, vx_uint32 num, SliceLocalData *data) {
     vx_status status = VX_SUCCESS;
     void *roi_tensor_ptr;
-    STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[3], VX_TENSOR_BUFFER_HOST, &data->pAnchor, sizeof(data->pAnchor)));
-    STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[4], VX_TENSOR_BUFFER_HOST, &data->pShape, sizeof(data->pShape)));
     STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, data->inputTensorDims[0], sizeof(float), data->pFillValues, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
 #if ENABLE_OPENCL
@@ -56,16 +54,23 @@ static vx_status VX_CALLBACK refreshSlice(vx_node node, const vx_reference *para
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HIP, &data->pSrc, sizeof(&data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HIP, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HIP, &data->pDst, sizeof(data->pDst)));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[3], VX_TENSOR_BUFFER_HIP, &data->pAnchor, sizeof(data->pAnchor)));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[4], VX_TENSOR_BUFFER_HIP, &data->pShape, sizeof(data->pShape)));
+        if (!data->pSrcRoi3D) {
+            hipError_t err = hipHostMalloc(&data->pSrcRoi3D, data->inputTensorDims[0] * 3 * 2, hipHostMallocDefault);
+            if (err != hipSuccess)
+                return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", data->inputTensorDims[0] * 3 * 2);
+        }
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(&data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HOST, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[3], VX_TENSOR_BUFFER_HOST, &data->pAnchor, sizeof(data->pAnchor)));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[4], VX_TENSOR_BUFFER_HOST, &data->pShape, sizeof(data->pShape)));
+        if (!data->pSrcRoi3D) data->pSrcRoi3D = new Rpp32u[data->inputTensorDims[0] * 3 * 2];
     }
 
-    if (!data->pSrcRoi3D) {
-        data->pSrcRoi3D = new Rpp32u[data->inputTensorDims[0] * 3 * 2];
-    }
     if (data->inputLayout == vxTensorLayout::VX_NDHWC) {
         unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
         for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
@@ -218,6 +223,15 @@ static vx_status VX_CALLBACK uninitializeSlice(vx_node node, const vx_reference 
     delete(data->pDstDesc);
     delete data->pSrcGenericDesc;
     delete data->pDstGenericDesc;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        hipError_t err = hipHostFree(data->pSrcRoi3D);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+#endif
+    } else {
+        if (data->pSrcRoi3D) delete[] data->pSrcRoi3D;
+    }
     delete (data);
     return VX_SUCCESS;
 }

@@ -83,7 +83,9 @@ void SliceNode::create_shape_tensor() {
     stride[0] = sizeof(vx_int32);
     stride[1] = stride[0] * _shape_tensor_dims[0];
     vx_enum mem_type = VX_MEMORY_TYPE_HOST;
-    _shape_array = (void *) malloc(stride[1] * _shape_vec.size());
+    if (_inputs[0]->info().mem_type() == RocalMemType::HIP)
+        mem_type = VX_MEMORY_TYPE_HIP;
+    allocate_host_or_pinned_mem(&_shape_array, stride[1] * _shape_vec.size(), _inputs[0]->info().mem_type());
 
     _shape = vxCreateTensorFromHandle(vxGetContext((vx_reference)_graph->get()), num_of_dims, _shape_tensor_dims.data(), VX_TYPE_INT32, 0,
                                       stride, reinterpret_cast<void *>(_shape_array), mem_type);
