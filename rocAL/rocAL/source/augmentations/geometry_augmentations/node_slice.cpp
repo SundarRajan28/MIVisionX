@@ -60,10 +60,10 @@ void SliceNode::update_node() {
     if (status != 0)
         WRN("ERROR: vxCopyArrayRange failed in the slice node (vxExtRppSlice) node: " + TOSTR(status))
     int* shape_arr = (int *) _shape_array;
-    for (unsigned i = 0; i < _batch_size; i++) {
-        for (unsigned j = 0; j < _shape_vec.size(); j++) {
-            shape_arr[i * _batch_size + j] = _shape_vec[j];
-        }
+    // replicate shape values for all samples in a batch
+    for (uint i = 0; i < _batch_size; i++) {
+        int sample_idx = i * _shape_vec.size();
+        memcpy(&(shape_arr[sample_idx]), _shape_vec.data(), _shape_vec.size() * sizeof(int));
     }
 }
 
