@@ -325,15 +325,6 @@ void MasterGraph::release() {
     _ring_buffer.release_gpu_res();
     // shut_down loader:: required for releasing any allocated resourses
     _loader_module->shut_down();
-    if (_affinity == RocalAffinity::GPU) {
-#if ENABLE_HIP
-        hipError_t err = hipHostFree(_roi_random_crop_buf);
-        if (err != hipSuccess)
-            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
-#endif
-    } else if (_affinity == RocalAffinity::CPU) {
-        if (_roi_random_crop_buf) free(_roi_random_crop_buf);
-    }
     // release output buffer if allocated
     if (_output_tensor_buffer != nullptr) {
 #if ENABLE_OPENCL
@@ -355,6 +346,21 @@ void MasterGraph::release() {
     _output_tensor_list.release();    // It will call the vxReleaseTensor internally in the destructor for each tensor in the list
     for (auto tensor_list : _metadata_output_tensor_list)
         dynamic_cast<TensorList *>(tensor_list)->release();  // It will call the vxReleaseTensor internally in the destructor for each tensor in the list
+    if(_is_roi_random_crop)
+    {
+        // delete _roi_random_crop_tensor;
+        if(_crop_shape_batch != nullptr)
+            delete[] _crop_shape_batch;
+        if(_roi_random_crop_buf != nullptr) {
+            if (_affinity == RocalAffinity::GPU) {
+    #if ENABLE_HIP
+                hipError_t err = hipHostFree(_roi_random_crop_buf);
+                if (err != hipSuccess)
+                    std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+    #endif
+            } else { free(_roi_random_crop_buf); }
+        }
+    }
 
     if (_graph != nullptr)
         _graph->release();
@@ -1449,13 +1455,16 @@ class BatchRNGUniform {
   std::vector<std::mt19937> rngs_;
 };
 
-Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape)
+Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape, int remove_dim)
 {
     _is_roi_random_crop = true;
     if(input->info().is_image())
         _input_dims = input->num_of_dims() - 2; // TO be changed later when generic roi changes are added
     else
         _input_dims = input->num_of_dims() - 1;
+    
+    _output_dims = remove_dim >= 0 ? _input_dims - 1 : _input_dims;
+    _roi_dim_to_remove = remove_dim >= 0 ? remove_dim : _input_dims; // Setting roi_dim_to_remove as _input_dims if remove_dim is not passed
 
     _roi_batch = reinterpret_cast<int *>(input->info().roi().get_ptr());
     _crop_shape_batch = new int[_input_dims * _user_batch_size]; // TODO handle this case later when different crop_shape is given for each tensor
@@ -1468,19 +1477,18 @@ Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape)
     }
 
     // create new instance of tensor class
-    std::vector<size_t> dims = {_user_batch_size, _input_dims};
+    std::vector<size_t> dims = {_user_batch_size, _output_dims};
     auto info = TensorInfo(std::move(dims), input->info().mem_type(), RocalTensorDataType::INT32);
     _roi_random_crop_tensor = new Tensor(info);
 
     // allocate memory for the raw buffer pointer in tensor object
-    allocate_host_or_pinned_mem(&_roi_random_crop_buf, _user_batch_size * _input_dims * sizeof(int), input->info().mem_type());
+    allocate_host_or_pinned_mem(&_roi_random_crop_buf, _user_batch_size * _output_dims * sizeof(int), input->info().mem_type());
     _roi_random_crop_tensor->create_from_handle_new(_context, _roi_random_crop_buf);
     return _roi_random_crop_tensor;
 }
 
 void MasterGraph::update_roi_random_crop(int *crop_shape_batch, int *roi_begin_batch, int *roi_end_batch) {
-    void *roi_random_crop_buf = _roi_random_crop_tensor->buffer();
-    int *crop_begin_batch = static_cast<int *>(roi_random_crop_buf);
+    int *crop_begin_batch = static_cast<int *>(_roi_random_crop_buf);
     uint seed = std::time(0);
 
     BatchRNGUniform _rng = {seed, static_cast<int>(_user_batch_size)};
@@ -1490,9 +1498,11 @@ void MasterGraph::update_roi_random_crop(int *crop_shape_batch, int *roi_begin_b
         int *roi_begin = &roi_begin_batch[sample_idx];
         int *input_shape = &_roi_batch[sample_idx * 2 + _input_dims];
         int *roi_end = &roi_end_batch[sample_idx];
-        int *crop_begin = &crop_begin_batch[sample_idx];
+        int *crop_begin = &crop_begin_batch[i * _output_dims];
 
-        for(uint j = 0; j < _input_dims; j++) {
+        for(uint j = 0, k = 0; j < _input_dims; j++) {
+            if (j == _roi_dim_to_remove)
+                continue;
             // check if crop_shape, roi_end is greater than input_shape
             if(crop_shape[j] > input_shape[j])
                 THROW("crop shape cannot be greater than input shape");
@@ -1502,7 +1512,7 @@ void MasterGraph::update_roi_random_crop(int *crop_shape_batch, int *roi_begin_b
             int roi_length = roi_end[j] - roi_begin[j];
             int crop_length = crop_shape[j];
             if (roi_length == crop_length) {
-                crop_begin[j] = roi_begin[j];
+                crop_begin[k++] = roi_begin[j];
             } else {
                 int64_t start_range[2] = {roi_begin[j], roi_end[j] - crop_length};
 
@@ -1518,7 +1528,7 @@ void MasterGraph::update_roi_random_crop(int *crop_shape_batch, int *roi_begin_b
                 start_range[1] = std::min<int64_t>(input_shape[j] - crop_length, start_range[1]);
 
                 auto dist = std::uniform_int_distribution<int64_t>(start_range[0], start_range[1]);
-                crop_begin[j] = dist(_rng[i]);
+                crop_begin[k++] = dist(_rng[i]);
             }
         }
     }

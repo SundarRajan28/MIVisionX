@@ -133,7 +133,7 @@ class MasterGraph {
     void set_sequence_batch_size(size_t sequence_length) { _sequence_batch_size = _user_batch_size * sequence_length; }
     std::vector<rocalTensorList *> get_bbox_encoded_buffers(size_t num_encoded_boxes);
     size_t bounding_box_batch_count(pMetaDataBatch meta_data_batch);
-    Tensor* roi_random_crop(Tensor *input, int *crop_shape);
+    Tensor* roi_random_crop(Tensor *input, int *crop_shape, int remove_dim=-1);
     void update_roi_random_crop(int *crop_shape_batch, int *roi_begin_batch, int *roi_end_batch);
 #if ENABLE_OPENCL
     cl_command_queue get_ocl_cmd_q() { return _device.resources()->cmd_queue; }
@@ -208,12 +208,11 @@ class MasterGraph {
     std::vector<float> _means, _stds;                                             //_means:  [x y w h] mean values for normalization _stds: [x y w h] standard deviations for offset normalization.
     bool _augmentation_metanode = false;
     bool _is_roi_random_crop = false;
-    uint _input_dims = 1;
+    uint _input_dims, _output_dims, _roi_dim_to_remove;
     int *_crop_shape_batch = nullptr;
     int *_roi_batch = nullptr;
     Tensor *_roi_random_crop_tensor = nullptr;
     void *_roi_random_crop_buf = nullptr;
-    vx_tensor _roi_random_crop_vx_tensor = nullptr;
 #if ENABLE_HIP
     BoxEncoderGpu *_box_encoder_gpu = nullptr;
 #endif

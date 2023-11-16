@@ -293,6 +293,6 @@ extern "C" void ROCAL_API_CALL rocalGetJointsDataPtr(RocalContext p_context, Roc
  * \param [in] roi_end_batch
  * \param [out] anchor The generated anchor tensor
  */
-extern "C" RocalTensor ROCAL_API_CALL rocalROIRandomCrop(RocalContext p_context, RocalTensor p_input, std::vector<int> crop_shape);
+extern "C" RocalTensor ROCAL_API_CALL rocalROIRandomCrop(RocalContext p_context, RocalTensor p_input, std::vector<int> crop_shape, int remove_dim=-1);
 
 #endif  // MIVISIONX_ROCAL_API_META_DATA_H

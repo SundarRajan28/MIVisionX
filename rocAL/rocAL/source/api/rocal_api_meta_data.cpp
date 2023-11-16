@@ -468,11 +468,11 @@ void
 
 RocalTensor
     ROCAL_API_CALL
-    rocalROIRandomCrop(RocalContext p_context, RocalTensor p_input, std::vector<int> crop_shape) {
+    rocalROIRandomCrop(RocalContext p_context, RocalTensor p_input, std::vector<int> crop_shape, int remove_dim) {
      if ((p_context == nullptr) || (p_input == nullptr)) {
         ERR("Invalid ROCAL context or invalid input tensor")
     }
     auto context = static_cast<Context*>(p_context);
     auto input = static_cast<Tensor*>(p_input);
-    return context->master_graph->roi_random_crop(input, crop_shape.data());
+    return context->master_graph->roi_random_crop(input, crop_shape.data(), remove_dim);
 }

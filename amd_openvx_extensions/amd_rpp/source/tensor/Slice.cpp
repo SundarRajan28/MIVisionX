@@ -75,23 +75,23 @@ static vx_status VX_CALLBACK refreshSlice(vx_node node, const vx_reference *para
         unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
         for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
             unsigned index = i * 4 * 2;
-            data->pSrcRoi3D[index] = src_roi_ptr[index + 2];
+            data->pSrcRoi3D[index] = src_roi_ptr[index];
             data->pSrcRoi3D[index + 1] = src_roi_ptr[index + 1];
-            data->pSrcRoi3D[index + 2] = src_roi_ptr[index];
-            data->pSrcRoi3D[index + 3] = src_roi_ptr[index + 6];
+            data->pSrcRoi3D[index + 2] = src_roi_ptr[index + 2];
+            data->pSrcRoi3D[index + 3] = src_roi_ptr[index + 4];
             data->pSrcRoi3D[index + 4] = src_roi_ptr[index + 5];
-            data->pSrcRoi3D[index + 5] = src_roi_ptr[index + 4];
+            data->pSrcRoi3D[index + 5] = src_roi_ptr[index + 6];
         }
     } else if (data->inputLayout == vxTensorLayout::VX_NCDHW) {
         unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
         for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
             unsigned index = i * 4 * 2;
-            data->pSrcRoi3D[index] = src_roi_ptr[index + 3];
+            data->pSrcRoi3D[index] = src_roi_ptr[index + 1];
             data->pSrcRoi3D[index + 1] = src_roi_ptr[index + 2];
-            data->pSrcRoi3D[index + 2] = src_roi_ptr[index + 1];
-            data->pSrcRoi3D[index + 3] = src_roi_ptr[index + 7];
+            data->pSrcRoi3D[index + 2] = src_roi_ptr[index + 3];
+            data->pSrcRoi3D[index + 3] = src_roi_ptr[index + 5];
             data->pSrcRoi3D[index + 4] = src_roi_ptr[index + 6];
-            data->pSrcRoi3D[index + 5] = src_roi_ptr[index + 5];
+            data->pSrcRoi3D[index + 5] = src_roi_ptr[index + 7];
         }
     }
     return status;
