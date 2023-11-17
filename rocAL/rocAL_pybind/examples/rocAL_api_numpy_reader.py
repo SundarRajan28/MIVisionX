@@ -22,35 +22,44 @@ def main():
             os.makedirs(path)
     except OSError as error:
         print(error)
-    data_path = sys.argv[1]
-    if(sys.argv[2] == "cpu"):
+    data_path1 = sys.argv[1]
+    data_path2 = sys.argv[2]
+    if(sys.argv[3] == "cpu"):
         rocal_cpu = True
     else:
         rocal_cpu = False
-    batch_size = int(sys.argv[3])
+    batch_size = int(sys.argv[4])
     num_threads = 1
     device_id = 0
     local_rank = 0
     world_size = 1
     random_seed = random.SystemRandom().randint(0, 2**32 - 1)
 
-    files_list = []
-    for file in os.listdir(data_path):
-        files_list.append(os.path.join(data_path, file))
+    data_files_list = []
+    for file in os.listdir(data_path1):
+        data_files_list.append(os.path.join(data_path1, file))
+
+    label_files_list = []
+    for file in os.listdir(data_path2):
+        label_files_list.append(os.path.join(data_path2, file))
 
     import time
     start = time.time()
     pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu)
 
     with pipeline:
-        numpy_reader_output = fn.readers.numpy(file_root=data_path, shard_id=local_rank, num_shards=world_size)
-        new_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
-        anchor = fn.roi_random_crop(new_output, crop_shape=(1, 128, 128, 128), remove_dim=0)
-        sliced_output = fn.slice(new_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        flip_output = fn.flip(sliced_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        brightness_output = fn.brightness(flip_output, brightness=1.25, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        # noise_output = fn.gaussian_noise(brightness_output, mean=0.0, std_dev=1.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        pipeline.set_outputs(brightness_output)
+        numpy_reader_output = fn.readers.numpy(file_root=data_path1, shard_id=local_rank, num_shards=world_size)
+        numpy_reader_output1 = fn.readers.numpy(file_root=data_path2, shard_id=local_rank, num_shards=world_size)
+        data_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
+        label_output = fn.set_layout(numpy_reader_output1, output_layout=types.NCDHW)
+        anchor = fn.roi_random_crop(label_output, crop_shape=(1, 128, 128, 128), remove_dim=0)
+        data_sliced_output = fn.slice(data_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        label_sliced_output = fn.slice(label_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.UINT8)       
+        data_flip_output = fn.flip(data_sliced_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        label_flip_output = fn.flip(label_sliced_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.UINT8)
+        brightness_output = fn.brightness(data_flip_output, brightness=1.25, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        noise_output = fn.gaussian_noise(brightness_output, mean=0.0, std_dev=1.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        pipeline.set_outputs(noise_output, label_flip_output)
 
     pipeline.build()
     
@@ -59,13 +68,14 @@ def main():
     cnt = 0
     for epoch in range(1):
         print("+++++++++++++++++++++++++++++EPOCH+++++++++++++++++++++++++++++++++++++",epoch)
-        for i , [it] in enumerate(numpyIteratorPipeline):
-            print(i, it.shape)
+        for i , it in enumerate(numpyIteratorPipeline):
+            print(i, it[0].shape, it[1].shape)
             for j in range(batch_size):
-                arr = np.load(files_list[cnt])
-                shape = arr.shape
-                print(arr.shape, shape)
-                print(np.array_equal(np.flip(arr[:, :128, :128, :128], axis=[1,2]) * 1.25, it[j].cpu().numpy()))
+                arr1 = np.load(data_files_list[cnt])
+                arr2 = np.load(label_files_list[cnt])
+                print(arr1.shape, arr2.shape)
+                print(np.array_equal(np.flip(arr1[:, :128, :128, :128], axis=[1,2]) * 1.25, it[0][j].cpu().numpy()))
+                print(np.array_equal(np.flip(arr2[:, :128, :128, :128], axis=[1,2]), it[1][j].cpu().numpy()))
                 cnt += 1
             print("************************************** i *************************************",i)
         numpyIteratorPipeline.reset()
