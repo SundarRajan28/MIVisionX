@@ -50,7 +50,7 @@ def main():
 
     pipeline.build()
     
-    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, tensor_dtype=types.UINT8, device='cpu' if rocal_cpu else 'gpu')
+    numpyIteratorPipeline = ROCALNumpyIterator(pipeline, device='cpu' if rocal_cpu else 'gpu')
     print(len(numpyIteratorPipeline))
     cnt = 0
     for epoch in range(1):

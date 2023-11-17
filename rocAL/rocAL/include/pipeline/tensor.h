@@ -183,17 +183,17 @@ class TensorInfo {
                 _channels = _dims.at(2);
             } else if (_layout == RocalTensorlayout::NDHWC) {
                 _is_image = false;
-                _max_shape.resize(3);
-                _max_shape = {_dims.at(1), _dims.at(2), _dims.at(3)};
+                _max_shape.resize(4);
+                _max_shape.assign(_dims.begin() + 1, _dims.end());
                 _channels = _dims.at(4);
             } else if (_layout == RocalTensorlayout::NCDHW) {
                 _is_image = false;
-                _max_shape.resize(3);
-                _max_shape = {_dims.at(2), _dims.at(3), _dims.at(4)};
+                _max_shape.resize(4);
+                _max_shape.assign(_dims.begin() + 1, _dims.end());
                 _channels = _dims.at(1);
             }
         } else {
-            if (!_max_shape.size()) _max_shape.resize(_num_of_dims - 1, 0);  // Since 2 values will be stored in the vector
+            if (!_max_shape.size()) _max_shape.resize(_num_of_dims - 1, 0);
             _max_shape.assign(_dims.begin() + 1, _dims.end());
         }
         reset_tensor_roi_buffers();
