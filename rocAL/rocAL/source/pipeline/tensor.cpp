@@ -285,7 +285,7 @@ int Tensor::create_from_handle(vx_context context) {
     return 0;
 }
 
-int Tensor::create_from_handle_new(vx_context context, void *ptr) {
+int Tensor::create_from_ptr(vx_context context, void *ptr) {
     if (_vx_handle) {
         WRN("Tensor object create method is already called ")
         return -1;
@@ -295,7 +295,6 @@ int Tensor::create_from_handle_new(vx_context context, void *ptr) {
     vx_enum tensor_data_type = interpret_tensor_data_type(_info.data_type());
     unsigned num_of_dims = _info.num_of_dims();
     vx_size stride[num_of_dims];
-    // void *ptr[1] = {nullptr};
 
     stride[0] = tensor_data_size(_info.data_type());
     for (unsigned i = 1; i < num_of_dims; i++)
@@ -307,8 +306,6 @@ int Tensor::create_from_handle_new(vx_context context, void *ptr) {
         THROW("Error: vxCreateTensorFromHandle(input: failed " + TOSTR(status))
     _info._type = TensorInfo::Type::HANDLE;
     _mem_handle = ptr;
-    // void *roi_handle = reinterpret_cast<void *>(_info.get_roi());
-    // create_roi_tensor_from_handle(&roi_handle); // Create ROI tensor from handle
     return 0;
 }
 

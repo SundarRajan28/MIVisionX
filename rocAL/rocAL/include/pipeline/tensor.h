@@ -183,17 +183,17 @@ class TensorInfo {
                 _channels = _dims.at(2);
             } else if (_layout == RocalTensorlayout::NDHWC) {
                 _is_image = false;
-                _max_shape.resize(3);
-                _max_shape = {_dims.at(1), _dims.at(2), _dims.at(3)};
+                _max_shape.resize(4);
+                _max_shape.assign(_dims.begin() + 1, _dims.end());
                 _channels = _dims.at(4);
             } else if (_layout == RocalTensorlayout::NCDHW) {
                 _is_image = false;
-                _max_shape.resize(3);
-                _max_shape = {_dims.at(2), _dims.at(3), _dims.at(4)};
+                _max_shape.resize(4);
+                _max_shape.assign(_dims.begin() + 1, _dims.end());
                 _channels = _dims.at(1);
             }
         } else {
-            if (!_max_shape.size()) _max_shape.resize(_num_of_dims - 1, 0);  // Since 2 values will be stored in the vector
+            if (!_max_shape.size()) _max_shape.resize(_num_of_dims - 1, 0);
             _max_shape.assign(_dims.begin() + 1, _dims.end());
         }
         reset_tensor_roi_buffers();
@@ -256,9 +256,9 @@ class TensorInfo {
                 break;
             }
             case RocalTensorlayout::NCDHW: {
-                _max_shape[0] = _dims[2] = new_dims[0];
-                _max_shape[1] = _dims[3] = new_dims[1];
-                _max_shape[2] = _dims[4] = new_dims[2];
+                _max_shape[1] = _dims[2] = new_dims[0];
+                _max_shape[2] = _dims[3] = new_dims[1];
+                _max_shape[3] = _dims[4] = new_dims[2];
                 break;
             }
             default: {
@@ -368,7 +368,7 @@ class Tensor : public rocalTensor {
     // create_from_handle() no internal memory allocation is done here since
     // tensor's handle should be swapped with external buffers before usage
     int create_from_handle(vx_context context);
-    int create_from_handle_new(vx_context context, void *ptr);
+    int create_from_ptr(vx_context context, void *ptr);
     int create_virtual(vx_context context, vx_graph graph);
     bool is_handle_set() { return (_vx_handle != 0); }
     void set_dims(std::vector<size_t> dims) { _info.set_dims(dims); }

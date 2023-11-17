@@ -1483,7 +1483,7 @@ Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape, int remove_
 
     // allocate memory for the raw buffer pointer in tensor object
     allocate_host_or_pinned_mem(&_roi_random_crop_buf, _user_batch_size * _output_dims * sizeof(int), input->info().mem_type());
-    _roi_random_crop_tensor->create_from_handle_new(_context, _roi_random_crop_buf);
+    _roi_random_crop_tensor->create_from_ptr(_context, _roi_random_crop_buf);
     return _roi_random_crop_tensor;
 }
 

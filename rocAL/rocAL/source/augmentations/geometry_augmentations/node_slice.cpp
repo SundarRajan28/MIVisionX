@@ -33,6 +33,11 @@ void SliceNode::create_node() {
         return;
 
     create_shape_tensor();
+    auto max_shape = _outputs[0]->info().max_shape();
+    _slice_roi.resize(_batch_size, std::vector<uint32_t>(max_shape.size()));
+    for (uint i = 0; i < _batch_size; i++)
+        for (uint j = 0; j < max_shape.size(); j++)
+            _slice_roi[i][j] = max_shape[j];
     const int buffer_size = _batch_size;
     int input_layout = static_cast<int>(_inputs[0]->info().layout());
     int roi_type = static_cast<int>(_inputs[0]->info().roi_type());
@@ -56,6 +61,7 @@ void SliceNode::update_node() {
         std::fill(_fill_values_vec.begin(), _fill_values_vec.end(), _fill_values[0]);
     }
     vx_status status = VX_SUCCESS;
+    _outputs[0]->update_tensor_roi(_slice_roi);
     status = vxCopyArrayRange((vx_array)_fill_values_array, 0, _batch_size, sizeof(vx_float32), _fill_values_vec.data(), VX_WRITE_ONLY, VX_MEMORY_TYPE_HOST);
     if (status != 0)
         WRN("ERROR: vxCopyArrayRange failed in the slice node (vxExtRppSlice) node: " + TOSTR(status))
