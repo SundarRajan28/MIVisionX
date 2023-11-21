@@ -55,10 +55,15 @@ def main():
         anchor = fn.roi_random_crop(label_output, crop_shape=(1, 128, 128, 128), remove_dim=0)
         data_sliced_output = fn.slice(data_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.FLOAT)
         label_sliced_output = fn.slice(label_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.UINT8)       
-        data_flip_output = fn.flip(data_sliced_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        label_flip_output = fn.flip(label_sliced_output, horizontal=0, vertical=1, depth=1, output_layout=types.NCDHW, output_dtype=types.UINT8)
-        brightness_output = fn.brightness(data_flip_output, brightness=1.25, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
-        noise_output = fn.gaussian_noise(brightness_output, mean=0.0, std_dev=1.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        brightness = fn.random.uniform(range=[0.7, 1.3])
+        hflip = fn.random.coin_flip(probability=0.33)
+        vflip = fn.random.coin_flip(probability=0.33)
+        dflip = fn.random.coin_flip(probability=0.33)
+        data_flip_output = fn.flip(data_sliced_output, horizontal=hflip, vertical=vflip, depth=dflip, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        label_flip_output = fn.flip(label_sliced_output, horizontal=hflip, vertical=vflip, depth=dflip, output_layout=types.NCDHW, output_dtype=types.UINT8)
+        brightness_output = fn.brightness(data_flip_output, brightness=brightness, brightness_shift=0.0, output_layout=types.NCDHW, output_dtype=types.FLOAT)
+        std_dev = fn.random.uniform(range=[0.0, 0.1])
+        noise_output = fn.gaussian_noise(brightness_output, mean=0.0, std_dev=std_dev, output_layout=types.NCDHW, output_dtype=types.FLOAT)
         pipeline.set_outputs(noise_output, label_flip_output)
 
     pipeline.build()
@@ -71,11 +76,7 @@ def main():
         for i , it in enumerate(numpyIteratorPipeline):
             print(i, it[0].shape, it[1].shape)
             for j in range(batch_size):
-                arr1 = np.load(data_files_list[cnt])
-                arr2 = np.load(label_files_list[cnt])
-                print(arr1.shape, arr2.shape)
-                print(np.array_equal(np.flip(arr1[:, :128, :128, :128], axis=[1,2]) * 1.25, it[0][j].cpu().numpy()))
-                print(np.array_equal(np.flip(arr2[:, :128, :128, :128], axis=[1,2]), it[1][j].cpu().numpy()))
+                print(it[0][j].cpu().numpy().shape, it[1][j].cpu().numpy().shape)
                 cnt += 1
             print("************************************** i *************************************",i)
         numpyIteratorPipeline.reset()
