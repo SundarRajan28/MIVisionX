@@ -1878,7 +1878,7 @@ VX_API_CALL vx_node VX_API_CALL vxExtrppNode_SequenceRearrangebatchPD(vx_graph g
 
 //tensor
 
-VX_API_ENTRY vx_node VX_API_CALL vxExtRppBrightness(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pAlpha, vx_array pBeta, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
+VX_API_ENTRY vx_node VX_API_CALL vxExtRppBrightness(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pAlpha, vx_array pBeta, vx_array conditional_execution, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
     if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
@@ -1890,11 +1890,12 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppBrightness(vx_graph graph, vx_tensor pS
             (vx_reference)pDst,
             (vx_reference)pAlpha,
             (vx_reference)pBeta,
+            (vx_reference)conditional_execution,
             (vx_reference)inputLayout,
             (vx_reference)outputLayout,
             (vx_reference)roiType,
             (vx_reference)deviceType};
-        node = createNode(graph, VX_KERNEL_RPP_BRIGHTNESS, params, 9);
+        node = createNode(graph, VX_KERNEL_RPP_BRIGHTNESS, params, 10);
     }
     return node;
 }
@@ -2311,7 +2312,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppNoise(vx_graph graph, vx_tensor pSrc, v
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxExtRppGaussianNoise(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array mean, vx_array std_dev, vx_scalar seed, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
+VX_API_ENTRY vx_node VX_API_CALL vxExtRppGaussianNoise(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array mean, vx_array std_dev, vx_array conditional_execution, vx_scalar seed, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
     if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
@@ -2323,12 +2324,13 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppGaussianNoise(vx_graph graph, vx_tensor
             (vx_reference)pDst,
             (vx_reference)mean,
             (vx_reference)std_dev,
+            (vx_reference)conditional_execution,
             (vx_reference)seed,
             (vx_reference)inputLayout,
             (vx_reference)outputLayout,
             (vx_reference)roiType,
             (vx_reference)deviceType};
-        node = createNode(graph, VX_KERNEL_RPP_GAUSSIAN_NOISE, params, 10);
+        node = createNode(graph, VX_KERNEL_RPP_GAUSSIAN_NOISE, params, 11);
     }
     return node;
 }
