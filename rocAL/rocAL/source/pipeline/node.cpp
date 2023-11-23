@@ -43,7 +43,6 @@ void Node::add_next(const std::shared_ptr<Node> &node) {
     
     if (node->get_id() < 0)
         node->set_id(_graph_id);
-    std::cerr << "Node ID : " << _graph_id << "\n";
     _next.emplace_back(node);
 }
 

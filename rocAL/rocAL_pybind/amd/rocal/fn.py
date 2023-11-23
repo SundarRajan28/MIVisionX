@@ -1136,3 +1136,9 @@ def roi_random_crop(*inputs, crop_shape=None, remove_dim=-1):
     kwargs_pybind = {"input_image": inputs[0], "crop_shape": crop_shape, "remove_dim": remove_dim}
     roi_random_crop = b.roiRandomCrop(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
     return (roi_random_crop)
+
+def random_object_bbox(*inputs, format='anchor_shape', background=0, cache_objects=False, classes=[], foreground_prob=1.0, ignore_class=False, k_largest=-1, seed=0, threshold=[]):
+    # pybind call arguments
+    kwargs_pybind = {"input_image": inputs[0], "format": format}
+    selected_roi = b.randomObjectBbox(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (selected_roi)

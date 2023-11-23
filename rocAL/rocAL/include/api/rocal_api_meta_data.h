@@ -307,4 +307,12 @@ extern "C" void ROCAL_API_CALL rocalGetJointsDataPtr(RocalContext p_context, Roc
  */
 extern "C" RocalTensor ROCAL_API_CALL rocalROIRandomCrop(RocalContext p_context, RocalTensor p_input, std::vector<int> crop_shape, int remove_dim=-1);
 
+/*! \brief initialize the values required for ROI Random crop
+ * \ingroup group_rocal_meta_data
+ * \param [in] rocal_context rocal context
+ * \param [in] p_input
+ * \param [out] anchor The generated anchor tensor
+ */
+extern "C" RocalTensorList ROCAL_API_CALL rocalRandomObjectBbox(RocalContext p_context, RocalTensor p_input, std::string output_format="anchor_shape");
+
 #endif  // MIVISIONX_ROCAL_API_META_DATA_H

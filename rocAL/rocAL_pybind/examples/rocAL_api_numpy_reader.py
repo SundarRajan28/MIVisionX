@@ -52,6 +52,7 @@ def main():
         numpy_reader_output1 = fn.readers.numpy(file_root=data_path2, shard_id=local_rank, num_shards=world_size)
         data_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
         label_output = fn.set_layout(numpy_reader_output1, output_layout=types.NCDHW)
+        selected_roi = fn.random_object_bbox(label_output, format="start_end")
         anchor = fn.roi_random_crop(label_output, crop_shape=(1, 128, 128, 128), remove_dim=0)
         data_sliced_output = fn.slice(data_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.FLOAT)
         label_sliced_output = fn.slice(label_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.UINT8)       
