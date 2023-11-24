@@ -1138,23 +1138,9 @@ void MasterGraph::output_routine_multiple_loaders() {
             if(_is_roi_random_crop)
             {
                 // get the roi_begin and roi_end values from random_object_bbox
-                int *roi_begin_batch = new int[_user_batch_size * _input_dims];
-                int *roi_end_batch = new int[_user_batch_size * _input_dims];
-                for(uint i = 0; i < _user_batch_size; i++)
-                {
-                    int sample_idx = i * _input_dims;
-                    int *roi_begin = &roi_begin_batch[sample_idx];
-                    int *roi_end = &roi_end_batch[sample_idx];
-                    int *input_shape = &_roi_batch[sample_idx * 2 + _input_dims];
-                    for(uint j = 0; j < _input_dims; j++)
-                    {
-                        roi_begin[j] = std::rand() % (_input_dims * 5);
-                        roi_end[j] = std::min(roi_begin[j] + (std::rand() % input_shape[j]), input_shape[j]);
-                    }
-                }
+                int *roi_begin_batch = static_cast<int *>(_random_object_bbox_box1_buf);
+                int *roi_end_batch = static_cast<int *>(_random_object_bbox_box2_buf);
                 update_roi_random_crop(_crop_shape_batch, roi_begin_batch, roi_end_batch);
-                delete[] roi_begin_batch;
-                delete[] roi_end_batch;
             }
             _process_time.start();
             for (auto& graph : _graphs) {
@@ -1656,10 +1642,12 @@ class BatchRNG {
   std::vector<std::mt19937> rngs_;
 };
 
-TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_format) {
+TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_format, int k_largest) {
     _random_object_bbox_label_tensor = input;
     _is_random_object_bbox = true;
+    _k_largest = k_largest;
     auto output_dims = _random_object_bbox_label_tensor->num_of_dims() - 1;
+    _random_object_bbox_output_format = output_format;
     if(output_format == "start_end" || output_format == "anchor_shape") {        
         // create new instance of tensor class
         std::vector<size_t> box1_dims = {_user_batch_size, output_dims};
@@ -1699,11 +1687,13 @@ void MasterGraph::update_random_object_bbox() {
     auto roi_dims = reinterpret_cast<int *>(_random_object_bbox_label_tensor->info().roi().get_ptr());
     std::vector<size_t> max_size = _random_object_bbox_label_tensor->info().max_shape();
     auto single_image_size = _random_object_bbox_label_tensor->data_size() / _user_batch_size;
+    auto input_dims = _random_object_bbox_label_tensor->num_of_dims() - 1;
     uint seed = std::time(0);
     BatchRNG _rng = {seed, static_cast<int>(_user_batch_size)};
+    int *box1_buf = static_cast<int *>(_random_object_bbox_box1_buf);
+    int *box2_buf = static_cast<int *>(_random_object_bbox_box2_buf);
 #pragma omp parallel for num_threads(_user_batch_size)
     for (uint i = 0; i < _user_batch_size; i++) {
-        auto input_dims = _random_object_bbox_label_tensor->num_of_dims() - 1;
         auto sample_idx = i * input_dims;
         int *input_shape = &roi_dims[sample_idx * 2 + input_dims];
         std::vector<int> roi_size;
@@ -1720,15 +1710,64 @@ void MasterGraph::update_random_object_bbox() {
         ranges.resize(total_box);
         hits.resize((total_box / 32 + !!(total_box % 32)));
         auto out_row = output_compact.data();
-        for (int i = 0; i < roi_size[0]; i++) {
-            for (int j = 0; j < roi_size[1]; j++) {
-                for (int k = 0; k < roi_size[2]; k++) {
-                    std::vector<int> origin{i, j, k, 0};
+        for (int d1 = 0; d1 < roi_size[0]; d1++) {
+            for (int d2 = 0; d2 < roi_size[1]; d2++) {
+                for (int d3 = 0; d3 < roi_size[2]; d3++) {
+                    std::vector<int> origin{d1, d2, d3, 0};
                     get_label_boundingboxes(boxes, ranges, hits, out_row, origin, roi_size[3]);
                     out_row += roi_size[3];
                 }
             }
         }
+        int chosen_box_idx = pick_box(boxes, _rng[i], _k_largest);
+        if(_random_object_bbox_output_format == "box") {
+            for (uint j = 0; j < input_dims; j++) {
+                box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
+                box1_buf[sample_idx + j + input_dims] = boxes[chosen_box_idx][1][j];
+            }
+        } else if(_random_object_bbox_output_format == "anchor_shape") {
+            for (uint j = 0; j < input_dims; j++) {
+                box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
+                box2_buf[sample_idx + j] = boxes[chosen_box_idx][0][j] - boxes[chosen_box_idx][1][j];
+            }
+        } else if(_random_object_bbox_output_format == "start_end") {
+            for (uint j = 0; j < input_dims; j++) {
+                box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
+                box2_buf[sample_idx + j] = boxes[chosen_box_idx][1][j];
+            }
+        }
+    }
+}
+
+int MasterGraph::pick_box(std::vector<std::vector<std::vector<unsigned>>> boxes, std::mt19937 &rng, int k_largest) {
+    auto beg = boxes.begin();
+    auto end = boxes.end();
+    int n = end - beg;
+    if (n <= 0)
+        return -1;
+    if (k_largest > 0 && k_largest < n) {
+        std::vector<std::pair<int64_t, int>> vol_idx;
+        vol_idx.resize(n);
+        for (int i = 0; i < n; i++) {
+            std::vector<unsigned> crop_region;
+            std::transform(boxes[i][1].begin(),boxes[i][1].end(), boxes[i][0].begin(),
+               std::back_inserter(crop_region),
+               [](const auto& hi, const auto& lo)
+               {
+                   return hi - lo;
+               });
+            auto volume_val = 1;
+            for (auto val : crop_region) {
+                volume_val *= val;
+            }
+            vol_idx[i] = {-volume_val, i};
+        }
+        std::sort(vol_idx.begin(), vol_idx.end());
+        std::uniform_int_distribution<int> dist(0, std::min(n, k_largest) - 1);
+        return vol_idx[dist(rng)].second;
+    } else {
+        std::uniform_int_distribution<int> dist(0, n - 1);
+        return dist(rng);
     }
 }
 
@@ -1871,7 +1910,7 @@ void MasterGraph::mergeRow(int *label_base, const int *in1, const int *in2, int 
     }
 }
 
-int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rngs) {
+int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rng) {
     int64_t total_buf_size = 1;
     for (auto val : size)
         total_buf_size *= val;
@@ -1883,7 +1922,7 @@ int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, s
     std::set<int> labels_found;
     findLabels(input, labels_found, size, max_size);
     std::uniform_int_distribution<int> class_dist{1, *labels_found.rbegin()};
-    int selected_label = class_dist(rngs);
+    int selected_label = class_dist(rng);
     filterByLabel(input, output_filtered, size, max_size, selected_label);
     for (int i = 0; i < size[0]; i++) {
         for (int j = 0; j < size[1]; j++) {

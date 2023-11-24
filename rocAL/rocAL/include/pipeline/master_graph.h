@@ -135,7 +135,7 @@ class MasterGraph {
     std::vector<rocalTensorList *> get_bbox_encoded_buffers(size_t num_encoded_boxes);
     size_t bounding_box_batch_count(pMetaDataBatch meta_data_batch);
     Tensor* roi_random_crop(Tensor *input, int *crop_shape, int remove_dim=-1);
-    TensorList* random_object_bbox(Tensor *input, std::string output_format);
+    TensorList* random_object_bbox(Tensor *input, std::string output_format, int k_largest = -1);
     void update_roi_random_crop(int *crop_shape_batch, int *roi_begin_batch, int *roi_end_batch);
     void update_random_object_bbox();
     void findLabels(const u_int8_t *input, std::set<int> &labels, std::vector<int> roi_size, std::vector<size_t> max_size);
@@ -146,9 +146,10 @@ class MasterGraph {
     int disjointFind(int *items, int x);
     int disjointMerge(int *items, int x, int y);
     void mergeRow(int *label_base, const int *in1, const int *in2, int *out1, int *out2, unsigned n);
-    int labelMergeFunc(const u_int8_t *input, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rngs);
+    int labelMergeFunc(const u_int8_t *input, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rng);
     bool hit(std::vector<unsigned>& hits, unsigned idx);
     void get_label_boundingboxes(std::vector<std::vector<std::vector<unsigned>>> &boxes, std::vector<std::pair<unsigned, unsigned>> ranges, std::vector<unsigned> hits, int *in, std::vector<int> origin, unsigned width);
+    int pick_box(std::vector<std::vector<std::vector<unsigned>>> boxes, std::mt19937 &rng, int k_largest = -1);
 #if ENABLE_OPENCL
         cl_command_queue get_ocl_cmd_q() {
         return _device.resources()->cmd_queue;
@@ -241,6 +242,8 @@ class MasterGraph {
     void *_random_object_bbox_box1_buf = nullptr;
     void *_random_object_bbox_box2_buf = nullptr;
     TensorList _random_object_bbox_tensor_list;
+    std::string _random_object_bbox_output_format;
+    int _k_largest;
 #if ENABLE_HIP
     BoxEncoderGpu *_box_encoder_gpu = nullptr;
 #endif
