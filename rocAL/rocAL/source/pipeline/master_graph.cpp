@@ -374,7 +374,6 @@ void MasterGraph::release() {
         dynamic_cast<TensorList *>(tensor_list)->release();  // It will call the vxReleaseTensor internally in the destructor for each tensor in the list
     if(_is_roi_random_crop)
     {
-        // delete _roi_random_crop_tensor;
         if(_crop_shape_batch != nullptr)
             delete[] _crop_shape_batch;
         if(_roi_random_crop_buf != nullptr) {
@@ -385,6 +384,7 @@ void MasterGraph::release() {
                     std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
     #endif
             } else { free(_roi_random_crop_buf); }
+        delete _roi_random_crop_tensor;
         }
     }
     if(_is_random_object_bbox)
@@ -395,7 +395,7 @@ void MasterGraph::release() {
         if(_random_object_bbox_box2_buf != nullptr) {
             free(_random_object_bbox_box2_buf);
         }
-        _random_object_bbox_tensor_list.release();
+        // _random_object_bbox_tensor_list.release();
     }
 
     if (_graph != nullptr)
@@ -1010,27 +1010,7 @@ void MasterGraph::output_routine() {
                 }
             }
             if(_is_random_object_bbox) { update_random_object_bbox(); }
-            if(_is_roi_random_crop)
-            {
-                // get the roi_begin and roi_end values from random_object_bbox
-                int *roi_begin_batch = new int[_user_batch_size * _input_dims];
-                int *roi_end_batch = new int[_user_batch_size * _input_dims];
-                for(uint i = 0; i < _user_batch_size; i++)
-                {
-                    int sample_idx = i * _input_dims;
-                    int *roi_begin = &roi_begin_batch[sample_idx];
-                    int *roi_end = &roi_end_batch[sample_idx];
-                    int *input_shape = &_roi_batch[sample_idx * 2 + _input_dims];
-                    for(uint j = 0; j < _input_dims; j++)
-                    {
-                        roi_begin[j] = std::rand() % (_input_dims * 5);
-                        roi_end[j] = std::min(roi_begin[j] + (std::rand() % input_shape[j]), input_shape[j]);
-                    }
-                }
-                update_roi_random_crop(_crop_shape_batch, roi_begin_batch, roi_end_batch);
-                delete[] roi_begin_batch;
-                delete[] roi_end_batch;
-            }
+            if(_is_roi_random_crop) { update_roi_random_crop(); }
             _process_time.start();
             _graph->process();
             _process_time.end();
@@ -1135,13 +1115,7 @@ void MasterGraph::output_routine_multiple_loaders() {
                 }
             }*/
             if(_is_random_object_bbox) { update_random_object_bbox(); }
-            if(_is_roi_random_crop)
-            {
-                // get the roi_begin and roi_end values from random_object_bbox
-                int *roi_begin_batch = static_cast<int *>(_random_object_bbox_box1_buf);
-                int *roi_end_batch = static_cast<int *>(_random_object_bbox_box2_buf);
-                update_roi_random_crop(_crop_shape_batch, roi_begin_batch, roi_end_batch);
-            }
+            if(_is_roi_random_crop) { update_roi_random_crop(); }
             _process_time.start();
             for (auto& graph : _graphs) {
                 graph->schedule();
@@ -2066,9 +2040,11 @@ void MasterGraph::get_label_boundingboxes(std::vector<std::vector<std::vector<un
     }
 }
 
-Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape, int remove_dim)
+Tensor* MasterGraph::roi_random_crop(Tensor *input, Tensor *roi_start, Tensor *roi_end, int *crop_shape, int remove_dim)
 {
     _is_roi_random_crop = true;
+    _roi_start_tensor = roi_start;
+    _roi_end_tensor = roi_end;
     if(input->info().is_image())
         _input_dims = input->num_of_dims() - 2; // TO be changed later when generic roi changes are added
     else
@@ -2098,14 +2074,16 @@ Tensor* MasterGraph::roi_random_crop(Tensor *input, int *crop_shape, int remove_
     return _roi_random_crop_tensor;
 }
 
-void MasterGraph::update_roi_random_crop(int *crop_shape_batch, int *roi_begin_batch, int *roi_end_batch) {
+void MasterGraph::update_roi_random_crop() {
     int *crop_begin_batch = static_cast<int *>(_roi_random_crop_buf);
     uint seed = std::time(0);
-
+    // get the roi_begin and roi_end values from random_object_bbox
+    int *roi_begin_batch = static_cast<int *>(_roi_start_tensor->buffer());
+    int *roi_end_batch = static_cast<int *>(_roi_end_tensor->buffer());
     BatchRNG _rng = {seed, static_cast<int>(_user_batch_size)};
     for(uint i = 0; i < _user_batch_size; i++) {
         int sample_idx = i * _input_dims;
-        int *crop_shape = &crop_shape_batch[sample_idx];
+        int *crop_shape = &_crop_shape_batch[sample_idx];
         int *roi_begin = &roi_begin_batch[sample_idx];
         int *input_shape = &_roi_batch[sample_idx * 2 + _input_dims];
         int *roi_end = &roi_end_batch[sample_idx];

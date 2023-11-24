@@ -134,9 +134,9 @@ class MasterGraph {
     void set_sequence_batch_size(size_t sequence_length) { _sequence_batch_size = _user_batch_size * sequence_length; }
     std::vector<rocalTensorList *> get_bbox_encoded_buffers(size_t num_encoded_boxes);
     size_t bounding_box_batch_count(pMetaDataBatch meta_data_batch);
-    Tensor* roi_random_crop(Tensor *input, int *crop_shape, int remove_dim=-1);
+    Tensor* roi_random_crop(Tensor *input, Tensor *roi_start, Tensor *roi_end, int *crop_shape, int remove_dim=-1);
     TensorList* random_object_bbox(Tensor *input, std::string output_format, int k_largest = -1);
-    void update_roi_random_crop(int *crop_shape_batch, int *roi_begin_batch, int *roi_end_batch);
+    void update_roi_random_crop();
     void update_random_object_bbox();
     void findLabels(const u_int8_t *input, std::set<int> &labels, std::vector<int> roi_size, std::vector<size_t> max_size);
     void filterByLabel(const u_int8_t *input, std::vector<int> &output, std::vector<int> roi_size, std::vector<size_t> max_size, int label);
@@ -235,6 +235,8 @@ class MasterGraph {
     int *_crop_shape_batch = nullptr;
     int *_roi_batch = nullptr;
     Tensor *_roi_random_crop_tensor = nullptr;
+    Tensor *_roi_start_tensor = nullptr;
+    Tensor *_roi_end_tensor = nullptr;
     Tensor *_random_object_bbox_label_tensor = nullptr;
     Tensor *_random_object_bbox_box1_tensor = nullptr;
     Tensor *_random_object_bbox_box2_tensor = nullptr;

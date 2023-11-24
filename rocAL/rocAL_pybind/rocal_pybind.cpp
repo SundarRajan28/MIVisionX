@@ -398,8 +398,8 @@ PYBIND11_MODULE(rocal_pybind, m) {
         int *ptr = static_cast<int *>(buf.ptr);
         rocalGetImageSizes(context, ptr);
     });
-    m.def("roiRandomCrop", &rocalROIRandomCrop);
-    m.def("randomObjectBbox", &rocalRandomObjectBbox);
+    m.def("roiRandomCrop", &rocalROIRandomCrop, py::return_value_policy::reference);
+    m.def("randomObjectBbox", &rocalRandomObjectBbox, py::return_value_policy::reference);
     m.def("getROIImgSizes", [](RocalContext context, py::array_t<int> array) {
         auto buf = array.request();
         int *ptr = static_cast<int *>(buf.ptr);

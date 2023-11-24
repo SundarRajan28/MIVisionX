@@ -1131,14 +1131,20 @@ def gaussian_noise(*inputs, mean=0.0, std_dev=1.0, seed=0, conditional_execution
         Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
     return (noise_added_image)
 
-def roi_random_crop(*inputs, crop_shape=None, remove_dim=-1):
+def roi_random_crop(*inputs, roi_start, roi_end, crop_shape, remove_dim=-1):
     # pybind call arguments
-    kwargs_pybind = {"input_image": inputs[0], "crop_shape": crop_shape, "remove_dim": remove_dim}
-    roi_random_crop = b.roiRandomCrop(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
-    return (roi_random_crop)
+    kwargs_pybind = {"input_image": inputs[0], "roi_start": roi_start, "roi_end": roi_end, "crop_shape": crop_shape, "remove_dim": remove_dim}
+    anchor = b.roiRandomCrop(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (anchor)
 
 def random_object_bbox(*inputs, format='anchor_shape', background=0, cache_objects=False, classes=[], foreground_prob=1.0, ignore_class=False, k_largest=-1, seed=0, threshold=[]):
     # pybind call arguments
     kwargs_pybind = {"input_image": inputs[0], "format": format, "k_largest": k_largest}
     selected_roi = b.randomObjectBbox(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
-    return (selected_roi)
+    if format == "box":
+        return (selected_roi)
+    elif format == "anchor_shape" or format == "start_end":
+        return (selected_roi[0], selected_roi[1])
+    else:
+        print('Wrong format passed to random_object_bbox')
+        return ()

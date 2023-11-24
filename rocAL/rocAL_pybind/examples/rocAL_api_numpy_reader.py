@@ -29,7 +29,7 @@ def main():
     else:
         rocal_cpu = False
     batch_size = int(sys.argv[4])
-    num_threads = 1
+    num_threads = 8
     device_id = 0
     local_rank = 0
     world_size = 1
@@ -45,15 +45,15 @@ def main():
 
     import time
     start = time.time()
-    pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu)
+    pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu, prefetch_queue_depth=2)
 
     with pipeline:
         numpy_reader_output = fn.readers.numpy(file_root=data_path1, shard_id=local_rank, num_shards=world_size)
         numpy_reader_output1 = fn.readers.numpy(file_root=data_path2, shard_id=local_rank, num_shards=world_size)
         data_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
         label_output = fn.set_layout(numpy_reader_output1, output_layout=types.NCDHW)
-        selected_roi = fn.random_object_bbox(label_output, format="start_end")
-        anchor = fn.roi_random_crop(label_output, crop_shape=(1, 128, 128, 128), remove_dim=0)
+        [roi_start, roi_end] = fn.random_object_bbox(label_output, format="start_end", k_largest=3)
+        anchor = fn.roi_random_crop(label_output, roi_start=roi_start, roi_end=roi_end, crop_shape=(1, 128, 128, 128), remove_dim=0)
         data_sliced_output = fn.slice(data_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.FLOAT)
         label_sliced_output = fn.slice(label_output, anchor=anchor, shape=(128,128,128), output_layout=types.NCDHW, output_dtype=types.UINT8)       
         hflip = fn.random.coin_flip(probability=0.33)
