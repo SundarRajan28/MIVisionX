@@ -390,10 +390,22 @@ void MasterGraph::release() {
     if(_is_random_object_bbox)
     {
         if(_random_object_bbox_box1_buf != nullptr) {
-            free(_random_object_bbox_box1_buf);
+            if (_affinity == RocalAffinity::GPU) {
+    #if ENABLE_HIP
+                hipError_t err = hipHostFree(_random_object_bbox_box1_buf);
+                if (err != hipSuccess)
+                    std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+    #endif
+            } else { free(_random_object_bbox_box1_buf); }
         }
         if(_random_object_bbox_box2_buf != nullptr) {
-            free(_random_object_bbox_box2_buf);
+            if (_affinity == RocalAffinity::GPU) {
+    #if ENABLE_HIP
+                hipError_t err = hipHostFree(_random_object_bbox_box2_buf);
+                if (err != hipSuccess)
+                    std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+    #endif
+            } else { free(_random_object_bbox_box2_buf); }
         }
         // _random_object_bbox_tensor_list.release();
     }
@@ -1629,7 +1641,7 @@ TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_fo
         _random_object_bbox_box1_tensor = new Tensor(box1_info);
 
         // allocate memory for the raw buffer pointer in tensor object
-        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * sizeof(int), RocalMemType::HOST);
+        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * sizeof(int), input->info().mem_type());
         _random_object_bbox_box1_tensor->create_from_ptr(_context, _random_object_bbox_box1_buf);
 
         // create new instance of tensor class
@@ -1638,7 +1650,7 @@ TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_fo
         _random_object_bbox_box2_tensor = new Tensor(box2_info);
 
         // allocate memory for the raw buffer pointer in tensor object
-        allocate_host_or_pinned_mem(&_random_object_bbox_box2_buf, _user_batch_size * output_dims * sizeof(int), RocalMemType::HOST);
+        allocate_host_or_pinned_mem(&_random_object_bbox_box2_buf, _user_batch_size * output_dims * sizeof(int), input->info().mem_type());
         _random_object_bbox_box2_tensor->create_from_ptr(_context, _random_object_bbox_box2_buf);
         _random_object_bbox_tensor_list.push_back(_random_object_bbox_box1_tensor);
         _random_object_bbox_tensor_list.push_back(_random_object_bbox_box2_tensor);
@@ -1649,7 +1661,7 @@ TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_fo
         _random_object_bbox_box1_tensor = new Tensor(box1_info);
 
         // allocate memory for the raw buffer pointer in tensor object
-        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * 2 * sizeof(int), RocalMemType::HOST);
+        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * 2 * sizeof(int), input->info().mem_type());
         _random_object_bbox_box1_tensor->create_from_ptr(_context, _random_object_bbox_box1_buf);
         _random_object_bbox_tensor_list.push_back(_random_object_bbox_box1_tensor);
     }
@@ -1677,37 +1689,72 @@ void MasterGraph::update_random_object_bbox() {
         std::vector<int> output_compact;
         auto label = input + i * single_image_size;
         auto total_box = labelMergeFunc(label, roi_size, max_size, output_compact, _rng[i]);
-        std::vector<std::vector<std::vector<unsigned>>> boxes;  // total - lo,hi - 4d
-        std::vector<std::pair<unsigned, unsigned>> ranges;      // totalbox - lo,hi
-        std::vector<unsigned> hits;
-        boxes.resize(total_box);
-        ranges.resize(total_box);
-        hits.resize((total_box / 32 + !!(total_box % 32)));
-        auto out_row = output_compact.data();
-        for (int d1 = 0; d1 < roi_size[0]; d1++) {
-            for (int d2 = 0; d2 < roi_size[1]; d2++) {
-                for (int d3 = 0; d3 < roi_size[2]; d3++) {
-                    std::vector<int> origin{d1, d2, d3, 0};
-                    get_label_boundingboxes(boxes, ranges, hits, out_row, origin, roi_size[3]);
-                    out_row += roi_size[3];
+        if(total_box) {
+            std::vector<std::vector<std::vector<unsigned>>> boxes;  // total - lo,hi - 4d
+            std::vector<std::pair<unsigned, unsigned>> ranges;      // totalbox - lo,hi
+            std::vector<unsigned> hits;
+            boxes.resize(total_box);
+            ranges.resize(total_box);
+            hits.resize((total_box / 32 + !!(total_box % 32)));
+            auto out_row = output_compact.data();
+            for (int d1 = 0; d1 < roi_size[0]; d1++) {
+                for (int d2 = 0; d2 < roi_size[1]; d2++) {
+                    for (int d3 = 0; d3 < roi_size[2]; d3++) {
+                        std::vector<int> origin{d1, d2, d3, 0};
+                        get_label_boundingboxes(boxes, ranges, hits, out_row, origin, roi_size[3]);
+                        out_row += roi_size[3];
+                    }
+                }
+            }
+            int chosen_box_idx = pick_box(boxes, _rng[i], _k_largest);
+            if(chosen_box_idx == -1) { ERR("No ROI regions found in input. Setting input shape as ROI region"); }
+            if(_random_object_bbox_output_format == "box") {
+                for (uint j = 0; j < input_dims; j++) {
+                    if(chosen_box_idx >= 0) {
+                        box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
+                        box1_buf[sample_idx + j + input_dims] = boxes[chosen_box_idx][1][j];
+                    }
+                    else {
+                        box1_buf[sample_idx + j] = 0;
+                        box1_buf[sample_idx + j + input_dims] = input_shape[j];
+                    }
+                }
+            } else if(_random_object_bbox_output_format == "anchor_shape") {
+                for (uint j = 0; j < input_dims; j++) {
+                    if(chosen_box_idx >= 0) {
+                        box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
+                        box2_buf[sample_idx + j] = boxes[chosen_box_idx][0][j] - boxes[chosen_box_idx][1][j];
+                    }
+                    else {
+                        box1_buf[sample_idx + j] = 0;
+                        box2_buf[sample_idx + j] = input_shape[j];
+                    }
+                }
+            } else if(_random_object_bbox_output_format == "start_end") {
+                for (uint j = 0; j < input_dims; j++) {
+                    if(chosen_box_idx >= 0) {
+                        box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
+                        box2_buf[sample_idx + j] = boxes[chosen_box_idx][1][j];
+                    }
+                    else {
+                        box1_buf[sample_idx + j] = 0;
+                        box2_buf[sample_idx + j] = input_shape[j];
+                    }
                 }
             }
         }
-        int chosen_box_idx = pick_box(boxes, _rng[i], _k_largest);
-        if(_random_object_bbox_output_format == "box") {
-            for (uint j = 0; j < input_dims; j++) {
-                box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
-                box1_buf[sample_idx + j + input_dims] = boxes[chosen_box_idx][1][j];
-            }
-        } else if(_random_object_bbox_output_format == "anchor_shape") {
-            for (uint j = 0; j < input_dims; j++) {
-                box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
-                box2_buf[sample_idx + j] = boxes[chosen_box_idx][0][j] - boxes[chosen_box_idx][1][j];
-            }
-        } else if(_random_object_bbox_output_format == "start_end") {
-            for (uint j = 0; j < input_dims; j++) {
-                box1_buf[sample_idx + j] = boxes[chosen_box_idx][0][j];
-                box2_buf[sample_idx + j] = boxes[chosen_box_idx][1][j];
+        else {
+            ERR("No ROI regions found in input. Setting input shape as ROI region");
+            if(_random_object_bbox_output_format == "box") {
+                for (uint j = 0; j < input_dims; j++) {
+                    box1_buf[sample_idx + j] = 0;
+                    box1_buf[sample_idx + j + input_dims] = input_shape[j];
+                }
+            } else {
+                for (uint j = 0; j < input_dims; j++) {
+                    box1_buf[sample_idx + j] = 0;
+                    box2_buf[sample_idx + j] = input_shape[j];
+                }
             }
         }
     }
@@ -1895,8 +1942,14 @@ int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, s
     std::fill(output_compact.begin(), output_compact.end(), 0);
     std::set<int> labels_found;
     findLabels(input, labels_found, size, max_size);
-    std::uniform_int_distribution<int> class_dist{1, *labels_found.rbegin()};
-    int selected_label = class_dist(rng);
+    labels_found.erase(0); // Removing background class
+    int selected_label;
+    if (!labels_found.size()) return 0;   // All labels belongs to background
+    if(labels_found.size() == 1) { selected_label = *labels_found.begin(); }
+    else {
+        std::uniform_int_distribution<int> class_dist{1, *labels_found.rbegin()};
+        selected_label = class_dist(rng);
+    }
     filterByLabel(input, output_filtered, size, max_size, selected_label);
     for (int i = 0; i < size[0]; i++) {
         for (int j = 0; j < size[1]; j++) {
@@ -2030,8 +2083,14 @@ void MasterGraph::get_label_boundingboxes(std::vector<std::vector<std::vector<un
                     boxes[i].push_back(hi);
                 } else {
                     // expand existing
-                    boxes[i][0] = min(boxes[i][0], lo);
-                    boxes[i][1] = max(boxes[i][1], hi);
+                    std::transform(boxes[i][0].begin(), boxes[i][0].end(), lo.begin(), boxes[i][0].begin(),
+                                   [](const auto &val1, const auto &val2) {
+                                       return val1 < val2 ? val1 : val2;
+                                   });
+                    std::transform(boxes[i][1].begin(), boxes[i][1].end(), hi.begin(), boxes[i][1].begin(),
+                                   [](const auto &val1, const auto &val2) {
+                                       return val1 > val2 ? val1 : val2;
+                                   });
                 }
             }
             mask >>= 1;
