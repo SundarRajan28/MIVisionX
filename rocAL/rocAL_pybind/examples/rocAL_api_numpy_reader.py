@@ -48,8 +48,8 @@ def main():
     pipeline = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu, prefetch_queue_depth=2)
 
     with pipeline:
-        numpy_reader_output = fn.readers.numpy(file_root=data_path1, shard_id=local_rank, num_shards=world_size)
-        numpy_reader_output1 = fn.readers.numpy(file_root=data_path2, shard_id=local_rank, num_shards=world_size)
+        numpy_reader_output = fn.readers.numpy(file_root=data_path1, shard_id=local_rank, num_shards=world_size, random_shuffle=True)
+        numpy_reader_output1 = fn.readers.numpy(file_root=data_path2, shard_id=local_rank, num_shards=world_size, random_shuffle=True)
         data_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
         label_output = fn.set_layout(numpy_reader_output1, output_layout=types.NCDHW)
         [roi_start, roi_end] = fn.random_object_bbox(label_output, format="start_end", k_largest=3)
@@ -70,11 +70,24 @@ def main():
         pipeline.set_outputs(noise_output, label_flip_output)
 
     pipeline.build()
+
+    pipeline1 = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu, prefetch_queue_depth=6)
+
+    with pipeline1:
+        numpy_reader_output = fn.readers.numpy(file_root=data_path1, shard_id=local_rank, num_shards=world_size)
+        numpy_reader_output1 = fn.readers.numpy(file_root=data_path2, shard_id=local_rank, num_shards=world_size)
+        data_output = fn.set_layout(numpy_reader_output, output_layout=types.NCDHW)
+        label_output = fn.set_layout(numpy_reader_output1, output_layout=types.NCDHW)
+        pipeline1.set_outputs(data_output, label_output)
+
+    pipeline1.build()
     
     numpyIteratorPipeline = ROCALNumpyIterator(pipeline, device='cpu' if rocal_cpu else 'gpu')
     print(len(numpyIteratorPipeline))
+    valNumpyIteratorPipeline = ROCALNumpyIterator(pipeline1, device='cpu' if rocal_cpu else 'gpu')
+    print(len(valNumpyIteratorPipeline))
     cnt = 0
-    for epoch in range(1):
+    for epoch in range(2):
         print("+++++++++++++++++++++++++++++EPOCH+++++++++++++++++++++++++++++++++++++",epoch)
         for i , it in enumerate(numpyIteratorPipeline):
             print(i, it[0].shape, it[1].shape)
@@ -83,6 +96,13 @@ def main():
                 cnt += 1
             print("************************************** i *************************************",i)
         numpyIteratorPipeline.reset()
+        for i , it in enumerate(valNumpyIteratorPipeline):
+            print(i, it[0].shape, it[1].shape)
+            for j in range(batch_size):
+                print(it[0][j].cpu().numpy().shape, it[1][j].cpu().numpy().shape)
+                cnt += 1
+            print("************************************** i *************************************",i)
+        valNumpyIteratorPipeline.reset()
     print("*********************************************************************")
     print(f'Took {time.time() - start} seconds')
 
