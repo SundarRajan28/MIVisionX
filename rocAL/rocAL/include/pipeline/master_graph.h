@@ -134,10 +134,26 @@ class MasterGraph {
     void set_sequence_batch_size(size_t sequence_length) { _sequence_batch_size = _user_batch_size * sequence_length; }
     std::vector<rocalTensorList *> get_bbox_encoded_buffers(size_t num_encoded_boxes);
     size_t bounding_box_batch_count(pMetaDataBatch meta_data_batch);
-    Tensor* roi_random_crop(Tensor *input, int *crop_shape, int remove_dim=-1);
-    void update_roi_random_crop(int *crop_shape_batch, int *roi_begin_batch, int *roi_end_batch);
+    Tensor* roi_random_crop(Tensor *input, Tensor *roi_start, Tensor *roi_end, int *crop_shape, int remove_dim=-1);
+    TensorList* random_object_bbox(Tensor *input, std::string output_format, int k_largest = -1);
+    void update_roi_random_crop();
+    void update_random_object_bbox();
+    void findLabels(const u_int8_t *input, std::set<int> &labels, std::vector<int> roi_size, std::vector<size_t> max_size);
+    void filterByLabel(const u_int8_t *input, std::vector<int> &output, std::vector<int> roi_size, std::vector<size_t> max_size, int label);
+    void labelRow(const int *label_base, const int *in_row, int *out_row, unsigned length);
+    int disjointGetGroup(const int &x) { return x; }
+    int disjointSetGroup(int &x, int new_id);
+    int disjointFind(int *items, int x);
+    int disjointMerge(int *items, int x, int y);
+    void mergeRow(int *label_base, const int *in1, const int *in2, int *out1, int *out2, unsigned n);
+    int labelMergeFunc(const u_int8_t *input, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rng);
+    bool hit(std::vector<unsigned>& hits, unsigned idx);
+    void get_label_boundingboxes(std::vector<std::vector<std::vector<unsigned>>> &boxes, std::vector<std::pair<unsigned, unsigned>> ranges, std::vector<unsigned> hits, int *in, std::vector<int> origin, unsigned width);
+    int pick_box(std::vector<std::vector<std::vector<unsigned>>> boxes, std::mt19937 &rng, int k_largest = -1);
 #if ENABLE_OPENCL
-    cl_command_queue get_ocl_cmd_q() { return _device.resources()->cmd_queue; }
+        cl_command_queue get_ocl_cmd_q() {
+        return _device.resources()->cmd_queue;
+    }
 #endif
    private:
     Status update_node_parameters();
@@ -214,11 +230,22 @@ class MasterGraph {
     std::vector<float> _means, _stds;                                             //_means:  [x y w h] mean values for normalization _stds: [x y w h] standard deviations for offset normalization.
     bool _augmentation_metanode = false;
     bool _is_roi_random_crop = false;
+    bool _is_random_object_bbox = false;
     uint _input_dims, _output_dims, _roi_dim_to_remove;
     int *_crop_shape_batch = nullptr;
     int *_roi_batch = nullptr;
     Tensor *_roi_random_crop_tensor = nullptr;
+    Tensor *_roi_start_tensor = nullptr;
+    Tensor *_roi_end_tensor = nullptr;
+    Tensor *_random_object_bbox_label_tensor = nullptr;
+    Tensor *_random_object_bbox_box1_tensor = nullptr;
+    Tensor *_random_object_bbox_box2_tensor = nullptr;
     void *_roi_random_crop_buf = nullptr;
+    void *_random_object_bbox_box1_buf = nullptr;
+    void *_random_object_bbox_box2_buf = nullptr;
+    TensorList _random_object_bbox_tensor_list;
+    std::string _random_object_bbox_output_format;
+    int _k_largest;
 #if ENABLE_HIP
     BoxEncoderGpu *_box_encoder_gpu = nullptr;
 #endif
