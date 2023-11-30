@@ -94,10 +94,34 @@ size_t NumpyDataReader::open() {
         _last_id.erase(0, last_slash_idx + 1);
     }
 
-    ParseHeader(_file_headers[_curr_file_idx], file_path);
+    auto ret = GetFromCache(file_path, _file_headers[_curr_file_idx]);
+    if (!ret) {
+        ParseHeader(_file_headers[_curr_file_idx], file_path);
+        UpdateCache(file_path, _file_headers[_curr_file_idx]);
+    } else {
+        _current_fPtr = std::fopen(file_path.c_str(), "rb");
+        if (_current_fPtr == nullptr)
+            THROW("Could not open file " + file_path + ": " + std::strerror(errno));
+    }
     fseek(_current_fPtr, 0, SEEK_SET);  // Take the file pointer back to the start
 
     return _file_headers[_curr_file_idx].nbytes();
+}
+
+bool NumpyDataReader::GetFromCache(const std::string& file_name, NumpyHeaderData& header) {
+    std::unique_lock<std::mutex> cache_lock(_cache_mutex_);
+    auto it = _header_cache_.find(file_name);
+    if (it == _header_cache_.end()) {
+        return false;
+    } else {
+        header = it->second;
+        return true;
+    }
+}
+
+void NumpyDataReader::UpdateCache(const std::string& file_name, const NumpyHeaderData& value) {
+    std::unique_lock<std::mutex> cache_lock(_cache_mutex_);
+    _header_cache_[file_name] = value;
 }
 
 const RocalTensorDataType NumpyDataReader::TypeFromNumpyStr(const std::string& format) {
@@ -377,20 +401,8 @@ int NumpyDataReader::release() {
 
 void NumpyDataReader::reset() {
     _shuffle_time.start();
-    if (_shuffle) {
-        std::vector<std::string> shuffled_filenames;
-        std::vector<NumpyHeaderData> shuffled_headers;
-        std::vector<int> indexes(_file_names.size());
-        std::iota(indexes.begin(), indexes.end(), 0);
-        // Shuffle the index vector and use the index to fetch batch size elements for decoding
-        std::random_shuffle(indexes.begin(), indexes.end());
-        for (auto const idx : indexes) {
-            shuffled_filenames.push_back(_file_names[idx]);
-            shuffled_headers.push_back(_file_headers[idx]);
-        }
-        _file_names = shuffled_filenames;
-        _file_headers = shuffled_headers;
-    }
+    if (_shuffle)
+        std::random_shuffle(_file_names.begin(), _file_names.end());
     _shuffle_time.end();
     _read_counter = 0;
     _curr_file_idx = 0;
