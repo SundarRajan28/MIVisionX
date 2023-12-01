@@ -591,6 +591,7 @@ extern "C"  RocalTensor  ROCAL_API_CALL rocalNumpyFileSource(
                  RocalContext p_context,
                  const char* source_path,
                  unsigned internal_shard_count,
+                 std::vector<std::string> files = {},
                  bool is_output = false,
                  bool shuffle = false,
                  bool loop = false,
@@ -611,6 +612,7 @@ extern "C"  RocalTensor  ROCAL_API_CALL rocalNumpyFileSource(
 extern "C"  RocalTensor  rocalNumpyFileSourceSingleShard(
                  RocalContext p_context,
                  const char* source_path,
+                 std::vector<std::string> files = {},
                  bool is_output = false,
                  bool shuffle = false,
                  bool loop = false,

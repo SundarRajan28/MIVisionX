@@ -77,6 +77,7 @@ class NumpyDataReader : public Reader {
     DIR* _sub_dir;
     struct dirent* _entity;
     std::vector<std::string> _file_names;
+    std::vector<std::string> _files;
     std::vector<NumpyHeaderData> _file_headers;
     unsigned _curr_file_idx;
     FILE* _current_fPtr;
