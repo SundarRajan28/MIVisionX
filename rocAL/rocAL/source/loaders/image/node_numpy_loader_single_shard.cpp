@@ -29,7 +29,7 @@ NumpyLoaderSingleShardNode::NumpyLoaderSingleShardNode(Tensor *output, void *dev
 }
 
 void NumpyLoaderSingleShardNode::init(unsigned shard_id, unsigned shard_count, const std::string &source_path, const std::vector<std::string> &files, StorageType storage_type, DecoderType decoder_type,
-                                      bool shuffle, bool loop, size_t load_batch_count, RocalMemType mem_type,
+                                      bool shuffle, bool loop, size_t load_batch_count, RocalMemType mem_type, unsigned seed,
                                       bool decoder_keep_original, const std::map<std::string, std::string> feature_key_map, unsigned sequence_length, unsigned step, unsigned stride) {
     if (!_loader_module)
         THROW("ERROR: loader module is not set for NumpyLoaderNode, cannot initialize")
@@ -44,6 +44,7 @@ void NumpyLoaderSingleShardNode::init(unsigned shard_id, unsigned shard_count, c
     reader_cfg.set_shard_id(shard_id);
     reader_cfg.set_batch_count(load_batch_count);
     reader_cfg.set_files(files);
+    reader_cfg.set_seed(seed);
     //  sequence_length, step and stride parameters used only for SequenceReader
     reader_cfg.set_sequence_length(sequence_length);
     reader_cfg.set_frame_step(step);

@@ -1643,7 +1643,8 @@ rocalNumpyFileSource(
     bool is_output,
     bool shuffle,
     bool loop,
-    RocalImageSizeEvaluationPolicy decode_size_policy) {
+    RocalImageSizeEvaluationPolicy decode_size_policy,
+    unsigned seed) {
     Tensor* output = nullptr;
     auto context = static_cast<Context*>(p_context);
     try {
@@ -1676,7 +1677,7 @@ rocalNumpyFileSource(
         info.set_max_shape();
         output = context->master_graph->create_loader_output_tensor(info);
 
-        context->master_graph->add_node<NumpyLoaderNode>({}, {output})->init(internal_shard_count, source_path, files, StorageType::NUMPY_DATA, DecoderType::SKIP_DECODE, shuffle, loop, context->user_batch_size(), context->master_graph->mem_type());
+        context->master_graph->add_node<NumpyLoaderNode>({}, {output})->init(internal_shard_count, source_path, files, StorageType::NUMPY_DATA, DecoderType::SKIP_DECODE, shuffle, loop, context->user_batch_size(), context->master_graph->mem_type(), seed);
         context->master_graph->set_loop(loop);
 
         if (is_output) {
@@ -1701,7 +1702,8 @@ rocalNumpyFileSourceSingleShard(
     bool loop,
     RocalImageSizeEvaluationPolicy decode_size_policy,
     unsigned shard_id,
-    unsigned shard_count) {
+    unsigned shard_count,
+    unsigned seed) {
     Tensor* output = nullptr;
     auto context = static_cast<Context*>(p_context);
     try {
@@ -1740,7 +1742,7 @@ rocalNumpyFileSourceSingleShard(
         info.set_max_shape();
         output = context->master_graph->create_loader_output_tensor(info);
 
-        context->master_graph->add_node<NumpyLoaderSingleShardNode>({}, {output})->init(shard_id, shard_count, source_path, files, StorageType::NUMPY_DATA, DecoderType::SKIP_DECODE, shuffle, loop, context->user_batch_size(), context->master_graph->mem_type());
+        context->master_graph->add_node<NumpyLoaderSingleShardNode>({}, {output})->init(shard_id, shard_count, source_path, files, StorageType::NUMPY_DATA, DecoderType::SKIP_DECODE, shuffle, loop, context->user_batch_size(), context->master_graph->mem_type(), seed);
         context->master_graph->set_loop(loop);
 
         if (is_output) {

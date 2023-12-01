@@ -63,6 +63,7 @@ Reader::Status NumpyDataReader::initialize(ReaderConfig desc) {
     _shuffle = desc.shuffle();
     _loop = desc.loop();
     _files = desc.get_files();
+    _seed = desc.seed();
     ret = subfolder_reading();
     // the following code is required to make every shard the same size:: required for multi-gpu training
     if (_shard_count > 1 && _batch_count > 1 && _files.empty()) {
@@ -77,7 +78,7 @@ Reader::Status NumpyDataReader::initialize(ReaderConfig desc) {
     // shuffle dataset if set
     _shuffle_time.start();
     if (ret == Reader::Status::OK && _shuffle) {
-        std::mt19937 rng(_shard_id);
+        std::mt19937 rng(_seed);
         std::shuffle(_file_names.begin(), _file_names.end(), rng);
     }
     _shuffle_time.end();
@@ -406,7 +407,7 @@ int NumpyDataReader::release() {
 void NumpyDataReader::reset() {
     _shuffle_time.start();
     if (_shuffle) {
-        std::mt19937 rng(_shard_id);
+        std::mt19937 rng(_seed);
         std::shuffle(_file_names.begin(), _file_names.end(), rng);
     }
     _shuffle_time.end();

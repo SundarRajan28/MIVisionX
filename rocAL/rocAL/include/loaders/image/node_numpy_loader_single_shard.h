@@ -38,7 +38,7 @@ class NumpyLoaderSingleShardNode : public Node {
     /// for example if there are 10 images in the dataset and load_batch_count is 3, the loader repeats 2 images as if there are 12 images available.
     void init(unsigned shard_id, unsigned shard_count, const std::string &source_path, const std::vector<std::string> &files,
               StorageType storage_type, DecoderType decoder_type, bool shuffle, bool loop,
-              size_t load_batch_count, RocalMemType mem_type, bool decoder_keep_orig = false, const std::map<std::string, std::string> feature_key_map = std::map<std::string, std::string>(), unsigned sequence_length = 0, unsigned step = 0, unsigned stride = 0);
+              size_t load_batch_count, RocalMemType mem_type, unsigned seed = 0, bool decoder_keep_orig = false, const std::map<std::string, std::string> feature_key_map = std::map<std::string, std::string>(), unsigned sequence_length = 0, unsigned step = 0, unsigned stride = 0);
 
     std::shared_ptr<LoaderModule> get_loader_module();
 

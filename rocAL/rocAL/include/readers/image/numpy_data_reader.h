@@ -95,6 +95,7 @@ class NumpyDataReader : public Reader {
     bool _loop;
     bool _shuffle;
     int _read_counter = 0;
+    unsigned _seed = 0;
     //!< _file_count_all_shards total_number of files in to figure out the max_batch_size (usually needed for distributed training).
     size_t _file_count_all_shards;
     std::mutex _cache_mutex_;

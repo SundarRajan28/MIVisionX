@@ -595,7 +595,8 @@ extern "C"  RocalTensor  ROCAL_API_CALL rocalNumpyFileSource(
                  bool is_output = false,
                  bool shuffle = false,
                  bool loop = false,
-                 RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MAX_SIZE);
+                 RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MAX_SIZE,
+                 unsigned seed = 0);
 
 /*! \brief Creates Numpy raw data reader and loader. It allocates the resources and objects required to read raw data stored on the numpy arrays.
  * \ingroup group_rocal_data_loaders
@@ -618,7 +619,8 @@ extern "C"  RocalTensor  rocalNumpyFileSourceSingleShard(
                  bool loop = false,
                  RocalImageSizeEvaluationPolicy decode_size_policy = ROCAL_USE_MAX_SIZE,
                  unsigned shard_id = 0,
-                 unsigned shard_count = 1);
+                 unsigned shard_count = 1,
+                 unsigned seed = 0);
 
 /*!
  * \brief Creates a video reader and decoder as a source. It allocates the resources and objects required to read and decode mp4 videos stored on the file systems.

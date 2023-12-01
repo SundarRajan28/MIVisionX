@@ -74,6 +74,7 @@ struct ReaderConfig {
     void set_frame_step(unsigned step) { _sequence_frame_step = step; }
     void set_frame_stride(unsigned stride) { _sequence_frame_stride = stride; }
     void set_files(const std::vector<std::string> &files) { _files = files; }
+    void set_seed(unsigned seed) { _seed = seed; }
     size_t get_shard_count() { return _shard_count; }
     size_t get_shard_id() { return _shard_id; }
     size_t get_cpu_num_threads() { return _cpu_num_threads; }
@@ -83,6 +84,7 @@ struct ReaderConfig {
     size_t get_frame_stride() { return _sequence_frame_stride; }
     std::vector<std::string> get_files() { return _files; }
     std::string path() { return _path; }
+    unsigned seed() { return _seed; }
 #ifdef ROCAL_VIDEO
     void set_video_properties(VideoProperties video_prop) { _video_prop = video_prop; }
     VideoProperties get_video_properties() { return _video_prop; }
@@ -110,6 +112,7 @@ struct ReaderConfig {
     std::string _file_prefix = "";  //!< to read only files with prefix. supported only for cifar10_data_reader and tf_record_reader
     std::shared_ptr<MetaDataReader> _meta_data_reader = nullptr;
     std::vector<std::string> _files;
+    unsigned _seed = 0;
 #ifdef ROCAL_VIDEO
     VideoProperties _video_prop;
 #endif
