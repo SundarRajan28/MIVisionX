@@ -1148,3 +1148,16 @@ def random_object_bbox(*inputs, format='anchor_shape', background=0, cache_objec
     else:
         print('Wrong format passed to random_object_bbox')
         return ()
+
+def transpose(*inputs, perm=[], output_layout=types.NHWC, output_dtype=types.UINT8):
+    # pybind call arguments
+    kwargs_pybind = {"input_image": inputs[0], "perm": perm, "is_output": False, "output_layout": output_layout, "output_dtype": output_dtype}
+    transposed_image = b.transpose(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (transposed_image)
+
+def normalize(*inputs, axes=[], mean=[], stddev=[], scale=1.0, shift=0.0, output_layout=types.NHWC, output_dtype=types.UINT8):
+    # pybind call arguments
+    kwargs_pybind = {"input_image": inputs[0], "axes": axes, "mean": mean, "stddev": stddev, "is_output": False,
+                     "scale": scale, "shift": shift, "output_layout": output_layout, "output_dtype": output_dtype}
+    normalized_image = b.normalize(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (normalized_image)

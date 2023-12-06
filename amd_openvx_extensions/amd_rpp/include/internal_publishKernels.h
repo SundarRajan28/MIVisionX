@@ -157,6 +157,8 @@ vx_status WarpAffine_Register(vx_context);
 vx_status SequenceRearrange_Register(vx_context);
 vx_status GaussianNoise_Register(vx_context);
 vx_status Slice_Register(vx_context);
+vx_status Normalize_Register(vx_context);
+vx_status Transpose_Register(vx_context);
 
 // kernel names
 #define VX_KERNEL_RPP_NOPBATCHPD_NAME                           "org.rpp.NopbatchPD"
@@ -283,5 +285,7 @@ vx_status Slice_Register(vx_context);
 #define VX_KERNEL_RPP_SEQUENCEREARRANGE_NAME                    "org.rpp.SequenceRearrange"
 #define VX_KERNEL_RPP_GAUSSIAN_NOISE_NAME                       "org.rpp.GaussianNoise"
 #define VX_KERNEL_RPP_SLICE_NAME                                "org.rpp.Slice"
+#define VX_KERNEL_RPP_NORMALIZE_NAME                            "org.rpp.Normalize"
+#define VX_KERNEL_RPP_TRANSPOSE_NAME                            "org.rpp.Transpose"
 
 #endif //_AMDVX_EXT__PUBLISH_KERNELS_H_

@@ -1263,6 +1263,37 @@ rocalSlice(
 }
 
 RocalTensor ROCAL_API_CALL
+rocalTranspose(
+    RocalContext p_context,
+    RocalTensor p_input,
+    std::vector<unsigned> perm,
+    bool is_output,
+    RocalTensorLayout output_layout,
+    RocalTensorOutputType output_datatype) {
+    Tensor* output = nullptr;
+    if ((p_context == nullptr) || (p_input == nullptr)) {
+        ERR("Invalid ROCAL context or invalid input image")
+        return output;
+    }
+    auto context = static_cast<Context*>(p_context);
+    auto input = static_cast<Tensor*>(p_input);
+    try {
+        RocalTensorlayout op_tensor_layout = static_cast<RocalTensorlayout>(output_layout);
+        RocalTensorDataType op_tensor_datatype = static_cast<RocalTensorDataType>(output_datatype);
+        TensorInfo output_info = input->info();
+        output_info.set_tensor_layout(op_tensor_layout);
+        output_info.set_data_type(op_tensor_datatype);
+        output = context->master_graph->create_tensor(output_info, is_output);
+        std::shared_ptr<TransposeNode> transpose_node = context->master_graph->add_node<TransposeNode>({input}, {output});
+        transpose_node->init(perm);
+    } catch (const std::exception& e) {
+        context->capture_error(e.what());
+        ERR(e.what())
+    }
+    return output;
+}
+
+RocalTensor ROCAL_API_CALL
 rocalFlip(
     RocalContext p_context,
     RocalTensor p_input,
@@ -1880,6 +1911,35 @@ rocalColorTwistFixed(
         output_info.set_data_type(op_tensor_datatype);
         output = context->master_graph->create_tensor(output_info, is_output);
         context->master_graph->add_node<ColorTwistNode>({input}, {output})->init(alpha, beta, hue, sat);
+    } catch (const std::exception& e) {
+        context->capture_error(e.what());
+        ERR(e.what())
+    }
+    return output;
+}
+
+RocalTensor ROCAL_API_CALL
+rocalNormalize(RocalContext p_context, RocalTensor p_input, std::vector<unsigned> &axes, 
+                         std::vector<float>& mean, std::vector<float>& std_dev, bool is_output,
+                         float scale, float shift,
+                         RocalTensorLayout output_layout,
+                         RocalTensorOutputType output_datatype) {
+    Tensor* output = nullptr;
+    if ((p_context == nullptr) || (p_input == nullptr)) {
+        ERR("Invalid ROCAL context or invalid input tensor")
+        return output;
+    }
+    auto context = static_cast<Context*>(p_context);
+    auto input = static_cast<Tensor*>(p_input);
+    try {
+        RocalTensorlayout op_tensor_layout = static_cast<RocalTensorlayout>(output_layout);
+        RocalTensorDataType op_tensor_datatype = static_cast<RocalTensorDataType>(output_datatype);
+        TensorInfo output_info = input->info();
+        output_info.set_tensor_layout(op_tensor_layout);
+        output_info.set_data_type(op_tensor_datatype);
+        output = context->master_graph->create_tensor(output_info, is_output);
+        std::shared_ptr<NormalizeNode> normalize_node = context->master_graph->add_node<NormalizeNode>({input}, {output});
+        normalize_node->init(axes, mean, std_dev, scale, shift);
     } catch (const std::exception& e) {
         context->capture_error(e.what());
         ERR(e.what())
