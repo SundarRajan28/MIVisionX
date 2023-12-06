@@ -207,8 +207,16 @@ class TensorInfo {
             modify_strides();
         }
         _layout = layout;
-        if (_layout == RocalTensorlayout::NONE)
-            set_max_shape();
+        if (_layout == RocalTensorlayout::NONE) {
+            _is_image = false;
+            _max_shape.resize(_dims.size() - 1);
+            _max_shape.assign(_dims.begin() + 1, _dims.end());
+            if (_layout == RocalTensorlayout::NHWC || _layout == RocalTensorlayout::NDHWC) {
+                _channels = _dims.back();
+            } else if (_layout == RocalTensorlayout::NCHW || _layout == RocalTensorlayout::NCDHW) {
+                _channels = _dims.at(1);
+            }
+        }
     }
     void set_dims(std::vector<size_t>& new_dims) {
         if (_num_of_dims == new_dims.size()) {

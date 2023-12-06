@@ -221,10 +221,8 @@ void Tensor::update_tensor_roi(const std::vector<std::vector<uint32_t>> &shape) 
             THROW("The number of dims to be updated and the num of dims of tensor info does not match")
         
         unsigned *tensor_shape = _info.roi()[i].end;
-        if (_info.layout() == RocalTensorlayout::NCDHW || _info.layout() == RocalTensorlayout::NDHWC) {
-            for (unsigned j = 0; j < max_shape.size(); j++) {
-                tensor_shape[j] = shape[i][j] > max_shape[j] ? max_shape[j] : shape[i][j];
-            }
+        for (unsigned j = 0; j < max_shape.size(); j++) {
+            tensor_shape[j] = shape[i][j] > max_shape[j] ? max_shape[j] : shape[i][j];
         }
     }
 }
