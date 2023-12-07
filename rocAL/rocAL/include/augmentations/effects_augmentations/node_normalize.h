@@ -24,7 +24,7 @@ THE SOFTWARE.
 #include "node.h"
 #include "parameter_vx.h"
 
-class NormalizeNode : public CropNode {
+class NormalizeNode : public Node {
    public:
     NormalizeNode(const std::vector<Tensor *> &inputs,
                             const std::vector<Tensor *> &outputs);

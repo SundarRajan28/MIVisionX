@@ -205,17 +205,13 @@ class TensorInfo {
             get_modified_dims_from_layout(_layout, layout, new_dims);
             _dims = new_dims;
             modify_strides();
+            _max_shape.assign(_dims.begin() + 1, _dims.end());
         }
         _layout = layout;
-        if (_layout == RocalTensorlayout::NONE) {
-            _is_image = false;
-            _max_shape.resize(_dims.size() - 1);
-            _max_shape.assign(_dims.begin() + 1, _dims.end());
-            if (_layout == RocalTensorlayout::NHWC || _layout == RocalTensorlayout::NDHWC) {
-                _channels = _dims.back();
-            } else if (_layout == RocalTensorlayout::NCHW || _layout == RocalTensorlayout::NCDHW) {
-                _channels = _dims.at(1);
-            }
+        if (_layout == RocalTensorlayout::NHWC || _layout == RocalTensorlayout::NDHWC) {
+            _channels = _dims.back();
+        } else if (_layout == RocalTensorlayout::NCHW || _layout == RocalTensorlayout::NCDHW) {
+            _channels = _dims.at(1);
         }
     }
     void set_dims(std::vector<size_t>& new_dims) {
@@ -257,13 +253,14 @@ class TensorInfo {
     }
     void modify_dims(RocalTensorlayout layout, std::vector<int> new_dims) {
         switch (_layout) {
-            case RocalTensorlayout::NDHWC: {
+            case RocalTensorlayout::NHWC:
+            case RocalTensorlayout::NCHW: {
                 _max_shape[0] = _dims[1] = new_dims[0];
                 _max_shape[1] = _dims[2] = new_dims[1];
                 _max_shape[2] = _dims[3] = new_dims[2];
-                _max_shape[3] = _dims[4] = new_dims[3];
                 break;
             }
+            case RocalTensorlayout::NDHWC:
             case RocalTensorlayout::NCDHW: {
                 _max_shape[0] = _dims[1] = new_dims[0];
                 _max_shape[1] = _dims[2] = new_dims[1];

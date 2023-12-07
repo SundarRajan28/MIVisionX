@@ -116,16 +116,16 @@ void TensorInfo::reset_tensor_roi_buffers() {
     auto roi_size = (_layout == RocalTensorlayout::NFCHW || _layout == RocalTensorlayout::NFHWC) ? _dims[0] * _dims[1] : _batch_size;  // For Sequences pre allocating the ROI to N * F to replicate in OpenVX extensions
     allocate_host_or_pinned_mem((void **)&roi_buf, roi_size * roi_no_of_dims * 2 * sizeof(unsigned), _mem_type);
     _roi.set_ptr(roi_buf, _mem_type, roi_size, roi_no_of_dims);
-    if (_layout == RocalTensorlayout::NCDHW || _layout == RocalTensorlayout::NDHWC) {
-        for (unsigned i = 0; i < _batch_size; i++) {
-            unsigned *tensor_shape = _roi[i].end;
-            tensor_shape[i] = _max_shape[i];
-        }
-    } else if (_is_image) {
+    if (_is_image) {
         Roi2DCords *roi = _roi.get_2D_roi();
         for (unsigned i = 0; i < _batch_size; i++) {
             roi[i].xywh.w = _max_shape.at(0);
             roi[i].xywh.h = _max_shape.at(1);
+        }
+    } else {
+        for (unsigned i = 0; i < _batch_size; i++) {
+            unsigned *tensor_shape = _roi[i].end;
+            tensor_shape[i] = _max_shape[i];
         }
     }
 }

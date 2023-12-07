@@ -2745,10 +2745,10 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericdscPtr, vxTens
         }
         case vxTensorLayout::VX_NHWC: {
             genericdscPtr->numDims = 4;
-            genericdscPtr[0] = tensorDims[0];
-            genericdscPtr[1] = tensorDims[1];
-            genericdscPtr[2] = tensorDims[2];
-            genericdscPtr[3] = tensorDims[3];
+            genericdscPtr->dims[0] = tensorDims[0];
+            genericdscPtr->dims[1] = tensorDims[1];
+            genericdscPtr->dims[2] = tensorDims[2];
+            genericdscPtr->dims[3] = tensorDims[3];
             genericdscPtr->strides[0] = genericdscPtr->dims[1] * genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[1] = genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[2] = genericdscPtr->dims[3];
@@ -2758,10 +2758,10 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericdscPtr, vxTens
         }
         case vxTensorLayout::VX_NCHW: {
             genericdscPtr->numDims = 4;
-            genericdscPtr[0] = tensorDims[0];
-            genericdscPtr[1] = tensorDims[1];
-            genericdscPtr[2] = tensorDims[2];
-            genericdscPtr[3] = tensorDims[3];
+            genericdscPtr->dims[0] = tensorDims[0];
+            genericdscPtr->dims[1] = tensorDims[1];
+            genericdscPtr->dims[2] = tensorDims[2];
+            genericdscPtr->dims[3] = tensorDims[3];
             genericdscPtr->strides[0] = genericdscPtr->dims[1] * genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[1] = genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[2] = genericdscPtr->dims[3];
@@ -2771,10 +2771,10 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericdscPtr, vxTens
         }
         case vxTensorLayout::VX_NFHWC: {
             genericdscPtr->numDims = 4;
-            genericdscPtr[0] = tensorDims[0] * tensorDims[1];
-            genericdscPtr[1] = tensorDims[2];
-            genericdscPtr[2] = tensorDims[3];
-            genericdscPtr[3] = tensorDims[4];
+            genericdscPtr->dims[0] = tensorDims[0] * tensorDims[1];
+            genericdscPtr->dims[1] = tensorDims[2];
+            genericdscPtr->dims[2] = tensorDims[3];
+            genericdscPtr->dims[3] = tensorDims[4];
             genericdscPtr->strides[0] = genericdscPtr->dims[1] * genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[1] = genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[2] = genericdscPtr->dims[3];
@@ -2784,10 +2784,10 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericdscPtr, vxTens
         }
         case vxTensorLayout::VX_NFCHW: {
             genericdscPtr->numDims = 4;
-            genericdscPtr[0]= tensorDims[0] * tensorDims[1];
-            genericdscPtr[1] = tensorDims[3];
-            genericdscPtr[2] = tensorDims[4];
-            genericdscPtr[3] = tensorDims[2];
+            genericdscPtr->dims[0]= tensorDims[0] * tensorDims[1];
+            genericdscPtr->dims[1] = tensorDims[3];
+            genericdscPtr->dims[2] = tensorDims[4];
+            genericdscPtr->dims[3] = tensorDims[2];
             genericdscPtr->strides[0] = genericdscPtr->dims[1] * genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[1] = genericdscPtr->dims[2] * genericdscPtr->dims[3];
             genericdscPtr->strides[2] = genericdscPtr->dims[3];

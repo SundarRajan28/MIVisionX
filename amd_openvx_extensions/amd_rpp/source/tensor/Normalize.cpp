@@ -47,12 +47,8 @@ struct NormalizeLocalData {
 static vx_status VX_CALLBACK refreshNormalize(vx_node node, const vx_reference *parameters, vx_uint32 num, NormalizeLocalData *data) {
     vx_status status = VX_SUCCESS;
     void *roi_tensor_ptr;
-    int channels;
-    if(data->inputLayout == RpptLayout::NHWC) channels = data->inputTensorDims[3];
-    if(data->inputLayout == RpptLayout::NCHW || data->inputLayout == RpptLayout::NCDHW) channels = data->inputTensorDims[1];
-    if(data->inputLayout == RpptLayout::NDHWC) channels = data->inputTensorDims[4];
-    STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, channels, sizeof(float), data->pMean, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
-    STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, channels, sizeof(float), data->pStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+    int mean_stddev_array_size = 1;
+    STATUS_ERROR_CHECK(vxReadScalarValue((vx_scalar)parameters[3], &data->axis_mask));
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
 #if ENABLE_OPENCL
         return VX_ERROR_NOT_IMPLEMENTED;
@@ -65,6 +61,43 @@ static vx_status VX_CALLBACK refreshNormalize(vx_node node, const vx_reference *
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HOST, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
+    }
+
+    unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
+    int nDim = data->pSrcGenericDesc->numDims - 1;
+    Rpp32u axis[nDim];
+    for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
+        unsigned index = i * nDim * 2;
+        int totalElements = 1;
+        for(Rpp32u j = 0; j < nDim; j++)
+        {
+            axis[j] = ((data->axis_mask & (int)(pow(2,j))) >= 1) ? 1 : 0;
+            totalElements *= !axis[j] ? src_roi_ptr[index + j + nDim] : 1;
+        }
+        mean_stddev_array_size = std::max(mean_stddev_array_size, totalElements);
+    }
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_OPENCL
+        return VX_ERROR_NOT_IMPLEMENTED;
+#elif ENABLE_HIP
+        if (!data->pMean) {
+            hipError_t err = hipHostMalloc(&data->pMean, data->inputTensorDims[0] * mean_stddev_array_size * sizeof(float), hipHostMallocDefault);
+            if (err != hipSuccess)
+                return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", data->inputTensorDims[0] * mean_stddev_array_size * sizeof(float));
+        }
+        if (!data->pStddev) {
+            hipError_t err = hipHostMalloc(&data->pStddev, data->inputTensorDims[0] * mean_stddev_array_size * sizeof(float), hipHostMallocDefault);
+            if (err != hipSuccess)
+                return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", data->inputTensorDims[0] * mean_stddev_array_size * sizeof(float));
+        }
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pMean, VX_READ_ONLY, VX_MEMORY_TYPE_HIP));
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HIP));
+#endif
+    } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
+        if (!data->pMean) data->pMean = new float[data->inputTensorDims[0] * mean_stddev_array_size];
+        if (!data->pStddev) data->pStddev = new float[data->inputTensorDims[0] * mean_stddev_array_size];
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pMean, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     }
     data->pSrcRoi = static_cast<unsigned *>(roi_tensor_ptr);
     return status;
@@ -133,7 +166,6 @@ static vx_status VX_CALLBACK initializeNormalize(vx_node node, const vx_referenc
 
     vx_enum input_tensor_dtype, output_tensor_dtype;
     vx_int32 roi_type, input_layout, output_layout;
-    STATUS_ERROR_CHECK(vxReadScalarValue((vx_scalar)parameters[3], &data->axis_mask));
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[6], &data->computeMean, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[7], &data->computeStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[8], &data->scale, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
@@ -164,7 +196,6 @@ static vx_status VX_CALLBACK initializeNormalize(vx_node node, const vx_referenc
     data->pDstGenericDesc->offsetInBytes = 0;
     fillGenericDescriptionPtrfromDims(data->pDstGenericDesc, data->outputLayout, data->outputTensorDims); 
     
-    refreshNormalize(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->inputTensorDims[0], data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
     return VX_SUCCESS;
@@ -174,6 +205,19 @@ static vx_status VX_CALLBACK uninitializeNormalize(vx_node node, const vx_refere
     NormalizeLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        hipError_t err = hipHostFree(data->pMean);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+        err = hipHostFree(data->pStddev);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+#endif
+    } else {
+        if (data->pMean) delete[] data->pMean;
+        if (data->pStddev) delete[] data->pStddev;
+    }
     delete data->pSrcGenericDesc;
     delete data->pDstGenericDesc;
     delete (data);

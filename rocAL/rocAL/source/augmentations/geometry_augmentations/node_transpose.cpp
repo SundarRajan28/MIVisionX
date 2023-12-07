@@ -42,7 +42,6 @@ void TransposeNode::create_node() {
 
     _node = vxExtRppTranspose(_graph->get(), _inputs[0]->handle(), _inputs[0]->get_roi_tensor(), _outputs[0]->handle(),
                          _perm_array, input_layout_vx, output_layout_vx, roi_type_vx);
-    vx_status status;
     if ((status = vxGetStatus((vx_reference)_node)) != VX_SUCCESS)
         THROW("Adding the transpose (vxExtRppTranspose) node failed: " + TOSTR(status))
 }
@@ -52,11 +51,12 @@ void TransposeNode::init(std::vector<unsigned> perm) {
 }
 
 void TransposeNode::update_node() {
+    auto max_shape = _outputs[0]->info().max_shape();
     std::vector<std::vector<uint32_t>> transposed_shape_batch(_batch_size);
     for (uint i = 0; i < _batch_size; i++) {
-        auto transposed_shape = transposed_shape_batch[i];
-        unsigned *tensor_shape = _outputs[0]->info().roi()[i].end;
-        for (unsigned j = 0; j < _perm.size(); j++) {
+        auto& transposed_shape = transposed_shape_batch[i];
+        unsigned *tensor_shape = _inputs[0]->info().roi()[i].end;
+        for (unsigned j = 0; j < max_shape.size(); j++) {
             transposed_shape.push_back(tensor_shape[_perm[j]]);
         }
     }

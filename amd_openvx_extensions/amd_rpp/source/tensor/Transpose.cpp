@@ -41,8 +41,8 @@ struct TransposeLocalData {
 static vx_status VX_CALLBACK refreshTranspose(vx_node node, const vx_reference *parameters, vx_uint32 num, TransposeLocalData *data) {
     vx_status status = VX_SUCCESS;
     void *roi_tensor_ptr;
-    int num_dims = (data->inputLayout == RpptLayout::NHWC || data->inputLayout == RpptLayout::NCHW) ? 3 : 4;
-    STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[3], 0, num_dims, sizeof(float), data->perm, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+    int nDim = data->pSrcGenericDesc->numDims - 1;
+    
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
 #if ENABLE_OPENCL
         return VX_ERROR_NOT_IMPLEMENTED;
@@ -50,11 +50,19 @@ static vx_status VX_CALLBACK refreshTranspose(vx_node node, const vx_reference *
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HIP, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HIP, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HIP, &data->pDst, sizeof(data->pDst)));
+        if (!data->perm) {
+            hipError_t err = hipHostMalloc(&data->perm, nDim * sizeof(unsigned), hipHostMallocDefault);
+            if (err != hipSuccess)
+                return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", nDim * sizeof(unsigned));
+        }
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[3], 0, nDim, sizeof(unsigned), data->perm, VX_READ_ONLY, VX_MEMORY_TYPE_HIP));
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HOST, &roi_tensor_ptr, sizeof(roi_tensor_ptr)));
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
+        if (!data->perm) data->perm = new unsigned[nDim];
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[3], 0, nDim, sizeof(unsigned), data->perm, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     }
     data->pSrcRoi = static_cast<unsigned *>(roi_tensor_ptr);
     return status;
@@ -159,6 +167,15 @@ static vx_status VX_CALLBACK uninitializeTranspose(vx_node node, const vx_refere
     TransposeLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        hipError_t err = hipHostFree(data->perm);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+#endif
+    } else {
+        if (data->perm) delete[] data->perm;
+    }
     delete data->pSrcGenericDesc;
     delete data->pDstGenericDesc;
     delete (data);

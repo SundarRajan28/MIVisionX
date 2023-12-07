@@ -10,6 +10,10 @@ import amd.rocal.types as types
 import sys
 import os, glob
 
+
+MEAN = [0.026144592091441154, -88.3379898071289, -84.62094116210938, -78.56366729736328, -77.72217559814453, 7.33015557974337e-12, 48330.79296875, 87595.4296875, 183.57638549804688, 208.38265991210938, -7.185957863625792e-19, 109.64270782470703, 94.19403076171875, -0.37584438920021057, 9952.041015625, 20.362579345703125]
+STDDEV = [108.9710922241211, 174.1948699951172, 173.99221801757812, 155.323486328125, 158.25418090820312, 0.14563894271850586, 58919.42578125, 24443.921875, 64.71000671386719, 77.63092041015625, 3.7348792830016464e-05, 242.97598266601562, 237.60250854492188, 5726.51611328125, 2953.1953125, 51.31494903564453]
+
 def load_data(path, files_pattern):
     data = sorted(glob.glob(os.path.join(path, files_pattern)))
     assert len(data) > 0, f"Found no data at {path}"
@@ -55,24 +59,26 @@ def main():
         numpy_reader_output = fn.readers.numpy(file_root=data_path, files=x_train, shard_id=local_rank, num_shards=world_size, random_shuffle=True, seed=random_seed+local_rank)
         label_output = fn.readers.numpy(file_root=data_path, files=y_train, shard_id=local_rank, num_shards=world_size, random_shuffle=True, seed=random_seed+local_rank)
         data_output = fn.set_layout(numpy_reader_output, output_layout=types.NHWC)
-        pipeline.set_outputs(data_output, label_output)
+        normalized_output = fn.normalize(data_output, axes=[0,1], mean=MEAN, stddev=STDDEV, output_layout=types.NHWC, output_dtype=types.FLOAT)
+        # transposed_output = fn.transpose(data_output, perm=[2,1,0], output_layout=types.NCHW, output_dtype=types.FLOAT)
+        pipeline.set_outputs(normalized_output, label_output)
 
     pipeline.build()
 
-    pipeline1 = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu, prefetch_queue_depth=6)
+    # pipeline1 = Pipeline(batch_size=batch_size, num_threads=num_threads, device_id=device_id, seed=random_seed, rocal_cpu=rocal_cpu, prefetch_queue_depth=6)
 
-    with pipeline1:
-        numpy_reader_output = fn.readers.numpy(file_root=data_path, files=x_val, shard_id=local_rank, num_shards=world_size, seed=random_seed+local_rank)
-        label_output = fn.readers.numpy(file_root=data_path, files=y_val, shard_id=local_rank, num_shards=world_size, seed=random_seed+local_rank)
-        data_output = fn.set_layout(numpy_reader_output, output_layout=types.NHWC)
-        pipeline1.set_outputs(data_output, label_output)
+    # with pipeline1:
+    #     numpy_reader_output = fn.readers.numpy(file_root=data_path, files=x_val, shard_id=local_rank, num_shards=world_size, seed=random_seed+local_rank)
+    #     label_output = fn.readers.numpy(file_root=data_path, files=y_val, shard_id=local_rank, num_shards=world_size, seed=random_seed+local_rank)
+    #     data_output = fn.set_layout(numpy_reader_output, output_layout=types.NHWC)
+    #     pipeline1.set_outputs(data_output, label_output)
 
-    pipeline1.build()
+    # pipeline1.build()
     
     numpyIteratorPipeline = ROCALNumpyIterator(pipeline, device='cpu' if rocal_cpu else 'gpu')
     print(len(numpyIteratorPipeline))
-    valNumpyIteratorPipeline = ROCALNumpyIterator(pipeline1, device='cpu' if rocal_cpu else 'gpu')
-    print(len(valNumpyIteratorPipeline))
+    # valNumpyIteratorPipeline = ROCALNumpyIterator(pipeline1, device='cpu' if rocal_cpu else 'gpu')
+    # print(len(valNumpyIteratorPipeline))
     cnt = 0
     for epoch in range(2):
         print("+++++++++++++++++++++++++++++EPOCH+++++++++++++++++++++++++++++++++++++",epoch)
@@ -83,13 +89,13 @@ def main():
                 cnt += 1
             print("************************************** i *************************************",i)
         numpyIteratorPipeline.reset()
-        for i , it in enumerate(valNumpyIteratorPipeline):
-            print(i, it[0].shape, it[1].shape)
-            for j in range(batch_size):
-                print(it[0][j].cpu().numpy().shape, it[1][j].cpu().numpy().shape)
-                cnt += 1
-            print("************************************** i *************************************",i)
-        valNumpyIteratorPipeline.reset()
+        # for i , it in enumerate(valNumpyIteratorPipeline):
+        #     print(i, it[0].shape, it[1].shape)
+        #     for j in range(batch_size):
+        #         print(it[0][j].cpu().numpy().shape, it[1][j].cpu().numpy().shape)
+        #         cnt += 1
+        #     print("************************************** i *************************************",i)
+        # valNumpyIteratorPipeline.reset()
     print("*********************************************************************")
     print(f'Took {time.time() - start} seconds')
 
