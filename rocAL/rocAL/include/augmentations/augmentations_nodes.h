@@ -59,3 +59,4 @@ THE SOFTWARE.
 #include "node_slice.h"
 #include "node_transpose.h"
 #include "node_normalize.h"
+#include "node_cast.h"

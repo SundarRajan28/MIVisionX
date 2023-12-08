@@ -165,6 +165,7 @@ list(APPEND SOURCES
         source/tensor/SequenceRearrange.cpp
         source/tensor/Normalize.cpp
         source/tensor/Transpose.cpp
+        source/tensor/Cast.cpp
         source/kernel_rpp.cpp
         source/internal_publishKernels.cpp
     )

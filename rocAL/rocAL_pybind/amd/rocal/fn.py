@@ -1161,3 +1161,9 @@ def normalize(*inputs, axes=[], mean=[], stddev=[], scale=1.0, shift=0.0, output
                      "scale": scale, "shift": shift, "output_layout": output_layout, "output_dtype": output_dtype}
     normalized_image = b.normalize(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
     return (normalized_image)
+
+def cast(*inputs, output_dtype=types.UINT8):
+    # pybind call arguments
+    kwargs_pybind = {"input_image": inputs[0], "is_output": False, "output_dtype": output_dtype}
+    normalized_image = b.normalize(Pipeline._current_pipeline._handle, *(kwargs_pybind.values()))
+    return (normalized_image)
