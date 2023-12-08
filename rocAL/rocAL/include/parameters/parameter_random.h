@@ -53,16 +53,8 @@ class UniformRand : public Parameter<T> {
     };
 
     std::vector<T> get_array() override {
-        /* Testing purpose */
-        std::cerr << "\n Updated Values :: ";
-         for (uint i = 0; i < _batch_size; i++) {
-            std::cerr << "\n Updated Values for a batch:" << _array[i];
-        }
-       /* Testing Purpose */
         return _array;
     }
-
-
 
     void renew_value() {
         std::unique_lock<std::mutex> lock(_lock);
