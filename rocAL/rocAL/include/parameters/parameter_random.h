@@ -211,7 +211,7 @@ struct CustomRand : public Parameter<T> {
     }
 
     void renew() override {
-        if (_array.size()>0) {
+        if (_array.size() > 0) {
             renew_array();
         }
         else {
