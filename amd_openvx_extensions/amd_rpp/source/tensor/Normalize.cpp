@@ -150,11 +150,11 @@ static vx_status VX_CALLBACK processNormalize(vx_node node, const vx_reference *
     refreshNormalize(node, parameters, num, data);
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
 #if ENABLE_HIP
-        rpp_status = rppt_normalize_generic_gpu(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->axis_mask, data->pMean, data->pStddev, data->computeMean, data->computeStddev, data->shift, data->scale, data->pSrcRoi, data->handle->rppHandle);
+        rpp_status = rppt_normalize_generic_gpu(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->axis_mask, data->pMean, data->pStddev, data->computeMean, data->computeStddev, data->scale, data->shift, data->pSrcRoi, data->handle->rppHandle);
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
-        rpp_status = rppt_normalize_generic_host(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->axis_mask, data->pMean, data->pStddev, data->computeMean, data->computeStddev, data->shift, data->scale, data->pSrcRoi, data->handle->rppHandle);
+        rpp_status = rppt_normalize_generic_host(data->pSrc, data->pSrcGenericDesc, data->pDst, data->pDstGenericDesc, data->axis_mask, data->pMean, data->pStddev, data->computeMean, data->computeStddev, data->scale, data->shift, data->pSrcRoi, data->handle->rppHandle);
         return_status = (rpp_status == RPP_SUCCESS) ? VX_SUCCESS : VX_FAILURE;
     }
     return return_status;

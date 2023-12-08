@@ -49,16 +49,3 @@ void TransposeNode::create_node() {
 void TransposeNode::init(std::vector<unsigned> perm) {
     _perm = perm;
 }
-
-void TransposeNode::update_node() {
-    auto max_shape = _outputs[0]->info().max_shape();
-    std::vector<std::vector<uint32_t>> transposed_shape_batch(_batch_size);
-    for (uint i = 0; i < _batch_size; i++) {
-        auto& transposed_shape = transposed_shape_batch[i];
-        unsigned *tensor_shape = _inputs[0]->info().roi()[i].end;
-        for (unsigned j = 0; j < max_shape.size(); j++) {
-            transposed_shape.push_back(tensor_shape[_perm[j]]);
-        }
-    }
-    _outputs[0]->update_tensor_roi(transposed_shape_batch);
-}
