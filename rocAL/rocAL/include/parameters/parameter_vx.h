@@ -115,7 +115,6 @@ class ParameterVX {
     vx_array _array = nullptr;
     Parameter<T>* _param;
     T _val;
-    std::vector<T> _arrVal;
     unsigned _batch_size;
     unsigned OVX_PARAM_IDX;
     const T _DEFAULT_RANGE_START;
