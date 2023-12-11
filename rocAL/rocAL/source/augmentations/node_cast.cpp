@@ -31,7 +31,11 @@ void CastNode::create_node() {
     if(_node)
         return;
 
-    _node = vxExtRppCast(_graph->get(), _inputs[0]->handle(), _src_tensor_roi, _outputs[0]->handle(), _input_layout, _roi_type);
+    int input_layout = (int)_inputs[0]->info().layout();
+    int roi_type = static_cast<int>(_inputs[0]->info().roi_type());
+    vx_scalar input_layout_vx = vxCreateScalar(vxGetContext((vx_reference)_graph->get()), VX_TYPE_INT32, &input_layout);
+    vx_scalar roi_type_vx = vxCreateScalar(vxGetContext((vx_reference)_graph->get()), VX_TYPE_INT32, &roi_type);
+    _node = vxExtRppCast(_graph->get(), _inputs[0]->handle(), _inputs[0]->get_roi_tensor(), _outputs[0]->handle(), input_layout_vx, roi_type_vx);
 
     vx_status status;
     if((status = vxGetStatus((vx_reference)_node)) != VX_SUCCESS)
