@@ -55,7 +55,7 @@ static vx_status VX_CALLBACK refreshTranspose(vx_node node, const vx_reference *
             if (err != hipSuccess)
                 return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", nDim * sizeof(unsigned));
         }
-        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[3], 0, nDim, sizeof(unsigned), data->perm, VX_READ_ONLY, VX_MEMORY_TYPE_HIP));
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[3], 0, nDim, sizeof(unsigned), data->perm, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
@@ -138,9 +138,21 @@ static vx_status VX_CALLBACK initializeTranspose(vx_node node, const vx_referenc
     data->roiType = static_cast<RpptRoiType>(roi_type);
     data->inputLayout = static_cast<vxTensorLayout>(input_layout);
     data->outputLayout = static_cast<vxTensorLayout>(output_layout);
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        hipError_t err = hipHostMalloc(&data->pSrcGenericDesc, sizeof(RpptGenericDesc), hipHostMallocDefault);
+        if (err != hipSuccess)
+            return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", sizeof(RpptGenericDesc));
+        err = hipHostMalloc(&data->pDstGenericDesc, sizeof(RpptGenericDesc), hipHostMallocDefault);
+        if (err != hipSuccess)
+            return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", sizeof(RpptGenericDesc));
+#endif
+    } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
+        data->pSrcGenericDesc = new RpptGenericDesc;
+        data->pDstGenericDesc = new RpptGenericDesc;
+    }
 
     // Querying for input tensor
-    data->pSrcGenericDesc = new RpptGenericDesc;
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_NUMBER_OF_DIMS, &data->pSrcGenericDesc->numDims, sizeof(data->pSrcGenericDesc->numDims)));
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_DIMS, &data->inputTensorDims, sizeof(vx_size) * data->pSrcGenericDesc->numDims));
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_DATA_TYPE, &input_tensor_dtype, sizeof(input_tensor_dtype)));
@@ -149,7 +161,6 @@ static vx_status VX_CALLBACK initializeTranspose(vx_node node, const vx_referenc
     fillGenericDescriptionPtrfromDims(data->pSrcGenericDesc, data->inputLayout, data->inputTensorDims);
 
     // Querying for output tensor
-    data->pDstGenericDesc = new RpptGenericDesc;
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_NUMBER_OF_DIMS, &data->pDstGenericDesc->numDims, sizeof(data->pDstGenericDesc->numDims)));
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_DIMS, &data->outputTensorDims, sizeof(vx_size) * data->pDstGenericDesc->numDims));
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_DATA_TYPE, &output_tensor_dtype, sizeof(output_tensor_dtype)));
@@ -169,15 +180,21 @@ static vx_status VX_CALLBACK uninitializeTranspose(vx_node node, const vx_refere
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
 #if ENABLE_HIP
-        hipError_t err = hipHostFree(data->perm);
+        hipError_t err = hipHostFree(data->pSrcGenericDesc);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+        err = hipHostFree(data->pDstGenericDesc);
+        if (err != hipSuccess)
+            std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
+        err = hipHostFree(data->perm);
         if (err != hipSuccess)
             std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
 #endif
     } else {
         if (data->perm) delete[] data->perm;
+        delete data->pSrcGenericDesc;
+        delete data->pDstGenericDesc;
     }
-    delete data->pSrcGenericDesc;
-    delete data->pDstGenericDesc;
     delete (data);
     return VX_SUCCESS;
 }

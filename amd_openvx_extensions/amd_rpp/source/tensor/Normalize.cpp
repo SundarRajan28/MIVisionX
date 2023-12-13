@@ -63,7 +63,7 @@ static vx_status VX_CALLBACK refreshNormalize(vx_node node, const vx_reference *
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[2], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
     }
 
-    unsigned *src_roi_ptr = (unsigned *)roi_tensor_ptr;
+    data->pSrcRoi = static_cast<unsigned *>(roi_tensor_ptr);
     int nDim = data->pSrcGenericDesc->numDims - 1;
     Rpp32u axis[nDim];
     for (unsigned i = 0; i < data->inputTensorDims[0]; i++) {
@@ -72,7 +72,7 @@ static vx_status VX_CALLBACK refreshNormalize(vx_node node, const vx_reference *
         for(Rpp32u j = 0; j < nDim; j++)
         {
             axis[j] = ((data->axis_mask & (int)(pow(2,j))) >= 1) ? 1 : 0;
-            totalElements *= !axis[j] ? src_roi_ptr[index + j + nDim] : 1;
+            totalElements *= !axis[j] ? data->pSrcRoi[index + j + nDim] : 1;
         }
         mean_stddev_array_size = std::max(mean_stddev_array_size, totalElements);
     }
@@ -99,7 +99,6 @@ static vx_status VX_CALLBACK refreshNormalize(vx_node node, const vx_reference *
         STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pMean, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
         STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     }
-    data->pSrcRoi = static_cast<unsigned *>(roi_tensor_ptr);
     return status;
 }
 
@@ -196,6 +195,7 @@ static vx_status VX_CALLBACK initializeNormalize(vx_node node, const vx_referenc
     data->pDstGenericDesc->offsetInBytes = 0;
     fillGenericDescriptionPtrfromDims(data->pDstGenericDesc, data->outputLayout, data->outputTensorDims); 
     
+    // refreshNormalize(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->inputTensorDims[0], data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
     return VX_SUCCESS;
