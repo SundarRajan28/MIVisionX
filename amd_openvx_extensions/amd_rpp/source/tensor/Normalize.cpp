@@ -90,8 +90,8 @@ static vx_status VX_CALLBACK refreshNormalize(vx_node node, const vx_reference *
             if (err != hipSuccess)
                 return ERRMSG(VX_ERROR_NOT_ALLOCATED, "refresh: hipHostMalloc of size %ld failed \n", data->inputTensorDims[0] * mean_stddev_array_size * sizeof(float));
         }
-        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pMean, VX_READ_ONLY, VX_MEMORY_TYPE_HIP));
-        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HIP));
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pMean, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+        STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[5], 0, data->inputTensorDims[0] * mean_stddev_array_size, sizeof(float), data->pStddev, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
 #endif
     } else if (data->deviceType == AGO_TARGET_AFFINITY_CPU) {
         if (!data->pMean) data->pMean = new float[data->inputTensorDims[0] * mean_stddev_array_size];
