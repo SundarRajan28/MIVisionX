@@ -390,22 +390,10 @@ void MasterGraph::release() {
     if(_is_random_object_bbox)
     {
         if(_random_object_bbox_box1_buf != nullptr) {
-            if (_affinity == RocalAffinity::GPU) {
-    #if ENABLE_HIP
-                hipError_t err = hipHostFree(_random_object_bbox_box1_buf);
-                if (err != hipSuccess)
-                    std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
-    #endif
-            } else { free(_random_object_bbox_box1_buf); }
+            free(_random_object_bbox_box1_buf);
         }
         if(_random_object_bbox_box2_buf != nullptr) {
-            if (_affinity == RocalAffinity::GPU) {
-    #if ENABLE_HIP
-                hipError_t err = hipHostFree(_random_object_bbox_box2_buf);
-                if (err != hipSuccess)
-                    std::cerr << "\n[ERR] hipFree failed  " << std::to_string(err) << "\n";
-    #endif
-            } else { free(_random_object_bbox_box2_buf); }
+            free(_random_object_bbox_box2_buf);
         }
         // _random_object_bbox_tensor_list.release();
     }
@@ -1638,31 +1626,31 @@ TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_fo
     if(output_format == "start_end" || output_format == "anchor_shape") {        
         // create new instance of tensor class
         std::vector<size_t> box1_dims = {_user_batch_size, output_dims};
-        auto box1_info = TensorInfo(std::move(box1_dims), input->info().mem_type(), RocalTensorDataType::INT32);
+        auto box1_info = TensorInfo(std::move(box1_dims), RocalMemType::HOST, RocalTensorDataType::INT32);
         _random_object_bbox_box1_tensor = new Tensor(box1_info);
 
         // allocate memory for the raw buffer pointer in tensor object
-        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * sizeof(int), input->info().mem_type());
+        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * sizeof(int), RocalMemType::HOST);
         _random_object_bbox_box1_tensor->create_from_ptr(_context, _random_object_bbox_box1_buf);
 
         // create new instance of tensor class
         std::vector<size_t> box2_dims = {_user_batch_size, output_dims};
-        auto box2_info = TensorInfo(std::move(box2_dims), input->info().mem_type(), RocalTensorDataType::INT32);
+        auto box2_info = TensorInfo(std::move(box2_dims), RocalMemType::HOST, RocalTensorDataType::INT32);
         _random_object_bbox_box2_tensor = new Tensor(box2_info);
 
         // allocate memory for the raw buffer pointer in tensor object
-        allocate_host_or_pinned_mem(&_random_object_bbox_box2_buf, _user_batch_size * output_dims * sizeof(int), input->info().mem_type());
+        allocate_host_or_pinned_mem(&_random_object_bbox_box2_buf, _user_batch_size * output_dims * sizeof(int), RocalMemType::HOST);
         _random_object_bbox_box2_tensor->create_from_ptr(_context, _random_object_bbox_box2_buf);
         _random_object_bbox_tensor_list.push_back(_random_object_bbox_box1_tensor);
         _random_object_bbox_tensor_list.push_back(_random_object_bbox_box2_tensor);
     } else if(output_format == "box") {
         // create new instance of tensor class
         std::vector<size_t> box1_dims = {_user_batch_size, output_dims * 2};
-        auto box1_info = TensorInfo(std::move(box1_dims), input->info().mem_type(), RocalTensorDataType::INT32);
+        auto box1_info = TensorInfo(std::move(box1_dims), RocalMemType::HOST, RocalTensorDataType::INT32);
         _random_object_bbox_box1_tensor = new Tensor(box1_info);
 
         // allocate memory for the raw buffer pointer in tensor object
-        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * 2 * sizeof(int), input->info().mem_type());
+        allocate_host_or_pinned_mem(&_random_object_bbox_box1_buf, _user_batch_size * output_dims * 2 * sizeof(int), RocalMemType::HOST);
         _random_object_bbox_box1_tensor->create_from_ptr(_context, _random_object_bbox_box1_buf);
         _random_object_bbox_tensor_list.push_back(_random_object_bbox_box1_tensor);
     }
@@ -2134,8 +2122,8 @@ void MasterGraph::update_roi_random_crop() {
     uint seed = std::time(0);
     auto input_dims = _roi_random_crop_tensor->info().dims()[1];
     // get the roi_begin and roi_end values from random_object_bbox
-    int *roi_begin_batch = static_cast<int *>(_roi_start_tensor->buffer());
-    int *roi_end_batch = static_cast<int *>(_roi_end_tensor->buffer());
+    int *roi_begin_batch = static_cast<int *>(_random_object_bbox_box1_buf);
+    int *roi_end_batch = static_cast<int *>(_random_object_bbox_box2_buf);
     BatchRNG _rng = {seed, static_cast<int>(_user_batch_size)};
     for(uint i = 0; i < _user_batch_size; i++) {
         int sample_idx = i * input_dims;

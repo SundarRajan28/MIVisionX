@@ -122,14 +122,14 @@ void ParameterFactory::set_seed(unsigned seed) {
 }
 
 IntParam* ParameterFactory::create_uniform_int_rand_param(int start, int end) {
-    auto gen = new UniformRand<int>(start, end, _seed);
+    auto gen = new UniformRand<int>(start, end, get_seed_from_seedsequence());
     auto ret = new IntParam(gen, RocalParameterType::RANDOM_UNIFORM);
     _parameters.insert(gen);
     return ret;
 }
 
 FloatParam* ParameterFactory::create_uniform_float_rand_param(float start, float end) {
-    auto gen = new UniformRand<float>(start, end, _seed);
+    auto gen = new UniformRand<float>(start, end, get_seed_from_seedsequence());
     auto ret = new FloatParam(gen, RocalParameterType::RANDOM_UNIFORM);
     _parameters.insert(gen);
     return ret;
@@ -143,7 +143,7 @@ IntParam* ParameterFactory::create_custom_int_rand_param(const int* value, const
 }
 
 FloatParam* ParameterFactory::create_custom_float_rand_param(const float* value, const double* frequencies, size_t size) {
-    auto gen = new CustomRand<float>(value, frequencies, size, _seed);
+    auto gen = new CustomRand<float>(value, frequencies, size, get_seed_from_seedsequence());
     auto ret = new FloatParam(gen, RocalParameterType::RANDOM_CUSTOM);
     _parameters.insert(gen);
     return ret;
