@@ -1616,11 +1616,12 @@ class BatchRNG {
   std::vector<std::mt19937> rngs_;
 };
 
-TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_format, int k_largest, float foreground_prob) {
+TensorList *MasterGraph::random_object_bbox(Tensor *input, std::string output_format, int k_largest, float foreground_prob, bool cache_objects) {
     _random_object_bbox_label_tensor = input;
     _is_random_object_bbox = true;
     _k_largest = k_largest;
     _foreground_prob = foreground_prob;
+    _cache_boxes = cache_objects;
     auto output_dims = _random_object_bbox_label_tensor->num_of_dims() - 1;
     _random_object_bbox_output_format = output_format;
     if(output_format == "start_end" || output_format == "anchor_shape") {        
@@ -1680,23 +1681,44 @@ void MasterGraph::update_random_object_bbox() {
         auto label = input + i * single_image_size;
         int total_box = 0;
         bool fg = foreground(_rng[i]) < _foreground_prob;
-        if (fg) total_box = labelMergeFunc(label, roi_size, max_size, output_compact, _rng[i]);
+        CacheEntry *cache_entry = nullptr;
+        fast_hash_t hash = {};
+        if (_cache_boxes) {
+            fast_hash(hash, label, single_image_size * sizeof(u_int8_t));
+            cache_entry = &_boxes_cache[hash];
+        }
+        int selected_label = -1;
+        std::vector<std::vector<std::vector<unsigned>>> boxes;  // total - lo,hi - 4D
+        if (fg) {
+            if (cache_entry && !cache_entry->labels.empty()) {
+                auto labels_found = cache_entry->labels;
+                if(labels_found.size() == 1) { selected_label = *labels_found.begin(); }
+                else {
+                    std::uniform_int_distribution<int> class_dist{1, *labels_found.rbegin()};
+                    selected_label = class_dist(_rng[i]);
+                }
+            }
+            total_box = labelMergeFunc(label, selected_label, roi_size, max_size, output_compact, _rng[i], cache_entry);
+        }
         if (total_box) {
-            std::vector<std::vector<std::vector<unsigned>>> boxes;  // total - lo,hi - 4d
-            std::vector<std::pair<unsigned, unsigned>> ranges;      // totalbox - lo,hi
-            std::vector<unsigned> hits;
-            boxes.resize(total_box);
-            ranges.resize(total_box);
-            hits.resize((total_box / 32 + !!(total_box % 32)));
-            auto out_row = output_compact.data();
-            for (int d1 = 0; d1 < roi_size[0]; d1++) {
-                for (int d2 = 0; d2 < roi_size[1]; d2++) {
-                    for (int d3 = 0; d3 < roi_size[2]; d3++) {
-                        std::vector<int> origin{d1, d2, d3, 0};
-                        get_label_boundingboxes(boxes, ranges, hits, out_row, origin, roi_size[3]);
-                        out_row += roi_size[3];
+            if (!cache_entry || !cache_entry->Get(boxes, selected_label)) {
+                std::vector<std::pair<unsigned, unsigned>> ranges;      // totalbox - lo,hi
+                std::vector<unsigned> hits;
+                boxes.resize(total_box);
+                ranges.resize(total_box);
+                hits.resize((total_box / 32 + !!(total_box % 32)));
+                auto out_row = output_compact.data();
+                for (int d1 = 0; d1 < roi_size[0]; d1++) {
+                    for (int d2 = 0; d2 < roi_size[1]; d2++) {
+                        for (int d3 = 0; d3 < roi_size[2]; d3++) {
+                            std::vector<int> origin{d1, d2, d3, 0};
+                            get_label_boundingboxes(boxes, ranges, hits, out_row, origin, roi_size[3]);
+                            out_row += roi_size[3];
+                        }
                     }
                 }
+                if (cache_entry)
+                    cache_entry->Put(selected_label, boxes);
             }
             int chosen_box_idx = pick_box(boxes, _rng[i], _k_largest);
             if(chosen_box_idx == -1) { ERR("No ROI regions found in input. Setting input shape as ROI region"); }
@@ -1921,7 +1943,7 @@ void MasterGraph::mergeRow(int *label_base, const int *in1, const int *in2, int 
     }
 }
 
-int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rng) {
+int MasterGraph::labelMergeFunc(const u_int8_t *input, int &selected_label, std::vector<int> &size, std::vector<size_t> &max_size, std::vector<int> &output_compact, std::mt19937 &rng, CacheEntry *cache_entry) {
     int64_t total_buf_size = 1;
     for (auto val : size)
         total_buf_size *= val;
@@ -1930,15 +1952,23 @@ int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, s
     output_compact.resize(total_buf_size);
     std::fill(output_filtered.begin(), output_filtered.end(), 0);
     std::fill(output_compact.begin(), output_compact.end(), 0);
-    std::set<int> labels_found;
-    findLabels(input, labels_found, size, max_size);
-    labels_found.erase(0); // Removing background class
-    int selected_label;
-    if (!labels_found.size()) return 0;   // All labels belongs to background
-    if(labels_found.size() == 1) { selected_label = *labels_found.begin(); }
-    else {
-        std::uniform_int_distribution<int> class_dist{1, *labels_found.rbegin()};
-        selected_label = class_dist(rng);
+    if(selected_label == -1) {
+        std::set<int> labels_found;
+        findLabels(input, labels_found, size, max_size);
+        labels_found.erase(0); // Removing background class
+        if (!labels_found.size()) return 0;   // All labels belongs to background
+        if (cache_entry && cache_entry->labels.empty())
+            cache_entry->labels = labels_found;
+        if(labels_found.size() == 1) { selected_label = *labels_found.begin(); }
+        else {
+            std::uniform_int_distribution<int> class_dist{1, *labels_found.rbegin()};
+            selected_label = class_dist(rng);
+        }
+    }
+    if (cache_entry) {
+        if(cache_entry->total_boxes.count(selected_label)) {
+            return cache_entry->total_boxes[selected_label];
+        }
     }
     filterByLabel(input, output_filtered, size, max_size, selected_label);
     for (int i = 0; i < size[0]; i++) {
@@ -2006,6 +2036,8 @@ int MasterGraph::labelMergeFunc(const u_int8_t *input, std::vector<int> &size, s
         }
         label = remapped;
     }
+    if (cache_entry)
+        cache_entry->total_boxes[selected_label] = label_set.size();
     return label_set.size();
 }
 
