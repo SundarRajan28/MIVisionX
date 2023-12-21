@@ -112,11 +112,9 @@ void CircularBuffer::sync() {
 #elif ENABLE_HIP
     if (_output_mem_type == RocalMemType::HIP) {
         // copy memory to host only if needed
-        if (!_hip_canMapHostMemory) {
-            hipError_t err = hipMemcpy((void *)(_dev_buffer[_write_ptr]), _host_buffer_ptrs[_write_ptr], _output_mem_size, hipMemcpyHostToDevice);
-            if (err != hipSuccess) {
-                THROW("hipMemcpy of size " + TOSTR(_output_mem_size) + " failed " + TOSTR(err));
-            }
+        hipError_t err = hipMemcpy((void *)(_dev_buffer[_write_ptr]), _host_buffer_ptrs[_write_ptr], _output_mem_size, hipMemcpyHostToDevice);
+        if (err != hipSuccess) {
+            THROW("hipMemcpy of size " + TOSTR(_output_mem_size) + " failed " + TOSTR(err));
         }
     } else {
 #endif
@@ -206,21 +204,11 @@ void CircularBuffer::init(RocalMemType output_mem_type, size_t output_mem_size, 
                 THROW("Error HIP device resource is not initialized");
 
             for (size_t buffIdx = 0; buffIdx < _buff_depth; buffIdx++) {
-                hipError_t err = hipHostMalloc((void **)&_host_buffer_ptrs[buffIdx], _output_mem_size, hipHostMallocDefault /*hipHostMallocMapped|hipHostMallocWriteCombined*/);
-                if (err != hipSuccess || !_host_buffer_ptrs[buffIdx]) {
-                    THROW("hipHostMalloc of size " + TOSTR(_output_mem_size) + " failed " + TOSTR(err));
-                }
-                if (_hip_canMapHostMemory) {
-                    err = hipHostGetDevicePointer((void **)&_dev_buffer[buffIdx], _host_buffer_ptrs[buffIdx], 0);
-                    if (err != hipSuccess) {
-                        THROW("hipHostGetDevicePointer of size " + TOSTR(_output_mem_size) + " failed " + TOSTR(err));
-                    }
-                } else {
-                    // no zero_copy memory available: allocate device memory
-                    hipError_t err = hipMalloc((void **)&_dev_buffer[buffIdx], _output_mem_size);
-                    if (err != hipSuccess) {
-                        THROW("hipMalloc of size " + TOSTR(_output_mem_size) + " failed " + TOSTR(err));
-                    }
+                _host_buffer_ptrs[buffIdx] = (unsigned char *)aligned_alloc(MEM_ALIGNMENT, MEM_ALIGNMENT * (_output_mem_size / MEM_ALIGNMENT + 1));
+                // no zero_copy memory available: allocate device memory
+                hipError_t err = hipMalloc((void **)&_dev_buffer[buffIdx], _output_mem_size);
+                if (err != hipSuccess) {
+                    THROW("hipMalloc of size " + TOSTR(_output_mem_size) + " failed " + TOSTR(err));
                 }
             }
         } else {
@@ -250,13 +238,9 @@ void CircularBuffer::release() {
 #elif ENABLE_HIP
             if (_output_mem_type == RocalMemType::HIP) {
                 if (_host_buffer_ptrs[buffIdx]) {
-                    hipError_t err = hipHostFree((void *)_host_buffer_ptrs[buffIdx]);
-
-                    if (err != hipSuccess)
-                        ERR("Could not release hip host memory in the circular buffer " + TOSTR(err))
-                    _host_buffer_ptrs[buffIdx] = nullptr;
+                    free(_host_buffer_ptrs[buffIdx]);
                 }
-                if (!_hip_canMapHostMemory && _dev_buffer[buffIdx]) {
+                if (_dev_buffer[buffIdx]) {
                     hipError_t err = hipFree((void *)_dev_buffer[buffIdx]);
 
                     if (err != hipSuccess)
