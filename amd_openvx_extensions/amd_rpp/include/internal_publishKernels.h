@@ -166,6 +166,7 @@ vx_status NonSilentRegionDetection_Register(vx_context);
 vx_status Slice_Register(vx_context);
 vx_status Normalize_Register(vx_context);
 vx_status MelFilterBank_Register(vx_context);
+vx_status GaussianNoise_Register(vx_context);
 
 // kernel names
 #define VX_KERNEL_RPP_NOPBATCHPD_NAME                           "org.rpp.NopbatchPD"
@@ -284,6 +285,7 @@ vx_status MelFilterBank_Register(vx_context);
 #define VX_KERNEL_RPP_PIXELATE_NAME                             "org.rpp.Pixelate"
 #define VX_KERNEL_RPP_VIGNETTE_NAME                             "org.rpp.Vignette"
 #define VX_KERNEL_RPP_WARPAFFINE_NAME                           "org.rpp.WarpAffine"
+#define VX_KERNEL_RPP_GAUSSIAN_NOISE_NAME                       "org.rpp.GaussianNoise"
 #define VX_KERNEL_RPP_BRIGHTNESS_NAME                           "org.rpp.Brightness"
 #define VX_KERNEL_RPP_COPY_NAME                                 "org.rpp.Copy"
 #define VX_KERNEL_RPP_CROPMIRRORNORMALIZE_NAME                  "org.rpp.CropMirrorNormalize"
