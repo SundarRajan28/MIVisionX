@@ -1,4 +1,4 @@
-# Copyright (c) 2017 - 2023 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2017 - 2024 Advanced Micro Devices, Inc. All rights reserved.
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -73,22 +73,22 @@ if(GPU_SUPPORT AND "${BACKEND}" STREQUAL "HIP" AND OpenMP_FOUND)
         install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev NAMELINK_ONLY)
         install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT asan)
         # install MIVisionX include files -- {ROCM_PATH}/include/mivisionx/
-	    install(FILES include/vx_amd_custom.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mivisionx COMPONENT dev)
+        install(FILES include/vx_amd_custom.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mivisionx COMPONENT dev)
     else()
         message("-- ${Red}WARNING: HIP Not Found -- ${PROJECT_NAME} module excluded${ColourReset}")
     endif()
 else()
-  set(ENABLE_HIP 0)
-  add_definitions(-DENABLE_HIP=${ENABLE_HIP})
-  message("-- ${Red}WARNING: GPU Support Turned OFF -- ${PROJECT_NAME} built for CPU only${ColourReset}")
-  add_subdirectory(custom_lib)
-  add_library(${PROJECT_NAME} SHARED ${SOURCES} $<TARGET_OBJECTS:custom_lib>)
-  target_link_libraries(${PROJECT_NAME} openvx hip::host)
-  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
-  # install MIVisionX libs -- {ROCM_PATH}/lib
-  install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime NAMELINK_SKIP)
-  install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev NAMELINK_ONLY)
-  install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT asan)
-  # install include files -- {ROCM_PATH}/include/mivisionx/
-  install(FILES include/vx_amd_custom.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mivisionx COMPONENT dev)
+    set(ENABLE_HIP 0)
+    add_definitions(-DENABLE_HIP=${ENABLE_HIP})
+    message("-- ${Red}WARNING: GPU Support Turned OFF -- ${PROJECT_NAME} built for CPU only${ColourReset}")
+    add_subdirectory(custom_lib)
+    add_library(${PROJECT_NAME} SHARED ${SOURCES} $<TARGET_OBJECTS:custom_lib>)
+    target_link_libraries(${PROJECT_NAME} openvx hip::host)
+    set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+    # install MIVisionX libs -- {ROCM_PATH}/lib
+    install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime NAMELINK_SKIP)
+    install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev NAMELINK_ONLY)
+    install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT asan)
+    # install include files -- {ROCM_PATH}/include/mivisionx/
+    install(FILES include/vx_amd_custom.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mivisionx COMPONENT dev)
 endif()

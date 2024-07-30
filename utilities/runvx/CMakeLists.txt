@@ -1,4 +1,4 @@
-# Copyright (c) 2015 - 2023 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2015 - 2024 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -108,9 +108,9 @@ if(WIN32)
 else()
     target_link_libraries(runvx pthread)
     find_path(SSL_INCLUDE
-              NAMES openssl/hmac.h openssl/md5.h
-              HINTS /usr/local/opt/openssl/include /usr/include /usr/local/include /opt/local/include
-             )
+            NAMES openssl/hmac.h openssl/md5.h
+            HINTS /usr/local/opt/openssl/include /usr/include /usr/local/include /opt/local/include
+    )
     if(NOT "${SSL_INCLUDE}" STREQUAL "SSL_INCLUDE-NOTFOUND")
         include_directories(${SSL_INCLUDE})
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_OpenSSL=1")
