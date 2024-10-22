@@ -163,6 +163,7 @@ list(APPEND SOURCES
         source/tensor/Spectrogram.cpp
         source/tensor/TensorAddTensor.cpp
         source/tensor/TensorMulScalar.cpp
+        source/tensor/TensorAddScalar.cpp
         source/tensor/ToDecibels.cpp
         source/tensor/Vignette.cpp
         source/tensor/WarpAffine.cpp
@@ -186,9 +187,10 @@ elseif (GPU_SUPPORT AND "${BACKEND}" STREQUAL "HIP" AND HIP_FOUND)
     set(ENABLE_HIP 1)
     add_definitions(-DENABLE_OPENCL=${ENABLE_OPENCL} -DENABLE_HIP=${ENABLE_HIP} -DRPP_BACKEND_HIP=1 -D__HIP_PLATFORM_AMD__)
     include_directories(${ROCM_PATH}/include)
+    add_subdirectory(amd_rpp_hip)
     link_directories(${HIP_PATH}/lib)
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::host)
-    add_library(vx_rpp SHARED ${SOURCES})
+    add_library(vx_rpp SHARED ${SOURCES} $<TARGET_OBJECTS:amd_rpp_hip>)
     set_target_properties(openvx PROPERTIES LINKER_LANGUAGE CXX)
     set_target_properties(openvx PROPERTIES POSITION_INDEPENDENT_CODE ON)
     # TBD -- CHECK to FIX

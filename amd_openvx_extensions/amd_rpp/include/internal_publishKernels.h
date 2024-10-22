@@ -161,6 +161,7 @@ vx_status Downmix_Register(vx_context);
 vx_status ToDecibels_Register(vx_context);
 vx_status Resample_Register(vx_context);
 vx_status TensorMulScalar_Register(vx_context);
+vx_status TensorAddScalar_Register(vx_context);
 vx_status TensorAddTensor_Register(vx_context);
 vx_status NonSilentRegionDetection_Register(vx_context);
 vx_status Slice_Register(vx_context);
@@ -301,5 +302,6 @@ vx_status MelFilterBank_Register(vx_context);
 #define VX_KERNEL_RPP_SLICE_NAME                                "org.rpp.Slice"
 #define VX_KERNEL_RPP_NORMALIZE_NAME                            "org.rpp.Normalize"
 #define VX_KERNEL_RPP_MELFILTERBANK_NAME                        "org.rpp.MelFilterBank"
+#define VX_KERNEL_RPP_TENSORADDSCALAR_NAME                      "org.rpp.TensorAddScalar"
 
 #endif //_AMDVX_EXT__PUBLISH_KERNELS_H_

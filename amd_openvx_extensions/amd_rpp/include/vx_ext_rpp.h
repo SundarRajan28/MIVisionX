@@ -1945,6 +1945,16 @@ extern "C"
 	 */
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorMulScalar(vx_graph graph, vx_tensor pSrc, vx_tensor pDst, vx_scalar scalarValue);
 
+	/*! \brief [Graph] Adds a tensor and a scalar and returns the output.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_FLOAT32<tt> format data.
+	 * \param [out] pDst The output tensor in <tt>\ref VX_TYPE_FLOAT32<tt> format data.
+	 * \param [in] scalarValue The input scalar in <tt>\ref VX_TYPE_FLOAT32</tt> format containing the value used to add to the input tensor
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorAddScalar(vx_graph graph, vx_tensor pSrc, vx_tensor pDst, vx_scalar scalarValue);
+
 	/*! \brief [Graph] Adds two tensors and returns the output.
 	 * \ingroup group_amd_rpp
 	 * \param [in] graph The handle to the graph.
