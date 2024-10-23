@@ -72,7 +72,9 @@ enum vxTensorLayout {
     VX_NFCHW = 3,
     VX_NHW = 4,     // Audio/2D layout
     VX_NFT = 5,     // Frequency major, Used for Spectrogram/MelFilterBank
-    VX_NTF = 6      // Time major, Used for Spectrogram/MelFilterBank
+    VX_NTF = 6,      // Time major, Used for Spectrogram/MelFilterBank
+    VX_NDHWC = 7,
+    VX_NCDHW = 8
 };
 
 const std::map<vxTensorLayout, RpptLayout> tensorLayoutMapping = {
@@ -80,6 +82,8 @@ const std::map<vxTensorLayout, RpptLayout> tensorLayoutMapping = {
     {vxTensorLayout::VX_NCHW, RpptLayout::NCHW},
     {vxTensorLayout::VX_NFHWC, RpptLayout::NHWC},
     {vxTensorLayout::VX_NFCHW, RpptLayout::NCHW},
+    {vxTensorLayout::VX_NDHWC, RpptLayout::NDHWC},
+    {vxTensorLayout::VX_NCDHW, RpptLayout::NCDHW},
 #if RPP_AUDIO
     {vxTensorLayout::VX_NHW, RpptLayout::NHW},
     {vxTensorLayout::VX_NFT, RpptLayout::NFT},
