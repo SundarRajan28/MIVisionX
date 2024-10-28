@@ -125,6 +125,7 @@ vx_status WarpPerspectivebatchPD_Register(vx_context);
 vx_status Blend_Register(vx_context);
 vx_status Blur_Register(vx_context);
 vx_status Brightness_Register(vx_context);
+vx_status Cast_Register(vx_context);
 vx_status ColorTemperature_Register(vx_context);
 vx_status ColorTwist_Register(vx_context);
 vx_status Contrast_Register(vx_context);
@@ -257,6 +258,7 @@ vx_status TensorLog_Register(vx_context);
 #define VX_KERNEL_RPP_BLEND_NAME                                "org.rpp.Blend"
 #define VX_KERNEL_RPP_BLUR_NAME                                 "org.rpp.Blur"
 #define VX_KERNEL_RPP_BRIGHTNESS_NAME                           "org.rpp.Brightness"
+#define VX_KERNEL_RPP_CAST_NAME                                 "org.rpp.Cast"
 #define VX_KERNEL_RPP_COLORTEMPERATURE_NAME                     "org.rpp.ColorTemperature"
 #define VX_KERNEL_RPP_COLORTWIST_NAME                           "org.rpp.ColorTwist"
 #define VX_KERNEL_RPP_CONTRAST_NAME                             "org.rpp.Contrast"

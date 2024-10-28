@@ -127,6 +127,7 @@ list(APPEND SOURCES
         source/tensor/Blend.cpp
         source/tensor/Blur.cpp
         source/tensor/Brightness.cpp
+        source/tensor/Cast.cpp
         source/tensor/ColorTemperature.cpp
         source/tensor/ColorTwist.cpp
         source/tensor/Contrast.cpp
