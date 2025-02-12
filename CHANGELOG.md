@@ -4,6 +4,24 @@
 
 The full documentation for MIVisionX is available at [https://rocm.docs.amd.com/projects/MIVisionX/en/latest/doxygen/html/index.html](https://rocm.docs.amd.com/projects/MIVisionX/en/latest/doxygen/html/index.html)
 
+##  (unreleased) MIVisionX 3.2.0
+
+### Changed
+
+* Setup: OpenCV package install for Ubuntu
+* AMD Clang is now the default CXX and C compiler
+* The version of OpenMP included in the ROCm LLVM project is now used instead of `libomp-dev/devel`
+
+### Known issues
+
+* Installation on CentOS/RedHat/SLES requires the manual installation of the `FFMPEG` & `OpenCV` dev packages.
+* Hardware decode requires the ROCm `graphics` usecase.
+
+### Upcoming changes
+
+* Optimized audio augmentations support for VX_RPP
+
+
 ##  MIVisionX 3.1.0 for ROCm 6.3.0
 
 ### Changed
@@ -11,11 +29,13 @@ The full documentation for MIVisionX is available at [https://rocm.docs.amd.com/
 * Setup: rocdecode install disabled
 * Package: rocdecode dependency removed
 
+### Optimizations
+
+* Setup: only core dependency packages installed
+
 ### Known issues
 
-* Package installation requires the manual installation of OpenCV.
-* Installation on CentOS/RedHat/SLES requires the manual installation of the `FFMPEG Dev` package.
-* Hardware decode requires the ROCm `graphics` usecase.
+* MIVisionX package installation on RedHat/SLES requires the manual installation of the `OpenCV` and `FFMPEG` development package.
 
 ### Upcoming changes
 
@@ -49,7 +69,7 @@ The full documentation for MIVisionX is available at [https://rocm.docs.amd.com/
 ### Known issues
 
 * Package install requires manually installing OpenCV
-* Installationon CentOS/RedHat/SLES requires manually installing the `FFMPEG Dev` package
+* Installation CentOS/RedHat/SLES requires manually installing the `FFMPEG Dev` package
 * Hardware decode requires the ROCm `graphics` usecase.
 
 ### Upcoming changes
