@@ -2014,23 +2014,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppBlur(vx_graph graph, vx_tensor pSrc, vx
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxExtRppCast(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar layout) {
-    vx_node node = NULL;
-    vx_context context = vxGetContext((vx_reference)graph);
-    if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
-        vx_uint32 devType = getGraphAffinity(graph);
-        vx_scalar deviceType = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &devType);
-        vx_reference params[] = {
-            (vx_reference)pSrc,
-            (vx_reference)pSrcRoi,
-            (vx_reference)pDst,
-            (vx_reference)layout,
-            (vx_reference)deviceType};
-        node = createNode(graph, VX_KERNEL_RPP_CAST, params, 5);
-    }
-    return node;  
-}
-
 VX_API_ENTRY vx_node VX_API_CALL vxExtRppColorTwist(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pAlpha, vx_array pBeta, vx_array pHue, vx_array pSat, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType) {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
@@ -2720,22 +2703,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorMulScalar(vx_graph graph, vx_tens
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorAddScalar(vx_graph graph, vx_tensor pSrc, vx_tensor pDst, vx_scalar scalarValue) {
-    vx_node node = NULL;
-    vx_context context = vxGetContext((vx_reference)graph);
-    if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
-        vx_uint32 devtype = getGraphAffinity(graph);
-        vx_scalar deviceType = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &devtype);
-        vx_reference params[] = {
-            (vx_reference)pSrc,
-            (vx_reference)pDst,
-            (vx_reference)scalarValue,
-            (vx_reference)deviceType};
-        node = createNode(graph, VX_KERNEL_RPP_TENSORADDSCALAR, params, 4);
-    }
-    return node;
-}
-
 VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorAddTensor(vx_graph graph, vx_tensor pSrc1, vx_tensor pSrc2, vx_tensor pDst, vx_tensor pSrcRoi, vx_tensor pDstRoi) {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
@@ -2912,16 +2879,42 @@ void fillAudioDescriptionPtrFromDims(RpptDescPtr &descPtr, size_t *maxTensorDims
     }
 }
 
-void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericDescPtr, vxTensorLayout layout, size_t *maxTensorDims) {
+void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericDescPtr, vxTensorLayout layout, size_t *tensorDims) {
     switch(layout) {
+        case vxTensorLayout::VX_NHWC: {
+            genericDescPtr->numDims = 4;
+            genericDescPtr->dims[0] = tensorDims[0];
+            genericDescPtr->dims[1] = tensorDims[1];
+            genericDescPtr->dims[2] = tensorDims[2];
+            genericDescPtr->dims[3] = tensorDims[3];
+            genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[2] = genericDescPtr->dims[3];
+            genericDescPtr->strides[3] = 1;
+            genericDescPtr->layout = RpptLayout::NHWC;
+            break; 
+        }
+        case vxTensorLayout::VX_NCHW: {
+            genericDescPtr->numDims = 4;
+            genericDescPtr->dims[0] = tensorDims[0];
+            genericDescPtr->dims[1] = tensorDims[1];
+            genericDescPtr->dims[2] = tensorDims[2];
+            genericDescPtr->dims[3] = tensorDims[3];
+            genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[2] = genericDescPtr->dims[3];
+            genericDescPtr->strides[3] = 1;
+            genericDescPtr->layout = RpptLayout::NCHW;
+            break;
+        }
         case vxTensorLayout::VX_NDHWC: {
             genericDescPtr->numDims = 5;
             genericDescPtr->layout = RpptLayout::NDHWC;
-            genericDescPtr->dims[0] = maxTensorDims[0];
-            genericDescPtr->dims[1] = maxTensorDims[1];
-            genericDescPtr->dims[2] = maxTensorDims[2];
-            genericDescPtr->dims[3] = maxTensorDims[3];
-            genericDescPtr->dims[4] = maxTensorDims[4];
+            genericDescPtr->dims[0] = tensorDims[0];
+            genericDescPtr->dims[1] = tensorDims[1];
+            genericDescPtr->dims[2] = tensorDims[2];
+            genericDescPtr->dims[3] = tensorDims[3];
+            genericDescPtr->dims[4] = tensorDims[4];
 
             genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3] * genericDescPtr->dims[4];
             genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3] * genericDescPtr->dims[4];
@@ -2933,11 +2926,11 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericDescPtr, vxTen
         case vxTensorLayout::VX_NCDHW: {
             genericDescPtr->numDims = 5;
             genericDescPtr->layout = RpptLayout::NCDHW;
-            genericDescPtr->dims[0] = maxTensorDims[0];
-            genericDescPtr->dims[1] = maxTensorDims[1];
-            genericDescPtr->dims[2] = maxTensorDims[2];
-            genericDescPtr->dims[3] = maxTensorDims[3];
-            genericDescPtr->dims[4] = maxTensorDims[4];
+            genericDescPtr->dims[0] = tensorDims[0];
+            genericDescPtr->dims[1] = tensorDims[1];
+            genericDescPtr->dims[2] = tensorDims[2];
+            genericDescPtr->dims[3] = tensorDims[3];
+            genericDescPtr->dims[4] = tensorDims[4];
 
             genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3] * genericDescPtr->dims[4];
             genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3] * genericDescPtr->dims[4];
@@ -2946,13 +2939,38 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericDescPtr, vxTen
             genericDescPtr->strides[4] = 1;
             break;
         }
+        case vxTensorLayout::VX_NFHWC: {
+            genericDescPtr->numDims = 4;
+            genericDescPtr->dims[0] = tensorDims[0] * tensorDims[1];
+            genericDescPtr->dims[1] = tensorDims[2];
+            genericDescPtr->dims[2] = tensorDims[3];
+            genericDescPtr->dims[3] = tensorDims[4];
+            genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[2] = genericDescPtr->dims[3];
+            genericDescPtr->strides[3] = 1;
+            genericDescPtr->layout = RpptLayout::NHWC;
+            break;
+        }
+        case vxTensorLayout::VX_NFCHW: {
+            genericDescPtr->numDims = 4;
+            genericDescPtr->dims[0]= tensorDims[0] * tensorDims[1];
+            genericDescPtr->dims[1] = tensorDims[3];
+            genericDescPtr->dims[2] = tensorDims[4];
+            genericDescPtr->dims[3] = tensorDims[2];
+            genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3];
+            genericDescPtr->strides[2] = genericDescPtr->dims[3];
+            genericDescPtr->strides[3] = 1;
+            genericDescPtr->layout = RpptLayout::NCHW;
+            break;
+        }
         case vxTensorLayout::VX_NHW:
         case vxTensorLayout::VX_NFT:
-        case vxTensorLayout::VX_NTF: {
-            genericDescPtr->layout = tensorLayoutMapping.at(layout);
-            genericDescPtr->dims[0] = maxTensorDims[0];
-            genericDescPtr->dims[1] = maxTensorDims[1];
-            genericDescPtr->dims[2] = maxTensorDims[2];
+        case vxTensorLayout::VX_NTF: {}
+            genericDescPtr->dims[0] = tensorDims[0];
+            genericDescPtr->dims[1] = tensorDims[1];
+            genericDescPtr->dims[2] = tensorDims[2];
             genericDescPtr->dims[3] = 1;
             if(genericDescPtr->dims[2] == 1)
                 genericDescPtr->numDims = 2;
@@ -2961,8 +2979,12 @@ void fillGenericDescriptionPtrfromDims(RpptGenericDescPtr &genericDescPtr, vxTen
             genericDescPtr->strides[0] = genericDescPtr->dims[1] * genericDescPtr->dims[2] * genericDescPtr->dims[3];
             genericDescPtr->strides[1] = genericDescPtr->dims[2] * genericDescPtr->dims[3];
             genericDescPtr->strides[2] = genericDescPtr->dims[3];
+            if(tensorLayoutMapping.find(layout) != tensorLayoutMapping.end()) {
+                genericDescPtr->layout = tensorLayoutMapping.at(layout);
+            } else {
+                throw std::runtime_error("Invalid layout value in fillGenericDescriptionPtrfromDims");
+            }
             break;
-        }
         default: {
             throw std::runtime_error("Invalid layout value in fillGenericDescriptionPtrfromDims.");
         }

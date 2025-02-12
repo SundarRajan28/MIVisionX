@@ -125,7 +125,6 @@ vx_status WarpPerspectivebatchPD_Register(vx_context);
 vx_status Blend_Register(vx_context);
 vx_status Blur_Register(vx_context);
 vx_status Brightness_Register(vx_context);
-vx_status Cast_Register(vx_context);
 vx_status ColorTemperature_Register(vx_context);
 vx_status ColorTwist_Register(vx_context);
 vx_status Contrast_Register(vx_context);
@@ -162,7 +161,6 @@ vx_status Downmix_Register(vx_context);
 vx_status ToDecibels_Register(vx_context);
 vx_status Resample_Register(vx_context);
 vx_status TensorMulScalar_Register(vx_context);
-vx_status TensorAddScalar_Register(vx_context);
 vx_status TensorAddTensor_Register(vx_context);
 vx_status NonSilentRegionDetection_Register(vx_context);
 vx_status Slice_Register(vx_context);
@@ -258,7 +256,6 @@ vx_status TensorLog_Register(vx_context);
 #define VX_KERNEL_RPP_BLEND_NAME                                "org.rpp.Blend"
 #define VX_KERNEL_RPP_BLUR_NAME                                 "org.rpp.Blur"
 #define VX_KERNEL_RPP_BRIGHTNESS_NAME                           "org.rpp.Brightness"
-#define VX_KERNEL_RPP_CAST_NAME                                 "org.rpp.Cast"
 #define VX_KERNEL_RPP_COLORTEMPERATURE_NAME                     "org.rpp.ColorTemperature"
 #define VX_KERNEL_RPP_COLORTWIST_NAME                           "org.rpp.ColorTwist"
 #define VX_KERNEL_RPP_CONTRAST_NAME                             "org.rpp.Contrast"
@@ -305,7 +302,6 @@ vx_status TensorLog_Register(vx_context);
 #define VX_KERNEL_RPP_SLICE_NAME                                "org.rpp.Slice"
 #define VX_KERNEL_RPP_NORMALIZE_NAME                            "org.rpp.Normalize"
 #define VX_KERNEL_RPP_MELFILTERBANK_NAME                        "org.rpp.MelFilterBank"
-#define VX_KERNEL_RPP_TENSORADDSCALAR_NAME                      "org.rpp.TensorAddScalar"
 #define VX_KERNEL_RPP_TENSORLOG_NAME                            "org.rpp.TensorLog"
 
 #endif //_AMDVX_EXT__PUBLISH_KERNELS_H_

@@ -131,7 +131,6 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Blend_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Blur_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Brightness_Register));
-    STATUS_ERROR_CHECK(ADD_KERNEL(Cast_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ColorTemperature_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ColorTwist_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Contrast_Register));
@@ -172,7 +171,6 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Slice_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Normalize_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(MelFilterBank_Register));
-    STATUS_ERROR_CHECK(ADD_KERNEL(TensorAddScalar_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(TensorLog_Register));
     return status;
 }
