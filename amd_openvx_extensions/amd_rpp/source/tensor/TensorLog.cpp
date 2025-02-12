@@ -69,7 +69,6 @@ static vx_status VX_CALLBACK refreshTensorLog(vx_node node, const vx_reference *
             auto nDim = numDims - 1;
             hipHostMalloc(&data->pSrcRoi, sizeof(data->inputTensorDims[0] * nDim * 2 * sizeof(Rpp32u)));
             unsigned *src_roi = reinterpret_cast<unsigned *>(roi_tensor_ptr);
-            static_cast<unsigned *>(roi_tensor_ptr);
             for (unsigned i = 0, j = 0; i < data->inputTensorDims[0]; i++, j += 8) {
                 for (unsigned j = 0; j < nDim; j++) {
                 auto index = i * nDim * 2;
