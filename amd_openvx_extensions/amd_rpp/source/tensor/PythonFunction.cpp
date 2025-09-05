@@ -33,6 +33,10 @@ THE SOFTWARE.
 #define ROCAL_PY_MAX_TENSOR_DIMS 8
 #endif
 
+#ifndef ROCAL_PY_MAX_INPUTS
+#define ROCAL_PY_MAX_INPUTS 8
+#endif
+
 typedef struct RocalPyTensorDesc_ {
     size_t num_dims;
     size_t shape[ROCAL_PY_MAX_TENSOR_DIMS];
@@ -43,12 +47,14 @@ typedef struct RocalPyTensorDesc_ {
 
 typedef struct RocalPyExecParams_ {
     uint64_t function_id;
-    RocalPyTensorDesc in_desc;
-    RocalPyTensorDesc out_desc;
+    uint32_t num_inputs;         /* Number of input tensors */
+    RocalPyTensorDesc in_desc[ROCAL_PY_MAX_INPUTS];  /* Input tensor descriptions */
+    RocalPyTensorDesc out_desc;  /* Output tensor description */
     uint32_t device_type;
 } RocalPyExecParams;
 
 typedef vx_status (*rocal_process_python_function_fn)(void *src_ptr, void *dst_ptr, const RocalPyExecParams *params);
+typedef vx_status (*rocal_process_python_function_multi_fn)(void **src_ptrs, void *dst_ptr, const RocalPyExecParams *params);
 
 // Map RpptDataType -> OpenVX type enum
 vx_enum getVxDataType(RpptDataType dataType) {
@@ -169,17 +175,18 @@ static vx_status VX_CALLBACK processPythonFunction(vx_node node, const vx_refere
 
     RocalPyExecParams p{};
     p.function_id = data->function_id;
+    p.num_inputs = 1;  // Single input for legacy compatibility
     p.device_type = data->deviceType;
 
-    // in_desc
-    p.in_desc.num_dims = data->pSrcGenericDesc->numDims;
-    p.in_desc.dtype = getVxDataType(data->pSrcGenericDesc->dataType);
-    p.in_desc.layout = static_cast<int>(data->inputLayout);
+    // in_desc[0] - use first element for single input
+    p.in_desc[0].num_dims = data->pSrcGenericDesc->numDims;
+    p.in_desc[0].dtype = getVxDataType(data->pSrcGenericDesc->dataType);
+    p.in_desc[0].layout = static_cast<int>(data->inputLayout);
     size_t in_itemsize = getItemSize(data->pSrcGenericDesc->dataType);
     if (in_itemsize == 0) return VX_ERROR_INVALID_TYPE;
-    for (size_t i = 0; i < p.in_desc.num_dims; ++i) {
-        p.in_desc.shape[i] = data->inputTensorDims[i];
-        p.in_desc.strides[i] = static_cast<size_t>(data->pSrcGenericDesc->strides[i]) / in_itemsize;
+    for (size_t i = 0; i < p.in_desc[0].num_dims; ++i) {
+        p.in_desc[0].shape[i] = data->inputTensorDims[i];
+        p.in_desc[0].strides[i] = static_cast<size_t>(data->pSrcGenericDesc->strides[i]) / in_itemsize;
     }
 
     // out_desc
