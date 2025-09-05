@@ -1906,17 +1906,66 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, vx_tensor p
     vx_context context = vxGetContext((vx_reference)graph);
     if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
         vx_uint32 devType = getGraphAffinity(graph);
-        vx_scalar deviceType = vxCreateScalar(vxGetContext((vx_reference)graph), VX_TYPE_UINT32, &devType);
-        vx_reference params[] = {
-            (vx_reference)pSrc,
-            (vx_reference)pDst,
-            (vx_reference)bridgeFnPtr,
-            (vx_reference)functionId,
-            (vx_reference)inputLayout,
-            (vx_reference)outputLayout,
-            (vx_reference)deviceType
+        vx_scalar deviceType = vxCreateScalar(context, VX_TYPE_UINT32, &devType);
+        vx_int32 numInputsVal = 1;
+        vx_scalar numInputsScalar = vxCreateScalar(context, VX_TYPE_INT32, &numInputsVal);
+
+        // Parameter layout:
+        // 0: pSrc0, 1: pDst, 2: bridgeFnPtr, 3: functionId, 4: inputLayout, 5: outputLayout,
+        // 6: deviceType, 7: numInputs, 8..14: pSrc1..pSrc7 (optional)
+        vx_reference params[15] = {
+            (vx_reference)pSrc,             // 0
+            (vx_reference)pDst,             // 1
+            (vx_reference)bridgeFnPtr,      // 2
+            (vx_reference)functionId,       // 3
+            (vx_reference)inputLayout,      // 4
+            (vx_reference)outputLayout,     // 5
+            (vx_reference)deviceType,       // 6
+            (vx_reference)numInputsScalar,  // 7
+            NULL,                           // 8
+            NULL,                           // 9
+            NULL,                           // 10
+            NULL,                           // 11
+            NULL,                           // 12
+            NULL,                           // 13
+            NULL                            // 14
         };
-        node = createNode(graph, VX_KERNEL_PYTHONFUNCTION, params, 7);
+        node = createNode(graph, VX_KERNEL_PYTHONFUNCTION, params, 15);
+    }
+    return node;
+}
+
+VX_API_ENTRY vx_node VX_API_CALL vxExtPythonFunctionMulti(vx_graph graph, const vx_tensor* pSrcs, vx_uint32 numInputs, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout) {
+    vx_node node = NULL;
+    vx_context context = vxGetContext((vx_reference)graph);
+    const vx_uint32 kMaxInputs = 8;
+    if (!pSrcs || numInputs < 1 || numInputs > kMaxInputs)
+        return node;
+
+    if (vxGetStatus((vx_reference)context) == VX_SUCCESS) {
+        vx_uint32 devType = getGraphAffinity(graph);
+        vx_scalar deviceType = vxCreateScalar(context, VX_TYPE_UINT32, &devType);
+        vx_int32 numInputsVal = (vx_int32)numInputs;
+        vx_scalar numInputsScalar = vxCreateScalar(context, VX_TYPE_INT32, &numInputsVal);
+
+        vx_reference params[15] = {
+            (vx_reference)pSrcs[0],         // 0
+            (vx_reference)pDst,             // 1
+            (vx_reference)bridgeFnPtr,      // 2
+            (vx_reference)functionId,       // 3
+            (vx_reference)inputLayout,      // 4
+            (vx_reference)outputLayout,     // 5
+            (vx_reference)deviceType,       // 6
+            (vx_reference)numInputsScalar,  // 7
+            NULL, NULL, NULL, NULL, NULL, NULL, NULL // 8..14
+        };
+        // Fill additional inputs at indices 8..14
+        for (vx_uint32 i = 1; i < numInputs; ++i) {
+            vx_uint32 idx = 8 + (i - 1);
+            params[idx] = (vx_reference)pSrcs[i];
+        }
+
+        node = createNode(graph, VX_KERNEL_PYTHONFUNCTION, params, 15);
     }
     return node;
 }

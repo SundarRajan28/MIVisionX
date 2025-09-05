@@ -93,21 +93,26 @@ size_t getItemSize(RpptDataType dataType) {
 
 struct PythonFunctionLocalData {
     vx_uint32 deviceType;
-    RppPtr_t pSrc;
+    vx_uint32 numInputs;
+
+    // Inputs
+    RppPtr_t pSrcs[ROCAL_PY_MAX_INPUTS];
     RppPtr_t pDst;
-    RpptGenericDescPtr pSrcGenericDesc;
+
+    // Descriptors
+    RpptGenericDescPtr pSrcGenericDesc[ROCAL_PY_MAX_INPUTS];
     RpptGenericDescPtr pDstGenericDesc;
-    RpptROI *pSrcRoi;
-    RpptRoiType roiType;
     vxTensorLayout inputLayout;
     vxTensorLayout outputLayout;
     vx_uint32 dtype;
-    size_t inputTensorDims[RPP_MAX_TENSOR_DIMS];
+
+    // Shapes
+    size_t inputTensorDims[ROCAL_PY_MAX_INPUTS][RPP_MAX_TENSOR_DIMS];
     size_t outputTensorDims[RPP_MAX_TENSOR_DIMS];
 
     // Bridge info
     uint64_t function_id;
-    rocal_process_python_function_fn bridge_fn;
+    uint64_t bridge_fn_ptr;
 };
 
 static vx_status VX_CALLBACK refreshPythonFunction(vx_node node, const vx_reference *parameters, vx_uint32 /*num*/, PythonFunctionLocalData *data) {
@@ -117,28 +122,61 @@ static vx_status VX_CALLBACK refreshPythonFunction(vx_node node, const vx_refere
     }
 
     vx_status status = VX_SUCCESS;
-    STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_BUFFER_HOST, &data->pSrc, sizeof(data->pSrc)));
+
+    // Destination buffer
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_BUFFER_HOST, &data->pDst, sizeof(data->pDst)));
+
+    // Source buffers
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        vx_uint32 paramIndex = (i == 0) ? 0u : (8u + (i - 1u));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[paramIndex], VX_TENSOR_BUFFER_HOST, &data->pSrcs[i], sizeof(data->pSrcs[i])));
+    }
 
     return status;
 }
 
 static vx_status VX_CALLBACK validatePythonFunction(vx_node /*node*/, const vx_reference parameters[], vx_uint32 /*num*/, vx_meta_format metas[]) {
     vx_enum scalar_type;
+    // 2: bridgeFnPtr (UINT64)
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[2], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
     if (scalar_type != VX_TYPE_UINT64)
         return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #3 (bridgeFnPtr) must be UINT64\n");
+    // 3: functionId (UINT64)
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[3], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
     if (scalar_type != VX_TYPE_UINT64)
         return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #4 (functionId) must be UINT64\n");
+    // 4,5: layouts (INT32)
     for (int idx : {4, 5}) {
         STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[idx], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
         if (scalar_type != VX_TYPE_INT32)
             return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #%d must be INT32\n", idx + 1);
     }
+    // 6: deviceType (UINT32)
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[6], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
     if (scalar_type != VX_TYPE_UINT32)
         return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #7 (deviceType) must be UINT32\n");
+    // 7: numInputs (INT32)
+    STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[7], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
+    if (scalar_type != VX_TYPE_INT32)
+        return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #8 (numInputs) must be INT32\n");
+
+    // Read numInputs value
+    vx_int32 numInputs = 0;
+    STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[7], &numInputs, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+    if (numInputs < 1 || numInputs > (vx_int32)ROCAL_PY_MAX_INPUTS) {
+        return ERRMSG(VX_ERROR_INVALID_VALUE, "PythonFunction validate: numInputs out of range [1,%d]\n", ROCAL_PY_MAX_INPUTS);
+    }
+    // Ensure additional inputs exist as per numInputs
+    for (vx_int32 i = 1; i < numInputs; ++i) {
+        vx_uint32 idx = 8u + (vx_uint32)(i - 1);
+        if (parameters[idx] == nullptr)
+            return ERRMSG(VX_ERROR_INVALID_PARAMETERS, "PythonFunction validate: missing input tensor at index %u (param #%u)\n", i, idx + 1);
+        // Ensure type is TENSOR
+        vx_enum ref_type = 0;
+        STATUS_ERROR_CHECK(vxQueryReference(parameters[idx], VX_REFERENCE_TYPE, &ref_type, sizeof(ref_type)));
+        if (ref_type != VX_TYPE_TENSOR)
+            return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #%u must be TENSOR\n", idx + 1);
+    }
 
     // Mirror output meta from provided output tensor (created by API with proper dims/dtype)
     size_t num_dims = 0;
@@ -162,31 +200,39 @@ static vx_status VX_CALLBACK processPythonFunction(vx_node node, const vx_refere
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
     STATUS_ERROR_CHECK(refreshPythonFunction(node, parameters, num, data));
 
-    if (!data->pSrc || !data->pDst)
-        return ERRMSG(VX_ERROR_INVALID_REFERENCE, "PythonFunction process: null tensor buffers\n");
+    if (!data->pDst)
+        return ERRMSG(VX_ERROR_INVALID_REFERENCE, "PythonFunction process: null dst tensor buffer\n");
+
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        if (!data->pSrcs[i])
+            return ERRMSG(VX_ERROR_INVALID_REFERENCE, "PythonFunction process: null src tensor buffer at index %u\n", i);
+    }
 
     if (data->deviceType == AGO_TARGET_AFFINITY_GPU)
         return VX_ERROR_NOT_IMPLEMENTED;
 
-    if (!data->bridge_fn) {
+    if (!data->bridge_fn_ptr) {
         vxAddLogEntry((vx_reference)node, VX_ERROR_NOT_IMPLEMENTED, "PythonFunction bridge function not available. Build rocAL with Python bridge.\n");
         return VX_ERROR_NOT_IMPLEMENTED;
     }
 
     RocalPyExecParams p{};
     p.function_id = data->function_id;
-    p.num_inputs = 1;  // Single input for legacy compatibility
+    p.num_inputs = data->numInputs;
     p.device_type = data->deviceType;
 
-    // in_desc[0] - use first element for single input
-    p.in_desc[0].num_dims = data->pSrcGenericDesc->numDims;
-    p.in_desc[0].dtype = getVxDataType(data->pSrcGenericDesc->dataType);
-    p.in_desc[0].layout = static_cast<int>(data->inputLayout);
-    size_t in_itemsize = getItemSize(data->pSrcGenericDesc->dataType);
-    if (in_itemsize == 0) return VX_ERROR_INVALID_TYPE;
-    for (size_t i = 0; i < p.in_desc[0].num_dims; ++i) {
-        p.in_desc[0].shape[i] = data->inputTensorDims[i];
-        p.in_desc[0].strides[i] = static_cast<size_t>(data->pSrcGenericDesc->strides[i]) / in_itemsize;
+    // in_desc
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        RpptGenericDescPtr g = data->pSrcGenericDesc[i];
+        p.in_desc[i].num_dims = g->numDims;
+        p.in_desc[i].dtype = getVxDataType(g->dataType);
+        p.in_desc[i].layout = static_cast<int>(data->inputLayout);
+        size_t in_itemsize = getItemSize(g->dataType);
+        if (in_itemsize == 0) return VX_ERROR_INVALID_TYPE;
+        for (size_t d = 0; d < p.in_desc[i].num_dims; ++d) {
+            p.in_desc[i].shape[d] = data->inputTensorDims[i][d];
+            p.in_desc[i].strides[d] = static_cast<size_t>(g->strides[d]);
+        }
     }
 
     // out_desc
@@ -195,12 +241,21 @@ static vx_status VX_CALLBACK processPythonFunction(vx_node node, const vx_refere
     p.out_desc.layout = static_cast<int>(data->outputLayout);
     size_t out_itemsize = getItemSize(data->pDstGenericDesc->dataType);
     if (out_itemsize == 0) return VX_ERROR_INVALID_TYPE;
-    for (size_t i = 0; i < p.out_desc.num_dims; ++i) {
-        p.out_desc.shape[i] = data->outputTensorDims[i];
-        p.out_desc.strides[i] = static_cast<size_t>(data->pDstGenericDesc->strides[i]) / out_itemsize;
+    for (size_t d = 0; d < p.out_desc.num_dims; ++d) {
+        p.out_desc.shape[d] = data->outputTensorDims[d];
+        p.out_desc.strides[d] = static_cast<size_t>(data->pDstGenericDesc->strides[d]);
     }
 
-    vx_status st = data->bridge_fn(data->pSrc, data->pDst, &p);
+    // Dispatch to the appropriate bridge
+    vx_status st = VX_FAILURE;
+    if (data->numInputs == 1) {
+        auto fn = reinterpret_cast<rocal_process_python_function_fn>(static_cast<uintptr_t>(data->bridge_fn_ptr));
+        st = fn(data->pSrcs[0], data->pDst, &p);
+    } else {
+        auto fn = reinterpret_cast<rocal_process_python_function_multi_fn>(static_cast<uintptr_t>(data->bridge_fn_ptr));
+        st = fn(reinterpret_cast<void**>(data->pSrcs), data->pDst, &p);
+    }
+
     if (st != VX_SUCCESS) {
         vxAddLogEntry((vx_reference)node, st, "PythonFunction bridge returned error: %d\n", st);
         return st;
@@ -211,28 +266,40 @@ static vx_status VX_CALLBACK processPythonFunction(vx_node node, const vx_refere
 static vx_status VX_CALLBACK initializePythonFunction(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     (void)num;
     auto *data = new PythonFunctionLocalData;
-    vx_int32 input_layout = 0, output_layout = 0;
-    vx_enum input_tensor_dtype = 0, output_tensor_dtype = 0;
+    memset(data, 0, sizeof(PythonFunctionLocalData));
 
+    vx_int32 input_layout = 0, output_layout = 0;
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[4], &input_layout, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[5], &output_layout, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[6], &data->deviceType, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     data->inputLayout = static_cast<vxTensorLayout>(input_layout);
     data->outputLayout = static_cast<vxTensorLayout>(output_layout);
 
+    // numInputs
+    vx_int32 numInputs = 1;
+    STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[7], &numInputs, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+    data->numInputs = static_cast<vx_uint32>(numInputs);
+
     // Allocate descriptors (host)
-    data->pSrcGenericDesc = new RpptGenericDesc;
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        data->pSrcGenericDesc[i] = new RpptGenericDesc;
+    }
     data->pDstGenericDesc = new RpptGenericDesc;
 
-    // Input tensor info
-    STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_NUMBER_OF_DIMS, &data->pSrcGenericDesc->numDims, sizeof(data->pSrcGenericDesc->numDims)));
-    STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_DIMS, &data->inputTensorDims, sizeof(vx_size) * data->pSrcGenericDesc->numDims));
-    STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[0], VX_TENSOR_DATA_TYPE, &input_tensor_dtype, sizeof(input_tensor_dtype)));
-    data->pSrcGenericDesc->dataType = getRpptDataType(input_tensor_dtype);
-    data->pSrcGenericDesc->offsetInBytes = 0;
-    fillGenericDescriptionPtrfromDims(data->pSrcGenericDesc, data->inputLayout, data->inputTensorDims);
+    // Input tensor info per input
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        vx_uint32 paramIndex = (i == 0) ? 0u : (8u + (i - 1u));
+        vx_enum input_tensor_dtype = 0;
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[paramIndex], VX_TENSOR_NUMBER_OF_DIMS, &data->pSrcGenericDesc[i]->numDims, sizeof(data->pSrcGenericDesc[i]->numDims)));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[paramIndex], VX_TENSOR_DIMS, &data->inputTensorDims[i], sizeof(vx_size) * data->pSrcGenericDesc[i]->numDims));
+        STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[paramIndex], VX_TENSOR_DATA_TYPE, &input_tensor_dtype, sizeof(input_tensor_dtype)));
+        data->pSrcGenericDesc[i]->dataType = getRpptDataType(input_tensor_dtype);
+        data->pSrcGenericDesc[i]->offsetInBytes = 0;
+        fillGenericDescriptionPtrfromDims(data->pSrcGenericDesc[i], data->inputLayout, data->inputTensorDims[i]);
+    }
 
     // Output tensor info
+    vx_enum output_tensor_dtype = 0;
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_NUMBER_OF_DIMS, &data->pDstGenericDesc->numDims, sizeof(data->pDstGenericDesc->numDims)));
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_DIMS, &data->outputTensorDims, sizeof(vx_size) * data->pDstGenericDesc->numDims));
     STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[1], VX_TENSOR_DATA_TYPE, &output_tensor_dtype, sizeof(output_tensor_dtype)));
@@ -240,14 +307,15 @@ static vx_status VX_CALLBACK initializePythonFunction(vx_node node, const vx_ref
     data->pDstGenericDesc->offsetInBytes = 0;
     fillGenericDescriptionPtrfromDims(data->pDstGenericDesc, data->outputLayout, data->outputTensorDims);
 
-
-    // Get bridge function pointer from scalar
+    // Get bridge function pointer from scalar (store raw)
     uint64_t bridge_fn_ptr = 0;
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[2], &bridge_fn_ptr, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
-    data->bridge_fn = reinterpret_cast<rocal_process_python_function_fn>(static_cast<uintptr_t>(bridge_fn_ptr));
-
-    if (!data->bridge_fn) {
+    data->bridge_fn_ptr = bridge_fn_ptr;
+    if (!data->bridge_fn_ptr) {
         vxAddLogEntry((vx_reference)node, VX_ERROR_INVALID_REFERENCE, "PythonFunction bridge function pointer is null.\n");
+        delete data->pDstGenericDesc;
+        for (vx_uint32 i = 0; i < data->numInputs; ++i) delete data->pSrcGenericDesc[i];
+        delete data;
         return VX_ERROR_INVALID_REFERENCE;
     }
 
@@ -256,7 +324,7 @@ static vx_status VX_CALLBACK initializePythonFunction(vx_node node, const vx_ref
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[3], &function_id, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     data->function_id = static_cast<uint64_t>(function_id);
 
-    // Call refreshPythonFunction
+    // Call refresh and store local data
     STATUS_ERROR_CHECK(refreshPythonFunction(node, parameters, num, data));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
 
@@ -268,7 +336,9 @@ static vx_status VX_CALLBACK uninitializePythonFunction(vx_node node, const vx_r
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
     if (!data) return VX_SUCCESS;
 
-    if (data->pSrcGenericDesc) delete data->pSrcGenericDesc;
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        if (data->pSrcGenericDesc[i]) delete data->pSrcGenericDesc[i];
+    }
     if (data->pDstGenericDesc) delete data->pDstGenericDesc;
 
     delete data;
@@ -291,7 +361,7 @@ vx_status PythonFunction_Register(vx_context context) {
     vx_kernel kernel = vxAddUserKernel(context, "org.rpp.PythonFunction",
                                        VX_KERNEL_PYTHONFUNCTION,
                                        processPythonFunction,
-                                       7,
+                                       15,
                                        validatePythonFunction,
                                        initializePythonFunction,
                                        uninitializePythonFunction);
@@ -307,14 +377,20 @@ vx_status PythonFunction_Register(vx_context context) {
     amd_kernel_query_target_support_f query_f = query_target_support;
     STATUS_ERROR_CHECK(vxSetKernelAttribute(kernel, VX_KERNEL_ATTRIBUTE_AMD_QUERY_TARGET_SUPPORT, &query_f, sizeof(query_f)));
 
-    // Parameters: pSrc, pDst, functionPtr, functionId, inputLayout, outputLayout, deviceType
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 0, VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED));
+    // Parameters: pSrc0, pDst, bridgeFnPtr, functionId, inputLayout, outputLayout, deviceType, numInputs, pSrc1..pSrc7(optional)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 0, VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED));
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 1, VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED));
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 2, VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED));
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 3, VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED));
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 4, VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED));
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 5, VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED));
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 6, VX_INPUT, VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED));
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 2, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // bridgeFnPtr (UINT64)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 3, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // functionId (UINT64)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 4, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // inputLayout (INT32)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 5, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // outputLayout (INT32)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 6, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // deviceType (UINT32)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 7, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // numInputs (INT32)
+    // Optional extra inputs
+    for (vx_uint32 i = 0; i < ROCAL_PY_MAX_INPUTS - 1; ++i) {
+        STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 8 + i, VX_INPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_OPTIONAL));
+    }
+
     STATUS_ERROR_CHECK(vxFinalizeKernel(kernel));
     if (status != VX_SUCCESS) {
         vxRemoveKernel(kernel);

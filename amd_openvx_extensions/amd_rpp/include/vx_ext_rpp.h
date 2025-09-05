@@ -2056,6 +2056,7 @@ extern "C"
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppLog1p(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar inputLayout);
 
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, vx_tensor pSrc, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout);
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtPythonFunctionMulti(vx_graph graph, const vx_tensor* pSrcs, vx_uint32 numInputs, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout);
 
 #ifdef __cplusplus
 }
