@@ -38,23 +38,22 @@ THE SOFTWARE.
 #endif
 
 typedef struct RocalPyTensorDesc_ {
-    size_t num_dims;
-    size_t shape[ROCAL_PY_MAX_TENSOR_DIMS];
-    size_t strides[ROCAL_PY_MAX_TENSOR_DIMS];  // in elements
-    vx_enum dtype;
-    int layout;
+    size_t num_dims;                          /* e.g., 4 for [N,H,W,C] */
+    size_t shape[ROCAL_PY_MAX_TENSOR_DIMS];   /* lengths per dimension */
+    size_t strides[ROCAL_PY_MAX_TENSOR_DIMS]; /* strides in elements */
+    vx_enum dtype;                            /* OpenVX scalar type enum */
+    int layout;                               /* matches rocAL/vx tensor layout enums */
 } RocalPyTensorDesc;
 
 typedef struct RocalPyExecParams_ {
-    uint64_t function_id;
+    uint64_t function_id;        /* CPython id(function), provided by python front-end */
     uint32_t num_inputs;         /* Number of input tensors */
     RocalPyTensorDesc in_desc[ROCAL_PY_MAX_INPUTS];  /* Input tensor descriptions */
     RocalPyTensorDesc out_desc;  /* Output tensor description */
-    uint32_t device_type;
+    uint32_t device_type;        /* AGO_TARGET_AFFINITY_{CPU,GPU}; currently CPU-only */
 } RocalPyExecParams;
 
-typedef vx_status (*rocal_process_python_function_fn)(void *src_ptr, void *dst_ptr, const RocalPyExecParams *params);
-typedef vx_status (*rocal_process_python_function_multi_fn)(void **src_ptrs, void *dst_ptr, const RocalPyExecParams *params);
+typedef vx_status (*rocal_process_python_function_fn)(void **src_ptrs, void *dst_ptr, const RocalPyExecParams *params);
 
 // Map RpptDataType -> OpenVX type enum
 vx_enum getVxDataType(RpptDataType dataType) {
@@ -104,7 +103,6 @@ struct PythonFunctionLocalData {
     RpptGenericDescPtr pDstGenericDesc;
     vxTensorLayout inputLayout;
     vxTensorLayout outputLayout;
-    vx_uint32 dtype;
 
     // Shapes
     size_t inputTensorDims[ROCAL_PY_MAX_INPUTS][RPP_MAX_TENSOR_DIMS];
@@ -246,19 +244,14 @@ static vx_status VX_CALLBACK processPythonFunction(vx_node node, const vx_refere
         p.out_desc.strides[d] = static_cast<size_t>(data->pDstGenericDesc->strides[d]);
     }
 
-    // Dispatch to the appropriate bridge
-    vx_status st = VX_FAILURE;
-    if (data->numInputs == 1) {
-        auto fn = reinterpret_cast<rocal_process_python_function_fn>(static_cast<uintptr_t>(data->bridge_fn_ptr));
-        st = fn(data->pSrcs[0], data->pDst, &p);
-    } else {
-        auto fn = reinterpret_cast<rocal_process_python_function_multi_fn>(static_cast<uintptr_t>(data->bridge_fn_ptr));
-        st = fn(reinterpret_cast<void**>(data->pSrcs), data->pDst, &p);
-    }
+    // Dispatch to the rocal bridge fn
+    vx_status status = VX_FAILURE;
+    auto fn = reinterpret_cast<rocal_process_python_function_fn>(static_cast<uintptr_t>(data->bridge_fn_ptr));
+    status = fn(reinterpret_cast<void**>(data->pSrcs), data->pDst, &p);
 
-    if (st != VX_SUCCESS) {
-        vxAddLogEntry((vx_reference)node, st, "PythonFunction bridge returned error: %d\n", st);
-        return st;
+    if (status != VX_SUCCESS) {
+        vxAddLogEntry((vx_reference)node, status, "PythonFunction bridge returned error: %d\n", status);
+        return status;
     }
     return VX_SUCCESS;
 }

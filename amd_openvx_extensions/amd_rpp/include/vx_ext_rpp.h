@@ -2055,8 +2055,20 @@ extern "C"
 	 */
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppLog1p(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar inputLayout);
 
-	SHARED_PUBLIC vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, vx_tensor pSrc, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout);
-	SHARED_PUBLIC vx_node VX_API_CALL vxExtPythonFunctionMulti(vx_graph graph, const vx_tensor* pSrcs, vx_uint32 numInputs, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout);
+	/*! \brief [Graph] Calls the python function, passes the input(s) as numpy arrays and returns the output.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrcs The array of input tensors in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] numInputs The number of input tensors.
+	 * \param [out] pDst The output tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] bridgeFnPtr The pointer to the bridge function in <tt>\ref VX_TYPE_UINT64</tt> format.
+	 * \param [in] functionId The python function ID in <tt>\ref VX_TYPE_UINT64</tt> format.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] outputLayout The output layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of output tensor.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a
+	 * successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, const vx_tensor* pSrcs, vx_uint32 numInputs, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout);
 
 #ifdef __cplusplus
 }
