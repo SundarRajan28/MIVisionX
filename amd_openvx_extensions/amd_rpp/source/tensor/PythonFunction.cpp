@@ -101,7 +101,7 @@ struct PythonFunctionLocalData {
     // Descriptors
     RpptGenericDescPtr pSrcGenericDesc[ROCAL_PY_MAX_INPUTS];
     RpptGenericDescPtr pDstGenericDesc;
-    vxTensorLayout inputLayout;
+    vxTensorLayout inputLayouts[ROCAL_PY_MAX_INPUTS];
     vxTensorLayout outputLayout;
 
     // Shapes
@@ -143,12 +143,19 @@ static vx_status VX_CALLBACK validatePythonFunction(vx_node /*node*/, const vx_r
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[3], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
     if (scalar_type != VX_TYPE_UINT64)
         return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #4 (functionId) must be UINT64\n");
-    // 4,5: layouts (INT32)
-    for (int idx : {4, 5}) {
-        STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[idx], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
-        if (scalar_type != VX_TYPE_INT32)
-            return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #%d must be INT32\n", idx + 1);
-    }
+    // 4: inputLayouts (ARRAY of INT32)
+    vx_enum ref_type = 0;
+    STATUS_ERROR_CHECK(vxQueryReference(parameters[4], VX_REFERENCE_TYPE, &ref_type, sizeof(ref_type)));
+    if (ref_type != VX_TYPE_ARRAY)
+        return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #5 (inputLayouts) must be ARRAY\n");
+    vx_enum itemtype = 0;
+    STATUS_ERROR_CHECK(vxQueryArray((vx_array)parameters[4], VX_ARRAY_ITEMTYPE, &itemtype, sizeof(itemtype)));
+    if (itemtype != VX_TYPE_INT32)
+        return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: inputLayouts array item type must be INT32\n");
+    // 5: outputLayout (INT32)
+    STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[5], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
+    if (scalar_type != VX_TYPE_INT32)
+        return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #6 (outputLayout) must be INT32\n");
     // 6: deviceType (UINT32)
     STATUS_ERROR_CHECK(vxQueryScalar((vx_scalar)parameters[6], VX_SCALAR_TYPE, &scalar_type, sizeof(scalar_type)));
     if (scalar_type != VX_TYPE_UINT32)
@@ -174,6 +181,13 @@ static vx_status VX_CALLBACK validatePythonFunction(vx_node /*node*/, const vx_r
         STATUS_ERROR_CHECK(vxQueryReference(parameters[idx], VX_REFERENCE_TYPE, &ref_type, sizeof(ref_type)));
         if (ref_type != VX_TYPE_TENSOR)
             return ERRMSG(VX_ERROR_INVALID_TYPE, "PythonFunction validate: Parameter #%u must be TENSOR\n", idx + 1);
+    }
+
+    // Validate inputLayouts array length
+    vx_size numLayouts = 0;
+    STATUS_ERROR_CHECK(vxQueryArray((vx_array)parameters[4], VX_ARRAY_NUMITEMS, &numLayouts, sizeof(numLayouts)));
+    if (!(numLayouts == (vx_size)numInputs)) {
+        return ERRMSG(VX_ERROR_INVALID_VALUE, "PythonFunction validate: inputLayouts length must be equal to numInputs (%d)\n", numInputs);
     }
 
     // Mirror output meta from provided output tensor (created by API with proper dims/dtype)
@@ -224,7 +238,7 @@ static vx_status VX_CALLBACK processPythonFunction(vx_node node, const vx_refere
         RpptGenericDescPtr g = data->pSrcGenericDesc[i];
         p.in_desc[i].num_dims = g->numDims;
         p.in_desc[i].dtype = getVxDataType(g->dataType);
-        p.in_desc[i].layout = static_cast<int>(data->inputLayout);
+        p.in_desc[i].layout = static_cast<int>(data->inputLayouts[i]);
         size_t in_itemsize = getItemSize(g->dataType);
         if (in_itemsize == 0) return VX_ERROR_INVALID_TYPE;
         for (size_t d = 0; d < p.in_desc[i].num_dims; ++d) {
@@ -261,17 +275,24 @@ static vx_status VX_CALLBACK initializePythonFunction(vx_node node, const vx_ref
     auto *data = new PythonFunctionLocalData;
     memset(data, 0, sizeof(PythonFunctionLocalData));
 
-    vx_int32 input_layout = 0, output_layout = 0;
-    STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[4], &input_layout, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+    vx_int32 output_layout = 0;
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[5], &output_layout, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[6], &data->deviceType, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
-    data->inputLayout = static_cast<vxTensorLayout>(input_layout);
     data->outputLayout = static_cast<vxTensorLayout>(output_layout);
 
     // numInputs
     vx_int32 numInputs = 1;
     STATUS_ERROR_CHECK(vxCopyScalar((vx_scalar)parameters[7], &numInputs, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
     data->numInputs = static_cast<vx_uint32>(numInputs);
+
+    // Read per-input layouts array
+    vx_size numLayouts = 0;
+    STATUS_ERROR_CHECK(vxQueryArray((vx_array)parameters[4], VX_ARRAY_NUMITEMS, &numLayouts, sizeof(numLayouts)));
+    vx_int32 inputLayouts[numLayouts];
+    STATUS_ERROR_CHECK(vxCopyArrayRange((vx_array)parameters[4], 0, numLayouts, sizeof(vx_int32), inputLayouts, VX_READ_ONLY, VX_MEMORY_TYPE_HOST));
+    for (vx_uint32 i = 0; i < data->numInputs; ++i) {
+        data->inputLayouts[i] = static_cast<vxTensorLayout>(inputLayouts[i]);
+    }
 
     // Allocate descriptors (host)
     for (vx_uint32 i = 0; i < data->numInputs; ++i) {
@@ -288,7 +309,7 @@ static vx_status VX_CALLBACK initializePythonFunction(vx_node node, const vx_ref
         STATUS_ERROR_CHECK(vxQueryTensor((vx_tensor)parameters[paramIndex], VX_TENSOR_DATA_TYPE, &input_tensor_dtype, sizeof(input_tensor_dtype)));
         data->pSrcGenericDesc[i]->dataType = getRpptDataType(input_tensor_dtype);
         data->pSrcGenericDesc[i]->offsetInBytes = 0;
-        fillGenericDescriptionPtrfromDims(data->pSrcGenericDesc[i], data->inputLayout, data->inputTensorDims[i]);
+        fillGenericDescriptionPtrfromDims(data->pSrcGenericDesc[i], data->inputLayouts[i], data->inputTensorDims[i]);
     }
 
     // Output tensor info
@@ -370,12 +391,12 @@ vx_status PythonFunction_Register(vx_context context) {
     amd_kernel_query_target_support_f query_f = query_target_support;
     STATUS_ERROR_CHECK(vxSetKernelAttribute(kernel, VX_KERNEL_ATTRIBUTE_AMD_QUERY_TARGET_SUPPORT, &query_f, sizeof(query_f)));
 
-    // Parameters: pSrc0, pDst, bridgeFnPtr, functionId, inputLayout, outputLayout, deviceType, numInputs, pSrc1..pSrc7(optional)
+    // Parameters: pSrc0, pDst, bridgeFnPtr, functionId, inputLayouts (ARRAY INT32), outputLayout, deviceType, numInputs, pSrc1..pSrc7(optional)
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 0, VX_INPUT,  VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED));
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 1, VX_OUTPUT, VX_TYPE_TENSOR, VX_PARAMETER_STATE_REQUIRED));
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 2, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // bridgeFnPtr (UINT64)
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 3, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // functionId (UINT64)
-    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 4, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // inputLayout (INT32)
+    STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 4, VX_INPUT,  VX_TYPE_ARRAY, VX_PARAMETER_STATE_REQUIRED)); // inputLayouts (ARRAY INT32)
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 5, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // outputLayout (INT32)
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 6, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // deviceType (UINT32)
     STATUS_ERROR_CHECK(vxAddParameterToKernel(kernel, 7, VX_INPUT,  VX_TYPE_SCALAR, VX_PARAMETER_STATE_REQUIRED)); // numInputs (INT32)

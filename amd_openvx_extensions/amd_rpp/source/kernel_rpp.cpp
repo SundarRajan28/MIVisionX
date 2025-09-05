@@ -1901,7 +1901,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppBrightness(vx_graph graph, vx_tensor pS
     return node;
 }
 
-VX_API_ENTRY vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, const vx_tensor* pSrcs, vx_uint32 numInputs, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_scalar inputLayout, vx_scalar outputLayout) {
+VX_API_ENTRY vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, const vx_tensor* pSrcs, vx_uint32 numInputs, vx_tensor pDst, vx_scalar bridgeFnPtr, vx_scalar functionId, vx_array inputLayouts, vx_scalar outputLayout) {
     vx_node node = NULL;
     vx_context context = vxGetContext((vx_reference)graph);
     const vx_uint32 kMaxInputs = 8;
@@ -1919,7 +1919,7 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtPythonFunction(vx_graph graph, const vx_te
             (vx_reference)pDst,             // 1
             (vx_reference)bridgeFnPtr,      // 2
             (vx_reference)functionId,       // 3
-            (vx_reference)inputLayout,      // 4
+            (vx_reference)inputLayouts,     // 4
             (vx_reference)outputLayout,     // 5
             (vx_reference)deviceType,       // 6
             (vx_reference)numInputsScalar,  // 7
