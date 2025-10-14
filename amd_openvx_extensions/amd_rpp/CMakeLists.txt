@@ -67,6 +67,7 @@ list(APPEND SOURCES
         source/tensor/Blend.cpp
         source/tensor/Blur.cpp
         source/tensor/Brightness.cpp
+        source/tensor/ChannelPermute.cpp
         source/tensor/ColorTemperature.cpp
         source/tensor/ColorTwist.cpp
         source/tensor/Contrast.cpp
@@ -79,13 +80,18 @@ list(APPEND SOURCES
         source/tensor/Flip.cpp
         source/tensor/Fog.cpp
         source/tensor/GammaCorrection.cpp
+        source/tensor/GaussianNoise.cpp
         source/tensor/Glitch.cpp
         source/tensor/Hue.cpp
+        source/tensor/JpegCompressionDistortion.cpp
         source/tensor/Jitter.cpp
         source/tensor/LensCorrection.cpp
+        source/tensor/Log.cpp
         source/tensor/Log1p.cpp
+        source/tensor/Lut.cpp
         source/tensor/MelFilterBank.cpp
         source/tensor/Noise.cpp
+        source/tensor/Posterize.cpp
         source/tensor/NonSilentRegionDetection.cpp
         source/tensor/Nop.cpp
         source/tensor/Normalize.cpp
@@ -100,6 +106,8 @@ list(APPEND SOURCES
         source/tensor/ResizeMirrorNormalize.cpp
         source/tensor/Saturation.cpp
         source/tensor/SequenceRearrange.cpp
+        source/tensor/ShotNoise.cpp
+        source/tensor/Solarize.cpp
         source/tensor/Snow.cpp
         source/tensor/Spectrogram.cpp
         source/tensor/TensorAddTensor.cpp
@@ -107,6 +115,7 @@ list(APPEND SOURCES
         source/tensor/ToDecibels.cpp
         source/tensor/Vignette.cpp
         source/tensor/WarpAffine.cpp
+        source/tensor/Water.cpp
         source/tensor/Slice.cpp
         source/tensor/Transpose.cpp
         source/kernel_rpp.cpp

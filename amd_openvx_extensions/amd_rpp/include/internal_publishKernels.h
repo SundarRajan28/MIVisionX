@@ -169,7 +169,16 @@ vx_status Slice_Register(vx_context);
 vx_status Normalize_Register(vx_context);
 vx_status MelFilterBank_Register(vx_context);
 vx_status Transpose_Register(vx_context);
+vx_status Log_Register(vx_context);
 vx_status Log1p_Register(vx_context);
+vx_status ChannelPermute_Register(vx_context);
+vx_status GaussianNoise_Register(vx_context);
+vx_status ShotNoise_Register(vx_context);
+vx_status Posterize_Register(vx_context);
+vx_status Solarize_Register(vx_context);
+vx_status Water_Register(vx_context);
+vx_status JpegCompressionDistortion_Register(vx_context);
+vx_status Lut_Register(vx_context);
 
 // kernel names
 #define VX_KERNEL_RPP_NOPBATCHPD_NAME                           "org.rpp.NopbatchPD"
@@ -306,6 +315,15 @@ vx_status Log1p_Register(vx_context);
 #define VX_KERNEL_RPP_NORMALIZE_NAME                            "org.rpp.Normalize"
 #define VX_KERNEL_RPP_MELFILTERBANK_NAME                        "org.rpp.MelFilterBank"
 #define VX_KERNEL_RPP_TRANSPOSE_NAME                            "org.rpp.Transpose"
+#define VX_KERNEL_RPP_LOG_NAME                                  "org.rpp.Log"
 #define VX_KERNEL_RPP_LOG1P_NAME                                "org.rpp.Log1p"
+#define VX_KERNEL_RPP_CHANNELPERMUTE_NAME                       "org.rpp.ChannelPermute"
+#define VX_KERNEL_RPP_GAUSSIAN_NOISE_NAME                       "org.rpp.GaussianNoise"
+#define VX_KERNEL_RPP_SHOT_NOISE_NAME                           "org.rpp.ShotNoise"
+#define VX_KERNEL_RPP_POSTERIZE_NAME                            "org.rpp.Posterize"
+#define VX_KERNEL_RPP_SOLARIZE_NAME                             "org.rpp.Solarize"
+#define VX_KERNEL_RPP_WATER_NAME                                "org.rpp.Water"
+#define VX_KERNEL_RPP_JPEGCOMPRESSIONDISTORTION_NAME            "org.rpp.JpegCompressionDistortion"
+#define VX_KERNEL_RPP_LUT_NAME                                  "org.rpp.Lut"
 
 #endif //_AMDVX_EXT__PUBLISH_KERNELS_H_

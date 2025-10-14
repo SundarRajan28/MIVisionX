@@ -149,6 +149,8 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Jitter_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(LensCorrection_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Noise_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(GaussianNoise_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(ShotNoise_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Nop_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Pixelate_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(PreemphasisFilter_Register));
@@ -174,7 +176,14 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Normalize_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(MelFilterBank_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Transpose_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(Log_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Log1p_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(ChannelPermute_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(Posterize_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(Solarize_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(Water_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(JpegCompressionDistortion_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(Lut_Register));
     return status;
 }
 
