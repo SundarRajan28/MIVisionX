@@ -163,7 +163,13 @@ static vx_status VX_CALLBACK initializeSolarize(vx_node node, const vx_reference
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->ouputTensorDims);
 
-    data->pThresholdTensor = new vx_float32[data->pSrcDesc->n];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pThresholdTensor, data->pSrcDesc->n * sizeof(vx_float32)));
+#endif
+    } else {
+        data->pThresholdTensor = new vx_float32[data->pSrcDesc->n];
+    }
     refreshSolarize(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -173,7 +179,13 @@ static vx_status VX_CALLBACK initializeSolarize(vx_node node, const vx_reference
 static vx_status VX_CALLBACK uninitializeSolarize(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     SolarizeLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pThresholdTensor;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pThresholdTensor) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pThresholdTensor));
+#endif
+    } else {
+        if (data->pThresholdTensor) delete[] data->pThresholdTensor;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));

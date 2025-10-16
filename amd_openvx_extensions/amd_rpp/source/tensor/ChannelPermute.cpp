@@ -139,7 +139,13 @@ static vx_status VX_CALLBACK initializeChannelPermute(vx_node node, const vx_ref
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->outputTensorDims);
 
-    data->pPermutationTensor = new vx_uint32[data->pSrcDesc->n * 3];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pPermutationTensor, data->pSrcDesc->n * 3 * sizeof(vx_uint32)));
+#endif
+    } else {
+        data->pPermutationTensor = new vx_uint32[data->pSrcDesc->n * 3];
+    }
     refreshChannelPermute(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -149,7 +155,13 @@ static vx_status VX_CALLBACK initializeChannelPermute(vx_node node, const vx_ref
 static vx_status VX_CALLBACK uninitializeChannelPermute(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     ChannelPermuteLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pPermutationTensor;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pPermutationTensor) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pPermutationTensor));
+#endif
+    } else {
+        if (data->pPermutationTensor) delete[] data->pPermutationTensor;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));

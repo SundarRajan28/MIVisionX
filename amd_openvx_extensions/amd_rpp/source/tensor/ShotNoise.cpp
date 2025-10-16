@@ -168,7 +168,13 @@ static vx_status VX_CALLBACK initializeShotNoise(vx_node node, const vx_referenc
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->ouputTensorDims);
 
-    data->pShotNoiseFactor = new vx_float32[data->pSrcDesc->n];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pShotNoiseFactor, data->pSrcDesc->n * sizeof(vx_float32)));
+#endif
+    } else {
+        data->pShotNoiseFactor = new vx_float32[data->pSrcDesc->n];
+    }
     refreshShotNoise(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -178,7 +184,13 @@ static vx_status VX_CALLBACK initializeShotNoise(vx_node node, const vx_referenc
 static vx_status VX_CALLBACK uninitializeShotNoise(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     ShotNoiseLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pShotNoiseFactor;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pShotNoiseFactor) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pShotNoiseFactor));
+#endif
+    } else {
+        if (data->pShotNoiseFactor) delete[] data->pShotNoiseFactor;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));

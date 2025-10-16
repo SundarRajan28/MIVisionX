@@ -171,8 +171,15 @@ static vx_status VX_CALLBACK initializeGaussianNoise(vx_node node, const vx_refe
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->ouputTensorDims);
 
-    data->pMean = new vx_float32[data->pSrcDesc->n];
-    data->pStdDev = new vx_float32[data->pSrcDesc->n];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pMean, data->pSrcDesc->n * sizeof(vx_float32)));
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pStdDev, data->pSrcDesc->n * sizeof(vx_float32)));
+#endif
+    } else {
+        data->pMean = new vx_float32[data->pSrcDesc->n];
+        data->pStdDev = new vx_float32[data->pSrcDesc->n];
+    }
     refreshGaussianNoise(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -182,8 +189,15 @@ static vx_status VX_CALLBACK initializeGaussianNoise(vx_node node, const vx_refe
 static vx_status VX_CALLBACK uninitializeGaussianNoise(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     GaussianNoiseLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pMean;
-    delete[] data->pStdDev;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pMean) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pMean));
+        if (data->pStdDev) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pStdDev));
+#endif
+    } else {
+        if (data->pMean) delete[] data->pMean;
+        if (data->pStdDev) delete[] data->pStdDev;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));

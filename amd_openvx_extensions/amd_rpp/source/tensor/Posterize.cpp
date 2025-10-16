@@ -163,7 +163,13 @@ static vx_status VX_CALLBACK initializePosterize(vx_node node, const vx_referenc
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->ouputTensorDims);
 
-    data->pPosterizeLevelBits = new vx_uint8[data->pSrcDesc->n];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pPosterizeLevelBits, data->pSrcDesc->n * sizeof(vx_uint8)));
+#endif
+    } else {
+        data->pPosterizeLevelBits = new vx_uint8[data->pSrcDesc->n];
+    }
     refreshPosterize(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -173,7 +179,13 @@ static vx_status VX_CALLBACK initializePosterize(vx_node node, const vx_referenc
 static vx_status VX_CALLBACK uninitializePosterize(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     PosterizeLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pPosterizeLevelBits;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pPosterizeLevelBits) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pPosterizeLevelBits));
+#endif
+    } else {
+        if (data->pPosterizeLevelBits) delete[] data->pPosterizeLevelBits;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));

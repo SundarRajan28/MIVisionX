@@ -163,7 +163,13 @@ static vx_status VX_CALLBACK initializeJpegCompressionDistortion(vx_node node, c
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->ouputTensorDims);
 
-    data->pQuality = new vx_int32[data->pSrcDesc->n];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pQuality, data->pSrcDesc->n * sizeof(vx_int32)));
+#endif
+    } else {
+        data->pQuality = new vx_int32[data->pSrcDesc->n];
+    }
     refreshJpegCompressionDistortion(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -173,7 +179,13 @@ static vx_status VX_CALLBACK initializeJpegCompressionDistortion(vx_node node, c
 static vx_status VX_CALLBACK uninitializeJpegCompressionDistortion(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     JpegCompressionDistortionLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pQuality;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pQuality) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pQuality));
+#endif
+    } else {
+        if (data->pQuality) delete[] data->pQuality;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));

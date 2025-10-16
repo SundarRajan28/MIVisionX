@@ -178,12 +178,23 @@ static vx_status VX_CALLBACK initializeWater(vx_node node, const vx_reference *p
     data->pDstDesc->offsetInBytes = 0;
     fillDescriptionPtrfromDims(data->pDstDesc, data->outputLayout, data->ouputTensorDims);
 
-    data->pAmplitudeX = new vx_float32[data->pSrcDesc->n];
-    data->pAmplitudeY = new vx_float32[data->pSrcDesc->n];
-    data->pFrequencyX = new vx_float32[data->pSrcDesc->n];
-    data->pFrequencyY = new vx_float32[data->pSrcDesc->n];
-    data->pPhaseX = new vx_float32[data->pSrcDesc->n];
-    data->pPhaseY = new vx_float32[data->pSrcDesc->n];
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pAmplitudeX, data->pSrcDesc->n * sizeof(vx_float32)));
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pAmplitudeY, data->pSrcDesc->n * sizeof(vx_float32)));
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pFrequencyX, data->pSrcDesc->n * sizeof(vx_float32)));
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pFrequencyY, data->pSrcDesc->n * sizeof(vx_float32)));
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pPhaseX, data->pSrcDesc->n * sizeof(vx_float32)));
+        CHECK_HIP_RETURN_STATUS(hipHostMalloc(&data->pPhaseY, data->pSrcDesc->n * sizeof(vx_float32)));
+#endif
+    } else {
+        data->pAmplitudeX = new vx_float32[data->pSrcDesc->n];
+        data->pAmplitudeY = new vx_float32[data->pSrcDesc->n];
+        data->pFrequencyX = new vx_float32[data->pSrcDesc->n];
+        data->pFrequencyY = new vx_float32[data->pSrcDesc->n];
+        data->pPhaseX = new vx_float32[data->pSrcDesc->n];
+        data->pPhaseY = new vx_float32[data->pSrcDesc->n];
+    }
     refreshWater(node, parameters, num, data);
     STATUS_ERROR_CHECK(createRPPHandle(node, &data->handle, data->pSrcDesc->n, data->deviceType));
     STATUS_ERROR_CHECK(vxSetNodeAttribute(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
@@ -193,12 +204,23 @@ static vx_status VX_CALLBACK initializeWater(vx_node node, const vx_reference *p
 static vx_status VX_CALLBACK uninitializeWater(vx_node node, const vx_reference *parameters, vx_uint32 num) {
     WaterLocalData *data;
     STATUS_ERROR_CHECK(vxQueryNode(node, VX_NODE_LOCAL_DATA_PTR, &data, sizeof(data)));
-    delete[] data->pAmplitudeX;
-    delete[] data->pAmplitudeY;
-    delete[] data->pFrequencyX;
-    delete[] data->pFrequencyY;
-    delete[] data->pPhaseX;
-    delete[] data->pPhaseY;
+    if (data->deviceType == AGO_TARGET_AFFINITY_GPU) {
+#if ENABLE_HIP
+        if (data->pAmplitudeX) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pAmplitudeX));
+        if (data->pAmplitudeY) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pAmplitudeY));
+        if (data->pFrequencyX) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pFrequencyX));
+        if (data->pFrequencyY) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pFrequencyY));
+        if (data->pPhaseX) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pPhaseX));
+        if (data->pPhaseY) CHECK_HIP_RETURN_STATUS(hipHostFree(data->pPhaseY));
+#endif
+    } else {
+        if (data->pAmplitudeX) delete[] data->pAmplitudeX;
+        if (data->pAmplitudeY) delete[] data->pAmplitudeY;
+        if (data->pFrequencyX) delete[] data->pFrequencyX;
+        if (data->pFrequencyY) delete[] data->pFrequencyY;
+        if (data->pPhaseX) delete[] data->pPhaseX;
+        if (data->pPhaseY) delete[] data->pPhaseY;
+    }
     delete data->pSrcDesc;
     delete data->pDstDesc;
     STATUS_ERROR_CHECK(releaseRPPHandle(node, data->handle, data->deviceType));
