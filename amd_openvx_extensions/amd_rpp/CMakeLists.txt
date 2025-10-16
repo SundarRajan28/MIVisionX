@@ -24,9 +24,9 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_EXTENSIONS ON)
-if(NOT DEFINED CMAKE_CXX_COMPILER AND EXISTS "${ROCM_PATH}/bin/amdclang++")
-    set(CMAKE_C_COMPILER ${ROCM_PATH}/bin/amdclang)
-    set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/amdclang++)
+if(NOT DEFINED CMAKE_CXX_COMPILER AND EXISTS "${ROCM_PATH}/lib/llvm/bin/amdclang++")
+    set(CMAKE_C_COMPILER ${ROCM_PATH}/lib/llvm/bin/amdclang)
+    set(CMAKE_CXX_COMPILER ${ROCM_PATH}/lib/llvm/bin/amdclang++)
 endif()
 
 # VX_RPP Version
@@ -38,7 +38,7 @@ project(vx_rpp VERSION ${VERSION} LANGUAGES CXX)
 list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
 
-find_package(rpp 2.1.0 REQUIRED)
+find_package(rpp 2.2.1 REQUIRED)
 
 message("-- ${White}${PROJECT_NAME}: rpp found with find_package(rpp REQUIRED)${ColourReset}")
 message("-- \t${White}rpp_INCLUDE_DIR -- ${rpp_INCLUDE_DIR}${ColourReset}")
