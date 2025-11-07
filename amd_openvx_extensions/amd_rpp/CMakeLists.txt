@@ -70,6 +70,8 @@ list(APPEND SOURCES
         source/tensor/ChannelPermute.cpp
         source/tensor/ColorTemperature.cpp
         source/tensor/ColorTwist.cpp
+        source/tensor/ColorToGreyscale.cpp
+        source/tensor/ColorJitter.cpp
         source/tensor/Contrast.cpp
         source/tensor/Copy.cpp
         source/tensor/Crop.cpp
@@ -109,8 +111,14 @@ list(APPEND SOURCES
         source/tensor/ShotNoise.cpp
         source/tensor/Solarize.cpp
         source/tensor/Snow.cpp
+        source/tensor/Spatter.cpp
         source/tensor/Spectrogram.cpp
         source/tensor/TensorAddTensor.cpp
+        source/tensor/TensorSum.cpp
+        source/tensor/TensorMin.cpp
+        source/tensor/TensorMax.cpp
+        source/tensor/TensorMean.cpp
+        source/tensor/TensorStdDev.cpp
         source/tensor/TensorMulScalar.cpp
         source/tensor/ToDecibels.cpp
         source/tensor/Vignette.cpp

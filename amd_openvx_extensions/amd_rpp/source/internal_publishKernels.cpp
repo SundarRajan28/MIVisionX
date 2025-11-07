@@ -134,6 +134,8 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Blur_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Brightness_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ColorTemperature_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(ColorJitter_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(ColorToGreyscale_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ColorTwist_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Contrast_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Copy_Register));
@@ -155,6 +157,7 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Pixelate_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(PreemphasisFilter_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Rain_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(Spatter_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Resize_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ResizeCrop_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ResizeCropMirror_Register));
@@ -171,6 +174,11 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Resample_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(TensorMulScalar_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(TensorAddTensor_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(TensorSum_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(TensorMin_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(TensorMax_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(TensorMean_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(TensorStdDev_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(NonSilentRegionDetection_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Slice_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Normalize_Register));

@@ -1498,6 +1498,23 @@ extern "C"
 	 */
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppColorTemperature(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pAdjustValue, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType);
 	
+	/*! \brief [Graph] Creates a ColorJitter function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pBrightness The input array in <tt>\ref VX_TYPE_FLOAT32</tt> format containing the brightness data.
+	 * \param [in] pContrast The input array in <tt>\ref VX_TYPE_FLOAT32</tt> format containing the contrast data.
+	 * \param [in] pHue The input array in <tt>\ref VX_TYPE_FLOAT32</tt> format containing the hue data.
+	 * \param [in] pSaturation The input array in <tt>\ref VX_TYPE_FLOAT32</tt> format containing the saturation data.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] outputLayout The output layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of output tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppColorJitter(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pBrightness, vx_array pContrast, vx_array pHue, vx_array pSaturation, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType);
+
 	/*! \brief [Graph] Creates a ColorTwist function node.
 	 * \ingroup group_amd_rpp
 	 * \param [in] graph The handle to the graph.
@@ -1514,6 +1531,20 @@ extern "C"
 	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
 	 */
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppColorTwist(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pAlpha, vx_array pBeta, vx_array pHue, vx_array pSat, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType);
+
+	/*! \brief [Graph] Creates a ColorToGreyscale function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] subpixelLayout The input scalar in <tt>\ref VX_TYPE_INT32</tt> specifying the source subpixel layout.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] outputLayout The output layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of output tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppColorToGreyscale(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar subpixelLayout, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType);
 	
 	/*! \brief [Graph] Creates a Contrast function node.
 	 * \ingroup group_amd_rpp
@@ -1744,6 +1775,20 @@ extern "C"
 	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
 	 */
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppRain(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar rainPercentage, vx_scalar rainWidth, vx_scalar rainHeight, vx_scalar rainSlantAngle, vx_array pRainTransperancy, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType);
+
+	/*! \brief [Graph] Creates a Spatter function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSpatterColor The input array in <tt>\ref VX_TYPE_UINT8</tt> format containing RGB values for the spatter color.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] outputLayout The output layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of output tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppSpatter(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_array pSpatterColor, vx_scalar inputLayout, vx_scalar outputLayout, vx_scalar roiType);
 	
 	/*! \brief [Graph] Creates a ResizeCrop function node.
 	 * \ingroup group_amd_rpp
@@ -1989,6 +2034,67 @@ extern "C"
 	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
 	 */
 	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorAddTensor(vx_graph graph, vx_tensor pSrc1, vx_tensor pSrc2, vx_tensor pDst, vx_tensor pSrcRoi, vx_tensor pDstRoi);
+
+	/*! \brief [Graph] Creates a TensorSum function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor that stores reduction results.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorSum(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar inputLayout, vx_scalar roiType);
+
+	/*! \brief [Graph] Creates a TensorMin function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor that stores reduction-min results.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorMin(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar inputLayout, vx_scalar roiType);
+
+	/*! \brief [Graph] Creates a TensorMax function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor that stores reduction-max results.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorMax(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar inputLayout, vx_scalar roiType);
+
+	/*! \brief [Graph] Creates a TensorMean function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor that stores reduction-mean results.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorMean(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_scalar inputLayout, vx_scalar roiType);
+
+	/*! \brief [Graph] Creates a TensorStdDev function node.
+	 * \ingroup group_amd_rpp
+	 * \param [in] graph The handle to the graph.
+	 * \param [in] pSrc The input tensor in <tt>\ref VX_TYPE_UINT8</tt> or <tt>\ref VX_TYPE_FLOAT32</tt> or <tt>\ref VX_TYPE_FLOAT16</tt> or <tt>\ref VX_TYPE_INT8</tt> format data.
+	 * \param [in] pSrcRoi The input tensor of batch size in <tt>unsigned int</tt> containing the roi values for the input in xywh/ltrb format.
+	 * \param [out] pDst The output tensor that stores reduction-stddev results.
+	 * \param [in] pMean The input tensor containing per-sample means required for stddev computation.
+	 * \param [in] inputLayout The input layout in <tt>\ref VX_TYPE_INT32</tt> denotes the layout of input tensor.
+	 * \param [in] roiType The type of roi <tt>\ref VX_TYPE_INT32</tt> denotes whether source roi is of XYWH/LTRB type.
+	 * \return A node reference <tt>\ref vx_node</tt>. Any possible errors preventing a successful creation should be checked using <tt>\ref vxGetStatus</tt>.
+	 */
+	SHARED_PUBLIC vx_node VX_API_CALL vxExtRppTensorStdDev(vx_graph graph, vx_tensor pSrc, vx_tensor pSrcRoi, vx_tensor pDst, vx_tensor pMean, vx_scalar inputLayout, vx_scalar roiType);
 
 	/*! \brief [Graph] Performs leading and trailing silence detection to the input tensor.
 	* \ingroup group_amd_rpp
