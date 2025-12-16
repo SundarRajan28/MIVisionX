@@ -2034,7 +2034,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppColorJitter(vx_graph graph, vx_tensor p
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_COLORJITTER, params, 11);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2078,7 +2077,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppColorToGreyscale(vx_graph graph, vx_ten
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_COLORTOGREYSCALE, params, 8);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2458,7 +2456,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppSpatter(vx_graph graph, vx_tensor pSrc,
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_SPATTER, params, 8);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2848,7 +2845,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorSum(vx_graph graph, vx_tensor pSr
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_TENSOR_SUM, params, 6);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2867,7 +2863,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorMin(vx_graph graph, vx_tensor pSr
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_TENSOR_MIN, params, 6);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2886,7 +2881,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorMax(vx_graph graph, vx_tensor pSr
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_TENSOR_MAX, params, 6);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2905,7 +2899,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorMean(vx_graph graph, vx_tensor pS
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_TENSOR_MEAN, params, 6);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
@@ -2925,7 +2918,6 @@ VX_API_ENTRY vx_node VX_API_CALL vxExtRppTensorStdDev(vx_graph graph, vx_tensor 
             (vx_reference)roiType,
             (vx_reference)deviceType};
         node = createNode(graph, VX_KERNEL_RPP_TENSOR_STDDEV, params, 7);
-        vxReleaseScalar(&deviceType);
     }
     return node;
 }
