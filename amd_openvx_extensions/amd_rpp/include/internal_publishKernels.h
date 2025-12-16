@@ -333,5 +333,13 @@ vx_status Lut_Register(vx_context);
 #define VX_KERNEL_RPP_WATER_NAME                                "org.rpp.Water"
 #define VX_KERNEL_RPP_JPEGCOMPRESSIONDISTORTION_NAME            "org.rpp.JpegCompressionDistortion"
 #define VX_KERNEL_RPP_LUT_NAME                                  "org.rpp.Lut"
+#define VX_KERNEL_RPP_COLORJITTER_NAME                          "org.rpp.ColorJitter"
+#define VX_KERNEL_RPP_SPATTER_NAME                              "org.rpp.Spatter"
+#define VX_KERNEL_RPP_COLORTOGREYSCALE_NAME                     "org.rpp.ColorToGreyscale"
+#define VX_KERNEL_RPP_TENSOR_SUM_NAME                           "org.rpp.TensorSum"
+#define VX_KERNEL_RPP_TENSOR_MIN_NAME                           "org.rpp.TensorMin"
+#define VX_KERNEL_RPP_TENSOR_MAX_NAME                           "org.rpp.TensorMax"
+#define VX_KERNEL_RPP_TENSOR_MEAN_NAME                          "org.rpp.TensorMean"
+#define VX_KERNEL_RPP_TENSOR_STDDEV_NAME                        "org.rpp.TensorStdDev"
 
 #endif //_AMDVX_EXT__PUBLISH_KERNELS_H_
