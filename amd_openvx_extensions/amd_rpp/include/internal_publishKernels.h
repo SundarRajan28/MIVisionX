@@ -179,6 +179,7 @@ vx_status MelFilterBank_Register(vx_context);
 vx_status Transpose_Register(vx_context);
 vx_status Log_Register(vx_context);
 vx_status Log1p_Register(vx_context);
+vx_status PythonFunction_Register(vx_context);
 vx_status ChannelPermute_Register(vx_context);
 vx_status GaussianNoise_Register(vx_context);
 vx_status ShotNoise_Register(vx_context);
@@ -325,6 +326,7 @@ vx_status Lut_Register(vx_context);
 #define VX_KERNEL_RPP_TRANSPOSE_NAME                            "org.rpp.Transpose"
 #define VX_KERNEL_RPP_LOG_NAME                                  "org.rpp.Log"
 #define VX_KERNEL_RPP_LOG1P_NAME                                "org.rpp.Log1p"
+#define VX_KERNEL_RPP_PYTHON_FUNCTION_NAME                      "org.rpp.PythonFunction"
 #define VX_KERNEL_RPP_CHANNELPERMUTE_NAME                       "org.rpp.ChannelPermute"
 #define VX_KERNEL_RPP_GAUSSIAN_NOISE_NAME                       "org.rpp.GaussianNoise"
 #define VX_KERNEL_RPP_SHOT_NOISE_NAME                           "org.rpp.ShotNoise"

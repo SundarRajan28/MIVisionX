@@ -186,6 +186,7 @@ vx_status get_kernels_to_publish()
     STATUS_ERROR_CHECK(ADD_KERNEL(Transpose_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Log_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Log1p_Register));
+    STATUS_ERROR_CHECK(ADD_KERNEL(PythonFunction_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(ChannelPermute_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Posterize_Register));
     STATUS_ERROR_CHECK(ADD_KERNEL(Solarize_Register));
